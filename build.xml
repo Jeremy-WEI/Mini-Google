@@ -12,7 +12,7 @@
     
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src/cis555/crawler/database" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac srcdir="src/cis555/database" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>

@@ -5,7 +5,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -13,21 +15,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
-import cis555.crawler.database.DBWrapper;
-import cis555.crawler.database.Dao;
-
+import cis555.database.DBWrapper;
+import cis555.database.Dao;
 
 public class Crawler {
 	
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 	private static final String CLASSNAME = Crawler.class.getName();
 	
-	private URL startingUrl;
+	
+	/* Database related */
 	private String dbEnvDir;
+	private Dao dao;
+	private int crawlerID = 0;
+
+	/* Crawler related */
+	
+	private URL startingUrl;
 	private int maxDocSize;
 	private int crawlLimit;
 	private boolean isCrawlLimitSet;
-	private Dao dao;
 	private List<Thread> getThreadPool;
 	private List<Thread> headThreadPool;
 	private Thread robotsMatcherThread;
@@ -37,6 +44,14 @@ public class Crawler {
 	private BlockingQueue<URL> headCrawlQueue;
 	private BlockingQueue<URL> getCrawlQueue;
 	private Vector<URL> sitesCrawledThisSession; // A list of sites crawled in this session, to prevent repeated crawl
+	
+	/* Link Extractor related */
+	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
+	private List<Thread> listExtractorThreadPool;
+	private BlockingQueue<URL> preRedistributionNewURLQueue;
+	private Thread linkQueuerThread;
+	private DocIDGenerator counterGenerator;
+	
 	
 	public static void main(String[] args) throws MalformedURLException, InterruptedException {
 		Crawler crawler = new Crawler();
@@ -59,14 +74,20 @@ public class Crawler {
 		this.headCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.URL_QUEUE_CAPACITY);
 		this.getCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.URL_QUEUE_CAPACITY);
 		
+		this.contentForLinkExtractor = new ArrayBlockingQueue<RawCrawledItem>(CrawlerConstants.URL_QUEUE_CAPACITY);
+		this.preRedistributionNewURLQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.URL_QUEUE_CAPACITY);
+		
 		if (isCrawlLimitSet){
 			CrawlLimitCounter.setCrawlLimit(this.crawlLimit);
 		}
 		this.siteInfoMap = new ConcurrentHashMap<String, SiteInfo>();
 		this.sitesCrawledThisSession = new Vector<URL>();
-		initialiseMatcher();
+		this.counterGenerator = new DocIDGenerator(this.crawlerID, this.dao);
+		linkQueuerThread();
+		initialiseLinkExtractorThreadPool();
 		initialiseHeadThreadPool();
 		initialiseGetThreadPool();
+		initialiseMatcher();
 	}
 	
 	/**
@@ -75,6 +96,23 @@ public class Crawler {
 	private void initialiseDb(){
 		DBWrapper wrapper = new DBWrapper(this.dbEnvDir);
 		this.dao = wrapper.getDao();
+	}
+	
+	/**
+	 * Initialise the linkQueuer
+	 */
+	private void linkQueuerThread(){
+		
+		// TEMPORARY
+		
+		Map<String, String> tempListOfOtherWorkers = new HashMap<String, String>();
+		tempListOfOtherWorkers.put("1", "192.0.0.1:8080");
+		///
+		
+		LinkQueuer linkQueuer = new LinkQueuer(this.preRedistributionNewURLQueue, 
+				this.newUrlQueue, this.crawlerID, tempListOfOtherWorkers);
+		linkQueuerThread = new Thread(linkQueuer);
+		linkQueuerThread.start();
 	}
 	
 	/**
@@ -96,7 +134,8 @@ public class Crawler {
 		headThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_THREADS; i++) {
 			HEADWorker crawler = new HEADWorker(this.siteInfoMap, this.headCrawlQueue, 
-					this.dao, this.getCrawlQueue, i, this.maxDocSize, this.newUrlQueue, this.sitesCrawledThisSession);
+					this.dao, this.getCrawlQueue, i, this.maxDocSize, this.newUrlQueue, 
+					this.contentForLinkExtractor, this.sitesCrawledThisSession);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
 			headThreadPool.add(workerThread);
@@ -109,12 +148,28 @@ public class Crawler {
 	 * @return
 	 */
 	private void initialiseGetThreadPool() {
-		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_THREADS);
+		listExtractorThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_THREADS; i++) {
-			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, i, this.dao);
+			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, i, this.contentForLinkExtractor);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
-			getThreadPool.add(workerThread);
+			listExtractorThreadPool.add(workerThread);
+		}
+	}
+	
+	/**
+	 * Start up a pool of threads for GET workers
+	 * 
+	 * @return
+	 */
+	private void initialiseLinkExtractorThreadPool() {
+		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_THREADS);
+		for (int i = 0; i < CrawlerConstants.NUM_THREADS; i++) {
+			LinkExtractorWorker extractor = new LinkExtractorWorker(this.contentForLinkExtractor, this.preRedistributionNewURLQueue, 
+					i, this.dao, this.counterGenerator);
+			Thread thread = new Thread(extractor);
+			thread.start();
+			getThreadPool.add(thread);
 		}
 	}
 	

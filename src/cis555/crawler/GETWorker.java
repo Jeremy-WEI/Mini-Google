@@ -4,13 +4,16 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
 
-import cis555.crawler.database.Dao;
+import cis555.database.Dao;
 
 public class GETWorker implements Runnable {
 	
@@ -21,16 +24,16 @@ public class GETWorker implements Runnable {
 	private BlockingQueue<URL> crawlQueue;
 	private BlockingQueue<URL> newUrlQueue;
 	private int id;
-	private Dao dao;
+	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
 	protected static boolean active = true;
 	
 	public GETWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> crawlQueue, 
-			BlockingQueue<URL> newUrlQueue, int id, Dao dao){
+			BlockingQueue<URL> newUrlQueue, int id, BlockingQueue<RawCrawledItem> contentForLinkExtractor){
 		this.siteInfoMap = siteInfoMap;
 		this.crawlQueue = crawlQueue;
 		this.newUrlQueue = newUrlQueue;
 		this.id = id;
-		this.dao = dao;
+		this.contentForLinkExtractor = contentForLinkExtractor;
 	}
 	
 	
@@ -97,48 +100,28 @@ public class GETWorker implements Runnable {
 			
 			updateSiteInfo(info, domain);
 			
-			String contents = response.getResponseBody();
+			String rawContents = response.getResponseBody();
 			
-			if (contents.isEmpty()){
+			if (rawContents.isEmpty()){
 				System.out.println("Unable to crawl " + url + ", skipping." );
 				return;
 			}
 			System.out.println("Crawled " + url);				
 			String contentType = response.getContentType().name();
 			
-			// Let Dao know that the last crawl date has changed
-			this.dao.setLastCrawlDate(new Date());
-			
-			this.dao.addNewCrawledDocument(url.toString(), contents, new Date(), contentType);
+			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
+			this.contentForLinkExtractor.add(forLinkExtractor);
 			
 			if (CrawlLimitCounter.getCounterAndDecrement() < 0){
 				logger.info(CLASSNAME + ": Crawl limit reached");
 				GETWorker.active = false;
 			}
 			
-			if (response.getContentType() == Response.ContentType.HTML){
-				addLinksToQueue(contents, url);
-			}
 				
 		} catch (CrawlerException e){
 			System.out.println("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );
 		} 
 	}
-	
-	/**
-	 * Add links from a document to the queue for future crawling
-	 * @param contents
-	 * @param url
-	 */
-	private void addLinksToQueue(String contents, URL url){
-		List<URL> links = CrawlerUtils.extractUrls(contents, url);
-		for (URL link : links){
-//			logger.info("Added " + link + " to the new url queue");
-			this.newUrlQueue.add(link);
-		}
-		
-	}
-
 	
 	/**
 	 * Updates the site info with the newest crawl date, and puts it back into the siteInfoMap

@@ -1,4 +1,4 @@
-package cis555.crawler.database;
+package cis555.database;
 
 public class EntryDoesNotExistException extends RuntimeException {
 	

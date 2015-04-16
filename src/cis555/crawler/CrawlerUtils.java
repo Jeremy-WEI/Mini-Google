@@ -4,27 +4,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.tidy.Tidy;
 
 public class CrawlerUtils {
 	
@@ -221,80 +210,7 @@ public class CrawlerUtils {
 		
 	}
 	
-	/**
-	 * Extract all links from a webpage
-	 * @param webpage
-	 * @param domain
-	 * @param protocol
-	 * @return
-	 */
-	public static List<URL> extractUrls(String webpage, URL originalUrl){
-		List<String> rawUrls = extractUrls(webpage);
-		List<URL> urls = new ArrayList<URL>();
-		for (String rawUrl : rawUrls){
-			URL newUrl;
-			try {
-				newUrl = convertToUrl(rawUrl, originalUrl);
-				urls.add(newUrl);
-			} catch (MalformedURLException e) {
-				logger.error(CLASSNAME + ": unable to convert link to URL " + rawUrl);
-				continue;
-			}
-		}
-		return urls;
-	}
-	
-	/**
-	 * Extracts a list of all contents of an 'a href' string
-	 * @param webpage
-	 * @return
-	 */
-	private static List<String> extractUrls(String webpage){
-		
-	    List<String> urlStrings = new ArrayList<String>();
 
-		Document document = convertToDOM(webpage);
-		
-		XPath xpath = XPathFactory.newInstance().newXPath();
-		
-		XPathExpression servletNamePath;
-		try {
-			servletNamePath = xpath.compile("//a/@href");
-			NodeList nodes = (NodeList) servletNamePath.evaluate(document, XPathConstants.NODESET);
-			for (int i = 0; i < nodes.getLength(); i++){
-				Node node = nodes.item(i);
-				
-				String link = node.getNodeValue();
-				if (null != link && !link.isEmpty()){
-					urlStrings.add(link);
-				}
-			}
-			
-		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return urlStrings;
-	}
-	
-	
-	/**
-	 * Convert page to document
-	 * @param text
-	 * @return
-	 */
-	private static Document convertToDOM(String text){
-		Tidy tidy = new Tidy();
-		tidy.setQuiet(true);
-		tidy.setShowWarnings(false);
-		tidy.setXHTML(true);
-		tidy.setMakeClean(true);
-		StringReader reader = new StringReader(text);
-		
-		return tidy.parseDOM(reader, null);
-		
-	}
 	/**
 	 * Converts a link to a URL
 	 * @param rawUrl
@@ -302,7 +218,7 @@ public class CrawlerUtils {
 	 * @return
 	 * @throws MalformedURLException 
 	 */
-	private static URL convertToUrl(String rawUrl, URL originalUrl) throws MalformedURLException {
+	public static URL convertToUrl(String rawUrl, URL originalUrl) throws MalformedURLException {
 		
 		String domain = originalUrl.getHost();
 		String protocol = originalUrl.getProtocol();

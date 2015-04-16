@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
-import cis555.crawler.database.CrawledDocument;
-import cis555.crawler.database.Dao;
+import cis555.database.CrawledDocument;
+import cis555.database.Dao;
 
 
 /**
@@ -34,10 +34,11 @@ public class HEADWorker implements Runnable {
 	private int id;
 	private int maxDocSize;
 	private Dao dao;
+	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
 	private Vector<URL> sitesCrawledThisSession;
 	
 	public HEADWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> headCrawlQueue, Dao dao, BlockingQueue<URL> getCrawlQueue, 
-			int id, int maxDocSize, BlockingQueue<URL> newUrlQueue, Vector<URL> sitesCrawledThisSession){
+			int id, int maxDocSize, BlockingQueue<URL> newUrlQueue, BlockingQueue<RawCrawledItem> contentForLinkExtractor, Vector<URL> sitesCrawledThisSession){
 		this.siteInfoMap = siteInfoMap;
 		this.headCrawlQueue = headCrawlQueue;
 		this.dao = dao;
@@ -45,6 +46,7 @@ public class HEADWorker implements Runnable {
 		this.id = id;
 		this.maxDocSize = maxDocSize;
 		this.newUrlQueue = newUrlQueue;
+		this.contentForLinkExtractor = contentForLinkExtractor;
 		this.sitesCrawledThisSession = sitesCrawledThisSession;
 	}
 	
@@ -121,13 +123,15 @@ public class HEADWorker implements Runnable {
 			// Adds the URL to the new URL queue
 			logger.debug(CLASSNAME + ": Redirected URL " + redirectedURL + " added to newUrlQueue");
 			this.newUrlQueue.add(redirectedURL);
+			
 		} 	else if (isNotModified(response)){
 			System.out.println(CLASSNAME + ": " + url + " not modified, using database version");
 			
 			String contents = retrieveDocumentFromDatabase(url);
 			
-			if (!contents.isEmpty()){ // This means that it's an HTML document, not an XML document			
-				addLinksToQueue(contents, url);
+			if (!contents.isEmpty()){ // This means that it's an HTML document, not an XML document
+				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents, "HTML", false);
+				this.contentForLinkExtractor.add(forLinkExtractor);
 			}
 			
 			if (CrawlLimitCounter.getCounterAndDecrement() < 0){
@@ -197,20 +201,7 @@ public class HEADWorker implements Runnable {
 		info.setLastCrawledDate(new Date());
 		this.siteInfoMap.put(domain, info);
 	}
-	
-	/**
-	 * Add links from a document to the queue for future crawling
-	 * @param contents
-	 * @param url
-	 */
-	private void addLinksToQueue(String contents, URL url){
-		List<URL> links = CrawlerUtils.extractUrls(contents, url);
-		for (URL link : links){
-//			logger.info("Added " + link + " to the new url queue");
-			this.newUrlQueue.add(link);
-		}
-		
-	}
+
 	
 	/**
 	 * Retrieve a document from the database, if the document is HTML
@@ -226,7 +217,8 @@ public class HEADWorker implements Runnable {
 			return "";
 		}
 		
-		CrawledDocument document = this.dao.getCrawledDocument(url.toString());
+		CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
+		
 		if (document.getContentType().equals("HTML")){
 			return document.getContents();
 		}
@@ -244,11 +236,11 @@ public class HEADWorker implements Runnable {
 	 */
 	private String generateIfModifiedSinceString(URL url){
 		
-		if (!this.dao.doesDocumentExist(url.toString())){
+		if (!this.dao.doesDocumentMetaExist(url.toString())){
 			return "";
 		}
 		
-		CrawledDocument document = this.dao.getCrawledDocument(url.toString());
+		CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
 		Date lastCrawlDate = document.getLastCrawledDate();
 		SimpleDateFormat format = new SimpleDateFormat();
 		format.applyPattern("EEE, dd MMM yyyy HH:mm:ss zzz");

@@ -1,4 +1,4 @@
-package cis555.crawler.database;
+package cis555.database;
 
 import java.util.Date;
 
@@ -11,17 +11,23 @@ public class CrawledDocument {
 	private CrawledDocument(){}
 	
 	@PrimaryKey
-	private String url;
+	private long id;
 	
+	private String url;
 	private String contents;
 	private Date lastCrawledDate;
 	private String contentType;
 	
-	public CrawledDocument(String url, String contents, Date lastCrawledDate, String contentType){
+	public CrawledDocument(long id, String url, String contents, Date lastCrawledDate, String contentType){
+		this.id = id;
 		this.url = url;
 		this.contents = contents;
 		this.lastCrawledDate = lastCrawledDate;
 		this.contentType = contentType;
+	}
+	
+	public long getID(){
+		return this.id;
 	}
 	
 	/**

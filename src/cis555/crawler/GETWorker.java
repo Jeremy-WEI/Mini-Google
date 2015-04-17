@@ -70,7 +70,7 @@ public class GETWorker implements Runnable {
 				logger.error(CLASSNAME + ": Unabble to get URL");
 				logger.error(CLASSNAME + e.getMessage());
 			} catch (IOException e){
-				System.out.println("Unable to crawl " + url + ", skipping." );
+				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of " + e.getMessage() + ", skipping");
 			}
 
 		}
@@ -103,7 +103,7 @@ public class GETWorker implements Runnable {
 			String rawContents = response.getResponseBody();
 			
 			if (rawContents.isEmpty()){
-				System.out.println("Unable to crawl " + url + ", skipping." );
+				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of no content was received, skipping");
 				return;
 			}
 			System.out.println("Crawled " + url);				

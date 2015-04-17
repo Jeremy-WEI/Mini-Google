@@ -38,12 +38,17 @@ public class SiteInfo {
 	public void parseRobotsTxt(String contents){
 		if (null == contents || contents.isEmpty()){
 			logger.error(CLASSNAME + ": No content to parse!");
+			return;
 		}
 		String[] lines = contents.split("\n");
 		
 		String userAgent = null;
 		
 		for (String line : lines){
+			
+			if (line.startsWith("#")){
+				continue;
+			}
 			
 			if (line.isEmpty()){
 				userAgent = null;

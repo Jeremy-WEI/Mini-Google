@@ -24,7 +24,7 @@ public class DBWrapper {
 	
 	private Dao dao;
 	
-	public DBWrapper(String directory){
+	public DBWrapper(String directory, boolean readOnly){
 		
 		if (null == directory || directory.isEmpty()){
 			String error = "Directory name is empty or null";
@@ -38,8 +38,8 @@ public class DBWrapper {
 			
 			logger.info(CLASSNAME + ": Opening database in " + envDirectory);
 			
-			setupEnvironment();
-			setupStore();
+			setupEnvironment(readOnly);
+			setupStore(readOnly);
 			isRunning = true;
 			
 		}
@@ -61,8 +61,15 @@ public class DBWrapper {
 	/**
 	 * Set up the database environment
 	 */
-	private void setupEnvironment(){
+	private void setupEnvironment(boolean readOnly){
 		EnvironmentConfig envConfig = new EnvironmentConfig();
+
+		if (readOnly){
+			envConfig = envConfig.setReadOnly(true);
+		} else {
+			
+		}
+
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);
 		createDirectory();
@@ -93,8 +100,11 @@ public class DBWrapper {
 	/**
 	 * Set up the store, and initiate the DAO
 	 */
-	private void setupStore(){
+	private void setupStore(boolean readOnly){
 		StoreConfig storeConfig = new StoreConfig();
+		if (readOnly){
+			storeConfig.setReadOnly(readOnly);			
+		}
 		storeConfig.setAllowCreate(true);
 		storeConfig.setTransactional(true);
 		store = new EntityStore(myEnv, DBConstants.DB_NAME, storeConfig);

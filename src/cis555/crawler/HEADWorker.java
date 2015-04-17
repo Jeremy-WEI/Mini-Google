@@ -87,7 +87,7 @@ public class HEADWorker implements Runnable {
 				logger.error(CLASSNAME + ": Unabble to get URL");
 				logger.error(CLASSNAME + e.getMessage());
 			} catch (IOException e){
-				System.out.println("Unable to crawl " + url + ", skipping." );
+				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of " + e.getMessage() + ", skipping");
 			}
 
 		}
@@ -122,7 +122,15 @@ public class HEADWorker implements Runnable {
 			URL redirectedURL = response.getLocation();
 			// Adds the URL to the new URL queue
 			logger.debug(CLASSNAME + ": Redirected URL " + redirectedURL + " added to newUrlQueue");
-			this.newUrlQueue.add(redirectedURL);
+			
+			try {
+				
+				if (!this.newUrlQueue.contains(redirectedURL)){
+					this.newUrlQueue.add(redirectedURL);									
+				}
+			} catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": New url queue is full, dropping " + redirectedURL);
+			}
 			
 		} 	else if (isNotModified(response)){
 			System.out.println(CLASSNAME + ": " + url + " not modified, using database version");
@@ -143,12 +151,20 @@ public class HEADWorker implements Runnable {
 			System.out.println("File exceeds maximum file length " + response.getContentLength() + ", skipping");
 		} else if (!isValidResponseType(response)){
 			logger.debug(CLASSNAME + ": URL " + url + " ignored as is neither HTML nor XML");
+		} else if (!response.getContentLanguage().equals("en") && !response.getContentLanguage().equals("NONE")){
+			logger.debug(CLASSNAME + ": URL " + url + " ignored as it's not in English but is in " + response.getContentLanguage());		
 		} else {
 			
-			this.getCrawlQueue.add(url);
+			try {
+				this.getCrawlQueue.add(url);
+				
+				this.sitesCrawledThisSession.add(url);
+//				System.out.println("Adding " + url + " to the GetCrawlQueue");
+				
+			} catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": Get queue is full, dropping " + url);				
+			}
 			
-			this.sitesCrawledThisSession.add(url);
-//			System.out.println("Adding " + url + " to the GetCrawlQueue");
 
 		}
 	}

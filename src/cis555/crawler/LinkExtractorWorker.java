@@ -1,9 +1,10 @@
 package cis555.crawler;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -59,9 +60,8 @@ public class LinkExtractorWorker implements Runnable {
 						// New document
 						docID = counterGenerator.getDocIDAndIncrement();
 					}
-					logger.info("Storing " + docID + ": " + url.toString());
 					this.dao.addNewCrawledDocument(docID, url.toString(), cleansedDoc.toString(), new Date(), contentType);
-					
+					logger.info(CLASSNAME + " stored " + url.toString() + " to database");
 				}
 				
 
@@ -70,17 +70,27 @@ public class LinkExtractorWorker implements Runnable {
 
 					for (Element link : links){
 						String urlString = link.attr("href");
-						URL newURL = CrawlerUtils.convertToUrl(urlString, url);
-						preRedistributionNewURLQueue.add(newURL);	
-					}
+						if (!urlString.isEmpty()){
+							String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
+							URL newURL = CrawlerUtils.convertToUrl(cleansedString, url);
+							try {
+								preRedistributionNewURLQueue.add(newURL);															
+							} catch (IllegalStateException e){
+								logger.info(CLASSNAME + " Queue is full, dropping " + newURL);
+								
+							}
+							
+						}
+					} 
 				}
 									
 			} catch (InterruptedException | MalformedURLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (UnsupportedEncodingException | IllegalStateException e1) {
+				logger.info(CLASSNAME + " Unable to decode, skipping " + e1.getMessage());
 			}
 		}
-		
 	}
 	
 }

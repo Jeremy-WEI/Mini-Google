@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -26,111 +27,50 @@ public class CrawlerUtils {
 	}
 	
 	/**
-	 * Retrieve an HTTP resource using GET
-	 * @param absoluteURI
+	 * Retrieves a resource via http
+	 * @param absoluteURL
+	 * @param method
+	 * @param ifModifiedDateString
 	 * @return
-	 * @throws UnknownHostException
-	 * @throws IOException
 	 */
-	public static Response retrieveHttpResource(URL absoluteURL, Method method, String ifModifiedDateString) throws CrawlerException {
-		try (Socket socket = new Socket(absoluteURL.getHost(), CrawlerConstants.PORT);){
-			socket.setSoTimeout(CrawlerConstants.SOCKET_TIMEOUT);
-			
-			PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
-			
+	public static Response retrieveHttpResource(URL absoluteURL, Method method, String ifModifiedDateString){
+		HttpURLConnection httpConnection = null;
+		try {
+			httpConnection = (HttpURLConnection) absoluteURL.openConnection();
+			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
+			if (method == Method.HEAD){
+				httpConnection.setRequestMethod("HEAD");
+			}
+
 			if (!ifModifiedDateString.isEmpty()){
-				ifModifiedDateString = "If-Modified-Since: " + ifModifiedDateString + "\r\n";
+				httpConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
 			}
 			
-			String resoureName = absoluteURL.getFile();
-			if (resoureName.isEmpty()){
-				resoureName = "/";
-			}
+			httpConnection.connect();
 			
-			String request = new String();
-			
-			if (method == Method.GET){
-				request = "GET " + resoureName + " HTTP/1.0\r\nHost: " + absoluteURL.getHost() + 
-						"\r\nUser-Agent: " + CrawlerConstants.CRAWLER_USER_AGENT + "\r\n\r\n";
-				
-			} else {
-				request = "HEAD " + resoureName + " HTTP/1.0\r\nHost: " + absoluteURL.getHost() + 
-						"\r\n" + ifModifiedDateString + "User-Agent: " + CrawlerConstants.CRAWLER_USER_AGENT + "\r\n\r\n";
-			}
-			
-			output.print(request);
-			output.flush();
-			
-			BufferedReader response = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			Response responseHeader = parseResponse(response, method);
+			Response response = Response.parseResponse(httpConnection, method);
+			httpConnection.disconnect();
 
-			if (response != null){
-				response.close();
-			}
 			
-			if (socket != null){
-				socket.close();
-			}
+			return response;
+
 			
-			return responseHeader;
-			
-		} catch (UnknownHostException e ){
-			String error = "Host unknown: " + absoluteURL.getHost();
+		} catch (IOException e) {
+			String error = "Unable to open connection to " + absoluteURL + ", skipping";
 			logger.error(CLASSNAME + ": " + error);
-			e.printStackTrace();
+//			e.printStackTrace();
 			throw new CrawlerException(error);
-		} catch (SocketTimeoutException e){
-			String error = "Server timed out.";
-			logger.error(CLASSNAME + ": " + error);
-			e.printStackTrace();
-			throw new CrawlerException(error);
-		} catch (ResponseException e){
-			e.printStackTrace();
-			throw new CrawlerException(e.getMessage());
-		}
-		
-		catch (IOException e){
-			String error = "Unable to open resource.";
-			logger.error(CLASSNAME + ": " + error);
-			e.printStackTrace();
-			throw new CrawlerException(error);			
+		} finally {
+			if (null != httpConnection){
+				httpConnection.disconnect();
+			}
 		}
 	}
 	
-	
-	/**
-	 * Given a response, parse out the headers and create a response object
-	 * @param response
-	 * @return
-	 * @throws ResponseException
-	 * @throws IOException
-	 */
-	private static Response parseResponse(BufferedReader response, Method method) throws ResponseException, IOException{
-		String responseString;
-		Response responseHeader = new Response();
-		StringBuilder headerString = new StringBuilder();
-		
-		while ((responseString = response.readLine()) != null){
-			if (responseString.isEmpty()){
-				
-				responseHeader.parseHeader(headerString.toString());
-				int contentLength = responseHeader.getContentLength();
-				
-				if (method == Method.GET){					
-					responseHeader.setResponseBody(extractBody(response, contentLength));
-				}
-				
-				break;
-			} else {
-				headerString.append(responseString + "\n");
-			}
-		} 
-		return responseHeader;
 
-	}
 	
 	/**
-	 * Retrieve an https resource
+	 * Retrieve a resource via https
 	 * @param absoluteURI
 	 * @return
 	 * @throws MalformedURLException
@@ -138,78 +78,34 @@ public class CrawlerUtils {
 	 */
 	public static Response retrieveHttpsResource(URL absoluteURL, Method method, String ifModifiedDateString) throws MalformedURLException, IOException{
 		
-		HttpsURLConnection httpConnection = (HttpsURLConnection)absoluteURL.openConnection();
-		httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
-		if (method == Method.HEAD){
-			httpConnection.setRequestMethod("HEAD");
-		}
-
-		if (!ifModifiedDateString.isEmpty()){
-			httpConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
-		}
-		
-//		logger.info(CLASSNAME + ": https connection established with " + absoluteURL);
-		
-		BufferedReader response = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-		Response responseHeader = new Response();
-		int contentLength = httpConnection.getContentLength();
-		responseHeader.parseContentType(httpConnection.getContentType());
-		responseHeader.setResponseCode(Integer.toString(httpConnection.getResponseCode()));
-		String locationString = httpConnection.getHeaderField("Location");
-		if (null != locationString && !locationString.isEmpty()){
-			responseHeader.setLocation(new URL(locationString));
-		}
-		
-		if (method == Method.GET && contentLength > 1){
-			responseHeader.setResponseBody(extractBody(response, contentLength));
-		} else {
-			responseHeader.setResponseBody("");
-		}
-		
-
-		if (response != null){
-			response.close();
-		}
-		return responseHeader;
-	}
-	
-	
-	/**
-	 * Extracts the body of the response
-	 * @param response
-	 * @param contentLength
-	 * @return
-	 * @throws IOException
-	 */
-	private static String extractBody(BufferedReader response, int contentLength) throws IOException {
-		
-		if (contentLength < 1){
-			String error = "Non positive content length: " + contentLength;
-			logger.error(CLASSNAME + ": " + error);
-			throw new CrawlerException(error);
-		}
-		
-		StringBuilder responseString = new StringBuilder();
+		HttpsURLConnection httpsConnection = null;
 		
 		try {
-			for (int i = 0; i < contentLength; i++){
-				int charRead = response.read();
-				if (charRead > -1){
-					responseString.append((char) charRead);
-				} else {
-					break;
-				}
+			httpsConnection = (HttpsURLConnection)absoluteURL.openConnection();
+			httpsConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
+			if (method == Method.HEAD){
+				httpsConnection.setRequestMethod("HEAD");
 			}
-			return responseString.toString();
+
+			if (!ifModifiedDateString.isEmpty()){
+				httpsConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
+			}
 			
-		} catch (SocketTimeoutException e){
-			String error = "Socket timed out";
+			Response response = Response.parseResponse(httpsConnection, method);
+			httpsConnection.disconnect();
+			return response;
+
+		} catch (IOException e) {
+			String error = "Unable to open connection to " + absoluteURL + ", skipping";
 			logger.error(CLASSNAME + ": " + error);
+//			e.printStackTrace();
 			throw new CrawlerException(error);
+		}  finally {
+			if (null != httpsConnection){
+				httpsConnection.disconnect();
+			}
 		}
-		
 	}
-	
 
 	/**
 	 * Converts a link to a URL
@@ -243,17 +139,22 @@ public class CrawlerUtils {
 		}
 		
 		rawUrl = rawUrl.trim();
-		// Starts with http
 		
 		if (rawUrl.toLowerCase().startsWith("http")){
+			// Starts with http
 			return new URL(rawUrl);
 		}
 		
 		// Relative uri
 
+		if (rawUrl.startsWith("//")){
+			// relative to http:
+			rawUrl = protocol + ":" + rawUrl;
+		}
+		
 //		String filenamePattern = "^[a-zA-Z0-9-_]+" + Pattern.quote(".") + "[a-z]+";
 		
-		if (rawUrl.startsWith("/")){
+		else if (rawUrl.startsWith("/")){
 			
 			// This is a root relative path
 			

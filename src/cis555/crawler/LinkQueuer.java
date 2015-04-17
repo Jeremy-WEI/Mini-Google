@@ -1,5 +1,6 @@
 package cis555.crawler;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -32,13 +33,45 @@ public class LinkQueuer implements Runnable {
 		while(LinkQueuer.active){
 			try {
 				URL url = preRedistributionNewURLQueue.take();
-				this.newUrlQueue.add(url);
+				URL filteredURL = filter(url);
+				if (null == filteredURL){
+					continue;
+				}
 				
-			} catch (InterruptedException e) {
+				try {
+					if (!this.newUrlQueue.contains(filteredURL)){
+						this.newUrlQueue.add(filteredURL);						
+					}
+				} catch (IllegalStateException e){
+					logger.info(CLASSNAME + " New url queue is full, dropping " + filteredURL);					
+				}
+				
+			} catch (InterruptedException | MalformedURLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
 		}
+	}
+	
+	/**
+	 * Filter out urls with particular characteristics
+	 * @param url
+	 * @return
+	 * @throws MalformedURLException
+	 */
+	private URL filter(URL url) throws MalformedURLException{
+		String urlString = url.toString();
+		if (urlString.contains("#")){
+			String newUrlString = urlString.substring(0, urlString.indexOf("#"));
+			return new URL(newUrlString);
+		} else if (urlString.contains("/cgi-bin/")){
+			// Ignore all urls containing /cgi-bin/
+			return null;
+			
+		}	else {
+
+			return url;
+		}
+		
 	}
 }

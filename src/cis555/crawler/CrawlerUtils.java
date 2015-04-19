@@ -1,20 +1,16 @@
 package cis555.crawler;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.log4j.Logger;
+
+import cis555.utils.CrawlerConstants;
 
 public class CrawlerUtils {
 	
@@ -55,7 +51,7 @@ public class CrawlerUtils {
 			return response;
 
 			
-		} catch (IOException e) {
+		} catch (IOException | IllegalArgumentException e) {
 			String error = "Unable to open connection to " + absoluteURL + ", skipping";
 			logger.error(CLASSNAME + ": " + error);
 //			e.printStackTrace();

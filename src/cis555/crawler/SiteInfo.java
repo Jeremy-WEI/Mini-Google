@@ -6,6 +6,8 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
+import cis555.utils.CrawlerConstants;
+
 public class SiteInfo {
 	
 	private static final Logger logger = Logger.getLogger(SiteInfo.class);

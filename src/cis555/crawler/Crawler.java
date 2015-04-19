@@ -1,13 +1,15 @@
 package cis555.crawler;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -17,6 +19,7 @@ import org.apache.log4j.Logger;
 
 import cis555.database.DBWrapper;
 import cis555.database.Dao;
+import cis555.utils.CrawlerConstants;
 
 public class Crawler {
 	
@@ -27,14 +30,16 @@ public class Crawler {
 	/* Database related */
 	private String dbEnvDir;
 	private Dao dao;
-	private int crawlerID = 0;
+	private int crawlerID;
 
-	/* Crawler related */
+	/* Crawler settings related */
 	
-	private URL startingUrl;
+	private List<URL> startingUrls;
+	private List<String> allCrawlerIPs;
 	private int maxDocSize;
-	private int crawlLimit;
-	private boolean isCrawlLimitSet;
+	private String storageDirectory;
+	private String urlStorageDirectory;
+	
 	private List<Thread> getThreadPool;
 	private List<Thread> headThreadPool;
 	private List<Thread> matcherThreadPool;
@@ -55,7 +60,7 @@ public class Crawler {
 	
 	public static void main(String[] args) throws MalformedURLException, InterruptedException {
 		Crawler crawler = new Crawler();
-		crawler.validateArgsAndPopulate(args);
+		crawler.setConfig();
 		crawler.initialise();
 		while(GETWorker.active){
 			Thread.sleep(1000);
@@ -67,9 +72,9 @@ public class Crawler {
 	private void initialise() throws MalformedURLException{
 		initialiseDb();
 		this.newUrlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
-//		this.newUrlQueue.add(this.startingUrl);
-		this.newUrlQueue.add(new URL("https://www.yahoo.com/"));
-//		this.newUrlQueue.add(new URL("http://en.wikipedia.org/wiki/Main_Page"));
+		for (URL url : this.startingUrls){
+			this.newUrlQueue.add(url);
+		}
 		
 		this.headCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
 		this.getCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
@@ -77,9 +82,6 @@ public class Crawler {
 		this.contentForLinkExtractor = new ArrayBlockingQueue<RawCrawledItem>(CrawlerConstants.QUEUE_CAPACITY);
 		this.preRedistributionNewURLQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
 		
-		if (isCrawlLimitSet){
-			CrawlLimitCounter.setCrawlLimit(this.crawlLimit);
-		}
 		this.siteInfoMap = new ConcurrentHashMap<String, SiteInfo>();
 		this.sitesCrawledThisSession = new Vector<URL>();
 		this.counterGenerator = new DocIDGenerator(this.crawlerID, this.dao);
@@ -99,20 +101,14 @@ public class Crawler {
 	}
 	
 	/**
-	 * Initialise the linkQueuer
+	 * Initialise the linkQueuer with the IP addresses of all crawlers (including this one)
 	 */
 	private void linkQueuerThreadPool(){
 		
-		// TEMPORARY
-		
-		Map<String, String> tempListOfOtherWorkers = new HashMap<String, String>();
-		tempListOfOtherWorkers.put("1", "192.0.0.1:8080");
-		//
-
 		this.linkQueuerThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_GET_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_HEAD_GET_THREADS; i++){
 			LinkQueuer linkQueuer = new LinkQueuer(this.preRedistributionNewURLQueue, 
-					this.newUrlQueue, this.crawlerID, tempListOfOtherWorkers);
+					this.newUrlQueue, this.crawlerID, this.allCrawlerIPs);
 			Thread linkQueuerThread = new Thread(linkQueuer);
 			linkQueuerThread.start();
 			this.linkQueuerThreadPool.add(linkQueuerThread);
@@ -144,7 +140,7 @@ public class Crawler {
 		for (int i = 0; i < CrawlerConstants.NUM_HEAD_GET_THREADS; i++) {
 			HEADWorker crawler = new HEADWorker(this.siteInfoMap, this.headCrawlQueue, 
 					this.dao, this.getCrawlQueue, i, this.maxDocSize, this.newUrlQueue, 
-					this.contentForLinkExtractor, this.sitesCrawledThisSession);
+					this.contentForLinkExtractor, this.sitesCrawledThisSession, this.storageDirectory);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
 			headThreadPool.add(workerThread);
@@ -174,8 +170,9 @@ public class Crawler {
 	private void initialiseLinkExtractorThreadPool() {
 		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_EXTRACTOR_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_EXTRACTOR_THREADS; i++) {
-			LinkExtractorWorker extractor = new LinkExtractorWorker(this.contentForLinkExtractor, this.preRedistributionNewURLQueue, 
-					i, this.dao, this.counterGenerator);
+			LinkExtractorWorker extractor = new LinkExtractorWorker(this.contentForLinkExtractor, 
+					this.preRedistributionNewURLQueue, 
+					i, this.dao, this.counterGenerator, this.storageDirectory, this.urlStorageDirectory);
 			Thread thread = new Thread(extractor);
 			thread.start();
 			getThreadPool.add(thread);
@@ -230,31 +227,70 @@ public class Crawler {
 		
 	}
 	
+	
+	/******
+	 * CONFIGURATION RELATED METHODS
+	 * *****
+	 */
+	
 	/**
-	 * 
+	 * Set the crawler configs from properties/settings.properties
 	 * @param args
 	 */
-	private void validateArgsAndPopulate(String[] args){
-		if (args.length != 3 && args.length != 4){
-			logger.info("Invalid number of arguments");
+	private void setConfig(){
+
+		Properties properties = new Properties();
+		
+		try {
+//			properties.load(ClassLoader.class.getResourceAsStream(CrawlerConstants.PROPERTIES_FILE));
+			properties.load(new FileInputStream(CrawlerConstants.PROPERTIES_FILE));
+
+			this.crawlerID = validateIntString(properties.getProperty("crawler_id"));
+			this.maxDocSize = validateIntString(properties.getProperty("max_doc_size"));
+			this.dbEnvDir = CrawlerConstants.DB_DIRECTORY;
+			
+			String[] startingUrlArray = properties.getProperty("starting_urls").split(";");
+			populateStartingUrls(startingUrlArray);
+			
+			String[] allCrawlersArray = properties.getProperty("other_crawlers").split(";");
+			populateAllCrawlerDetails(allCrawlersArray);
+			
+			this.storageDirectory = CrawlerConstants.STORAGE_DIRECTORY;
+			createDirectory(this.storageDirectory);
+			this.urlStorageDirectory = CrawlerConstants.URL_STORAGE_DIRECTORY;
+			createDirectory(this.urlStorageDirectory);
+			
+			
+		} catch (ValidationException e){
+			logger.error(e.getMessage());
+			System.exit(1);
+		} catch (Exception e){
+			String file = CrawlerConstants.PROPERTIES_FILE;
+			File f = new File(file);
+			
+			logger.error(CLASSNAME + " Unable to load properties file, exiting " + f.getAbsoluteFile());
 			System.exit(1);
 		}
 		
-		validateAndPopulateStartingUrl(args[0]);
-		this.dbEnvDir = (args[1]);
-		this.maxDocSize = validateIntString(args[2]);
-		
-		if (args.length == 4){
-			this.crawlLimit = validateIntString(args[3]);
-			this.isCrawlLimitSet = true;
-		} 
+
+	}
+	
+	/**
+	 * Populates the starting urls from a url array
+	 * @param startingUrlArray
+	 */
+	private void populateStartingUrls(String[] startingUrlArray){
+		this.startingUrls = new ArrayList<URL>();
+		for (String url : startingUrlArray){
+			this.startingUrls.add(validateUrl(url));
+		}
 	}
 
 	/**
-	 * Validates and populates the starting url string
+	 * Converts a URL string to a URL
 	 * @param urlString
 	 */
-	private void validateAndPopulateStartingUrl(String urlString){
+	private URL validateUrl(String urlString){
 		
 		try {
 			urlString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
@@ -262,33 +298,71 @@ public class Crawler {
 			if (!urlString.startsWith("http")){
 				urlString = "http://" + urlString;
 			}
-			this.startingUrl = new URL(urlString);			
+			return new URL(urlString);			
 			
 		} catch (MalformedURLException | UnsupportedEncodingException e){
-			logger.info("URL syntax invalid");
-			System.exit(1);			
+			throw new ValidationException("URL syntax invalid: " + urlString);
 		}
 	}	
+	
+	/**
+	 * Populates all the IP addresses of all other crawlers
+	 * @param allCrawlersArray
+	 */
+	private void populateAllCrawlerDetails(String[] allCrawlersArray){
+		this.allCrawlerIPs = new ArrayList<String>();
+		for (String iPPortString : allCrawlersArray){
+			this.allCrawlerIPs.add(validateIPPortString(iPPortString));
+		}
+		Collections.sort(this.allCrawlerIPs);
+	}
 	
 	/**
 	 * Validates an int string
 	 * @param sizeString
 	 * @return
 	 */
-	private int validateIntString(String sizeString){
-		try {
-			int size = Integer.parseInt(sizeString);
-			if (size > 0){
-				return size;
-			} else {
-				logger.info("Integer must be greater than 0");
-				System.exit(1);				
+	private int validateIntString(String intString){
+		if (null != intString && !intString.isEmpty()){
+			if (intString.matches("\\d+")){
+				return Integer.parseInt(intString);				
 			}
-		} catch (NumberFormatException e){
-			logger.info("Invalid value for integer: " + sizeString);
-			System.exit(1);		
 		}
-		// should never get here...!
-		return -1;
+		throw new ValidationException("Invalid or missing integer: " + intString);
+	}
+	
+	/**
+	 * Validates IP-port strings
+	 * @param ipPortString
+	 * @return
+	 */
+	public String validateIPPortString(String iPPortString){
+		if (null != iPPortString && !iPPortString.isEmpty()){
+			if (iPPortString.matches(CrawlerConstants.IP_PORT_FORMAT)){
+				return iPPortString;				
+			}
+		}
+		throw new ValidationException("Invalid port number: " + iPPortString);
+	}
+	
+	
+	/****
+	 * Other helper methods
+	 */
+	
+	/**
+	 * Creates a directory to store the database and environment settings
+	 */
+	private void createDirectory(String path){
+		File directory = new File(path);
+		if (!directory.exists()){
+			try {
+				directory.mkdirs();
+				logger.info(CLASSNAME + ": New directory created " + path);
+			} catch (SecurityException e){
+				throw new ValidationException("Unable to create directory");
+			}
+		}
+		
 	}
 }

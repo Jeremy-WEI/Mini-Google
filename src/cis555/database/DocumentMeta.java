@@ -19,6 +19,7 @@ public class DocumentMeta {
 	public DocumentMeta(String url, long id, Date lastCrawledDate){
 		this.id = id;
 		this.url = url;
+		this.lastCrawledDate = lastCrawledDate;
 	}
 	
 	/**

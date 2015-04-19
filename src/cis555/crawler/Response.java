@@ -10,6 +10,7 @@ import java.net.URL;
 import org.apache.log4j.Logger;
 
 import cis555.crawler.CrawlerUtils.Method;
+import cis555.utils.CrawlerConstants;
 
 public class Response {
 

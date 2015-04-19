@@ -3,10 +3,11 @@ package cis555.database;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+
+import cis555.utils.CrawlerConstants;
 
 import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;
@@ -45,8 +46,8 @@ public class Dao {
 	 * @return
 	 */
 	public long getLatestCounterValue(){
-		if (this.counterDao.contains(DBConstants.DB_COUNTER_KEY)){
-			return this.counterDao.get(DBConstants.DB_COUNTER_KEY).getDocID();
+		if (this.counterDao.contains(CrawlerConstants.DB_COUNTER_KEY)){
+			return this.counterDao.get(CrawlerConstants.DB_COUNTER_KEY).getDocID();
 		} else {
 			return -1;
 		}
@@ -92,6 +93,15 @@ public class Dao {
 		return getDocumentMetaData(url).getID();
 	}
 	
+	/**
+	 * Get the last crawled date for a url
+	 * @param url
+	 * @return
+	 */
+	public Date getLastCrawlDate(String url){
+		return getDocumentMetaData(url).getLastCrawledDate();
+	}
+	
 	
 	/**
 	 * Indicates whether a meta object exists for a particular URL string
@@ -113,8 +123,8 @@ public class Dao {
 	 * @param contents
 	 * @param crawlDate
 	 */
-	public void addNewCrawledDocument(long docID, String url, String contents, Date crawlDate, String contentType){
-		crawledDocumentDao.putNoReturn(new CrawledDocument(docID, url, contents, crawlDate, contentType));
+	public void addNewCrawledDocument(long docID, String url, Date crawlDate, String contentType){
+		crawledDocumentDao.putNoReturn(new CrawledDocument(docID, url, contentType));
 		addNewDocumentMeta(url, docID, crawlDate);
 	}
 	

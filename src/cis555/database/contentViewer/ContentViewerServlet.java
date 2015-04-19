@@ -56,7 +56,6 @@ public class ContentViewerServlet extends AbstractServlet {
     		str.append("<th>ID</th>");
     		str.append("<th>URL</th>");
     		str.append("<th>Content type</th>");
-    		str.append("<th>Crawled date</th>");
     		str.append("</tr>");
     		
             for (CrawledDocument document : crawledDocuments){
@@ -64,7 +63,6 @@ public class ContentViewerServlet extends AbstractServlet {
             	str.append("<td width=\"25%\">" + document.getID() + "</td>"); 
                 str.append("<td width=\"25%\"><a href=\"doc?docID=" + document.getID() + "\">" + document.getURL() + "</a></td>");
                 str.append("<td width=\"25%\">" + document.getContentType() + "</td>");
-                str.append("<td width=\"25%\">" + document.getLastCrawledDate() + "</td>");
             }	
             
         }

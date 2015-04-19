@@ -1,12 +1,14 @@
 package cis555.crawler;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +17,7 @@ import org.apache.log4j.Logger;
 
 import cis555.database.CrawledDocument;
 import cis555.database.Dao;
+import cis555.utils.CrawlerConstants;
 
 
 /**
@@ -36,9 +39,11 @@ public class HEADWorker implements Runnable {
 	private Dao dao;
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
 	private Vector<URL> sitesCrawledThisSession;
+	private String storageDirectory;
 	
 	public HEADWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> headCrawlQueue, Dao dao, BlockingQueue<URL> getCrawlQueue, 
-			int id, int maxDocSize, BlockingQueue<URL> newUrlQueue, BlockingQueue<RawCrawledItem> contentForLinkExtractor, Vector<URL> sitesCrawledThisSession){
+			int id, int maxDocSize, BlockingQueue<URL> newUrlQueue, BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
+			Vector<URL> sitesCrawledThisSession, String storageDirectory){
 		this.siteInfoMap = siteInfoMap;
 		this.headCrawlQueue = headCrawlQueue;
 		this.dao = dao;
@@ -48,6 +53,7 @@ public class HEADWorker implements Runnable {
 		this.newUrlQueue = newUrlQueue;
 		this.contentForLinkExtractor = contentForLinkExtractor;
 		this.sitesCrawledThisSession = sitesCrawledThisSession;
+		this.storageDirectory = storageDirectory;
 	}
 	
 	
@@ -135,7 +141,7 @@ public class HEADWorker implements Runnable {
 		} 	else if (isNotModified(response)){
 			System.out.println(CLASSNAME + ": " + url + " not modified, using database version");
 			
-			String contents = retrieveDocumentFromDatabase(url);
+			String contents = retrieveDocument(url);
 			
 			if (!contents.isEmpty()){ // This means that it's an HTML document, not an XML document
 				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents, "HTML", false);
@@ -224,7 +230,7 @@ public class HEADWorker implements Runnable {
 	 * @param url
 	 * @return
 	 */
-	private String retrieveDocumentFromDatabase(URL url){
+	private String retrieveDocument(URL url){
 		
 		if (this.sitesCrawledThisSession.contains(url)){
 			
@@ -236,11 +242,52 @@ public class HEADWorker implements Runnable {
 		CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
 		
 		if (document.getContentType().equals("HTML")){
-			return document.getContents();
+			return retrieveDocumentFromFileSystem(url);
 		}
 		else {		
 			// Not an HTML document, so ignore
 			return "";
+		}
+	}
+	
+	
+	/**
+	 * Retrieves document from the file system
+	 * @param url
+	 * @return
+	 */
+	private String retrieveDocumentFromFileSystem(URL url){
+		long documentID = this.dao.getDocIDFromURL(url.toString());
+		String fileName = this.storageDirectory + "/" + Long.toString(documentID) + ".txt";
+		File file = new File(fileName);
+		if (file.exists()){
+			StringBuilder str = new StringBuilder();
+			BufferedReader reader = null;
+			try {
+				reader = new BufferedReader(new FileReader(file));
+				String line = new String();
+				while ((line = reader.readLine()) != null){
+					str.append(line);
+				}
+				return str.toString();
+			} catch (IOException e){
+				logger.error("Error when reading from file " + fileName + ", skipping");
+				return "";
+			} finally {
+				if (null != reader){
+					try {
+						reader.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return "";
+					}
+				}
+			}
+			
+		} else {
+			logger.error("File " + fileName + ", does not exist in storage, skipping");
+			return "";			
 		}
 	}
 	
@@ -254,16 +301,16 @@ public class HEADWorker implements Runnable {
 		
 		if (!this.dao.doesDocumentMetaExist(url.toString())){
 			return "";
+		} else {
+			Date lastCrawlDate = this.dao.getLastCrawlDate(url.toString());
+			SimpleDateFormat format = new SimpleDateFormat();
+			format.applyPattern("EEE, dd MMM yyyy HH:mm:ss zzz");
+			String dateString = format.format(lastCrawlDate);
+			
+//			logger.info(CLASSNAME + ": " + url + " already exists in database with latest crawl date " + dateString);
+			return dateString;
+			
 		}
-		
-		CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
-		Date lastCrawlDate = document.getLastCrawledDate();
-		SimpleDateFormat format = new SimpleDateFormat();
-		format.applyPattern("EEE, dd MMM yyyy HH:mm:ss zzz");
-		String dateString = format.format(lastCrawlDate);
-		
-//		logger.info(CLASSNAME + ": " + url + " already exists in database with latest crawl date " + dateString);
-		return dateString;
 		
 	}
 	

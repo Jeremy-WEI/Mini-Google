@@ -5,6 +5,8 @@ import java.io.File;
 
 import org.apache.log4j.Logger;
 
+import cis555.utils.CrawlerConstants;
+
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.persist.EntityStore;
@@ -65,14 +67,12 @@ public class DBWrapper {
 		EnvironmentConfig envConfig = new EnvironmentConfig();
 
 		if (readOnly){
-			envConfig = envConfig.setReadOnly(true);
+			envConfig = envConfig.setReadOnly(readOnly);
 		} else {
-			
 		}
-
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);
-		createDirectory();
+		createDirectory();			
 		myEnv = new Environment(new File(envDirectory), envConfig);
 	}
 	
@@ -104,10 +104,11 @@ public class DBWrapper {
 		StoreConfig storeConfig = new StoreConfig();
 		if (readOnly){
 			storeConfig.setReadOnly(readOnly);			
+		} else {
+			storeConfig.setAllowCreate(true);
+			storeConfig.setTransactional(true);			
 		}
-		storeConfig.setAllowCreate(true);
-		storeConfig.setTransactional(true);
-		store = new EntityStore(myEnv, DBConstants.DB_NAME, storeConfig);
+		store = new EntityStore(myEnv, CrawlerConstants.DB_NAME, storeConfig);
 		dao = new Dao(store);
 	}
 		

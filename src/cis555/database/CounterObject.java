@@ -1,5 +1,7 @@
 package cis555.database;
 
+import cis555.utils.CrawlerConstants;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
@@ -14,7 +16,7 @@ public class CounterObject {
 	private long docID;
 	
 	public CounterObject(long docID){
-		this.key = DBConstants.DB_COUNTER_KEY;
+		this.key = CrawlerConstants.DB_COUNTER_KEY;
 		this.docID = docID;
 	}
 	

@@ -24,13 +24,11 @@ public class RobotsMatcher implements Runnable {
 	private ConcurrentHashMap<String, SiteInfo> siteInfoMap;
 	private BlockingQueue<URL> newUrlQueue;
 	private BlockingQueue<URL> headCrawlQueue;
-	private Map<URL, Integer> visitCount;
 	
 	public RobotsMatcher(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> newUrlQueue, BlockingQueue<URL> headCrawlQueue){
 		this.siteInfoMap = siteInfoMap;
 		this.newUrlQueue = newUrlQueue;
 		this.headCrawlQueue = headCrawlQueue;
-		this.visitCount = new HashMap<URL, Integer>();
 	}
 	
 	@Override
@@ -40,14 +38,6 @@ public class RobotsMatcher implements Runnable {
 
 			try {
 				url = newUrlQueue.take();
-				
-//				if (this.visitCount.containsKey(url)){
-//					if (this.visitCount.get(url) > CrawlerConstants.MAX_RETRY){
-//						logger.info(this.visitCount.get(url));
-//						logger.info(CLASSNAME + ": Skipping " + url + " as this site has been visited more than max retry times");
-//						continue;					
-//					}					
-//				}
 				
 				
 				String domain = url.getHost();
@@ -73,11 +63,6 @@ public class RobotsMatcher implements Runnable {
 					}
 				}
 				
-//				if (this.visitCount.containsKey(url)){
-//					this.visitCount.put(url, this.visitCount.get(url) + 1);					
-//				} else {
-//					this.visitCount.put(url,  1);
-//				}
 				
 			}  catch (InterruptedException e) {
 				logger.error(CLASSNAME + ": Unabble to get URL");
@@ -112,7 +97,7 @@ public class RobotsMatcher implements Runnable {
 
 			String contents = response.getResponseBody();
 			if (null == contents || contents.isEmpty()){
-				logger.error(CLASSNAME + ": Unable to get Robots.txt for " + url.getHost() + " because response body was empty. Adding dummy site info. Original URL: " + url.toString());
+				logger.debug(CLASSNAME + ": Unable to get Robots.txt for " + url.getHost() + " because response body was empty. Adding dummy site info. Original URL: " + url.toString());
 				
 			} else {
 				info.parseRobotsTxt(contents);
@@ -124,7 +109,7 @@ public class RobotsMatcher implements Runnable {
 //			logger.debug(CLASSNAME + ": Robots.txt added for " + url.getHost());
 			
 		} catch (CrawlerException | ResponseException e){
-			logger.error(CLASSNAME + ": Unable to get Robots.txt for " + url + "because of " + e.getMessage() + ", adding dummy site info");
+			logger.debug(CLASSNAME + ": Unable to get Robots.txt for " + url + "because of " + e.getMessage() + ", adding dummy site info");
 			SiteInfo info = new SiteInfo();
 			this.siteInfoMap.put(url.getHost(), info);
 			

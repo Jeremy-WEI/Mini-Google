@@ -2,10 +2,12 @@ package cis555.crawler;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.log4j.Logger;
+
+import cis555.utils.CrawlerConstants;
 	
 public class LinkQueuer implements Runnable {
 	
@@ -16,11 +18,11 @@ public class LinkQueuer implements Runnable {
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private BlockingQueue<URL> newUrlQueue;
 	private int crawlerID;
-	private Map<String, String> otherCrawlerDetails;
+	private List<String> otherCrawlerDetails;
 	public static boolean active;
 	
 	public LinkQueuer(BlockingQueue<URL> preRedistributionNewURLQueue, BlockingQueue<URL> newUrlQueue,
-			int crawlerID, Map<String, String> otherCrawlerDetails){
+			int crawlerID, List<String> otherCrawlerDetails){
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.newUrlQueue = newUrlQueue;
 		this.crawlerID = crawlerID;
@@ -61,17 +63,34 @@ public class LinkQueuer implements Runnable {
 	 */
 	private URL filter(URL url) throws MalformedURLException{
 		String urlString = url.toString();
-		if (urlString.contains("#")){
+		if (urlString.length() > CrawlerConstants.MAX_URL_LENGTH){
+			return null;
+		}else if (urlString.contains("#")){
 			String newUrlString = urlString.substring(0, urlString.indexOf("#"));
 			return new URL(newUrlString);
 		} else if (urlString.contains("/cgi-bin/")){
 			// Ignore all urls containing /cgi-bin/
 			return null;
 			
-		}	else {
+		} else {
 
-			return url;
+			return ignoreBlackListDomain(url);
 		}
 		
+	}
+	
+	/**
+	 * Removes any sites that are in a black listed domain
+	 * @param url
+	 * @return
+	 */
+	private URL ignoreBlackListDomain(URL url){
+		String[] blackListDomains = CrawlerConstants.DOMAIN_BLACKLIST;
+		for (String domain : blackListDomains){
+			if (url.toString().contains(domain)){
+				return null;
+			}
+		}
+		return url;
 	}
 }

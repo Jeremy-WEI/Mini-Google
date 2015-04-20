@@ -69,7 +69,7 @@ public class Response {
 	
 	
 	public enum ContentType {
-		XML, HTML, TEXT, OTHERS
+		XML, HTML, TEXT, PDF, OTHERS
 	}
 	
 	/**
@@ -85,6 +85,8 @@ public class Response {
 			this.contentType = ContentType.HTML;
 		} else if (header.contains("text")){
 			this.contentType = ContentType.TEXT;
+		} else if (header.contains("pdf")){
+			this.contentType = ContentType.PDF;
 		} else {
 			this.contentType = ContentType.OTHERS;
 		}

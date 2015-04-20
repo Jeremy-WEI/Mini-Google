@@ -139,22 +139,16 @@ public class HEADWorker implements Runnable {
 			}
 			
 		} 	else if (isNotModified(response)){
-			System.out.println(CLASSNAME + ": " + url + " not modified, using database version");
+			logger.info(CLASSNAME + ": " + url + " not modified, using database version");
 			
 			String contents = retrieveDocument(url);
 			
-			if (!contents.isEmpty()){ // This means that it's an HTML document, not an XML document
+			if (!contents.isEmpty()){ // This means that it's an HTML document
 				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents, "HTML", false);
 				this.contentForLinkExtractor.add(forLinkExtractor);
 			}
-			
-			if (CrawlLimitCounter.getCounterAndDecrement() < 0){
-				logger.info(CLASSNAME + ": Crawl limit reached");
-				GETWorker.active = false;
-			}
-			
 		} else if (isTooBig(response.getContentLength())){
-			System.out.println("File exceeds maximum file length " + response.getContentLength() + ", skipping");
+			logger.info("File exceeds maximum file length " + response.getContentLength() + ", skipping");
 		} else if (!isValidResponseType(response)){
 			logger.debug(CLASSNAME + ": URL " + url + " ignored as is neither HTML nor XML");
 		} else if (!response.getContentLanguage().equals("en") && !response.getContentLanguage().equals("NONE")){
@@ -164,8 +158,13 @@ public class HEADWorker implements Runnable {
 			try {
 				this.getCrawlQueue.add(url);
 				
+				// Also add to list of all sites crawled in this session to prevent crawling the same site multiple times
+				
+				if (this.sitesCrawledThisSession.size() > CrawlerConstants.QUEUE_CAPACITY){
+					this.sitesCrawledThisSession.removeAllElements();
+				}
+				
 				this.sitesCrawledThisSession.add(url);
-//				System.out.println("Adding " + url + " to the GetCrawlQueue");
 				
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": Get queue is full, dropping " + url);				
@@ -192,12 +191,12 @@ public class HEADWorker implements Runnable {
 	}
 	
 	/**
-	 * Determines whether the content type of the response is either HTML or XML
+	 * Determines whether the content type of the response is neither html, xml, text or pdf
 	 * @param response
 	 * @return
 	 */
 	private boolean isValidResponseType(Response response){
-		return (response.getContentType() == Response.ContentType.HTML || response.getContentType() == Response.ContentType.XML);
+		return (!(response.getContentType() == Response.ContentType.OTHERS));
 	}
 		
 	/**

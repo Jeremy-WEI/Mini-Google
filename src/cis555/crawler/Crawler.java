@@ -19,6 +19,7 @@ import org.apache.log4j.Logger;
 
 import cis555.database.DBWrapper;
 import cis555.database.Dao;
+import cis555.database.PopulateDynamo;
 import cis555.utils.CrawlerConstants;
 
 public class Crawler {
@@ -60,12 +61,14 @@ public class Crawler {
 	
 	public static void main(String[] args) throws MalformedURLException, InterruptedException {
 		Crawler crawler = new Crawler();
+//		PopulateDynamo p = new PopulateDynamo();
+//		p.populateDynamo();
 		crawler.setConfig();
 		crawler.initialise();
-		while(GETWorker.active){
-			Thread.sleep(1000);
-		}
-		crawler.shutdown();
+//		while(GETWorker.active){
+//			Thread.sleep(1000);
+//		}
+//		crawler.shutdown();
 	}
 
 	

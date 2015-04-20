@@ -61,13 +61,14 @@ public class Dao {
 	 */
 	
 	/**
-	 * Add a new meta object
+	 * Add a new meta object (regardless of whether it has been crawled or not) 
 	 * @param url
 	 * @param docID
 	 * @param crawlDate
+	 * @param isCrawled
 	 */
-	public void addNewDocumentMeta(String url, long docID, Date crawlDate){
-		documentMetaDao.putNoReturn(new DocumentMeta(url, docID, crawlDate));
+	public void addNewDocumentMeta(String url, long docID, Date crawlDate, boolean isCrawled){
+		documentMetaDao.putNoReturn(new DocumentMeta(url, docID, crawlDate, isCrawled));
 	}
 	
 
@@ -125,7 +126,7 @@ public class Dao {
 	 */
 	public void addNewCrawledDocument(long docID, String url, Date crawlDate, String contentType){
 		crawledDocumentDao.putNoReturn(new CrawledDocument(docID, url, contentType));
-		addNewDocumentMeta(url, docID, crawlDate);
+		addNewDocumentMeta(url, docID, crawlDate, true);
 	}
 	
 	/**

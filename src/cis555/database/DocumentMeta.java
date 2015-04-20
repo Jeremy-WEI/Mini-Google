@@ -5,6 +5,10 @@ import java.util.Date;
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
+/**
+ * Refers to all URLs encountered, regardless of whether they've been crawled or not
+ *
+ */
 @Entity
 public class DocumentMeta {
 
@@ -15,11 +19,13 @@ public class DocumentMeta {
 
 	private long id;
 	private Date lastCrawledDate;
+	private boolean isCrawled;
 	
-	public DocumentMeta(String url, long id, Date lastCrawledDate){
+	public DocumentMeta(String url, long id, Date lastCrawledDate, boolean isCrawled){
 		this.id = id;
 		this.url = url;
 		this.lastCrawledDate = lastCrawledDate;
+		this.isCrawled = isCrawled;
 	}
 	
 	/**
@@ -46,5 +52,12 @@ public class DocumentMeta {
 		return this.lastCrawledDate;
 	}
 		
+	/**
+	 * Indicates whether this document has been crawled or not
+	 * @return
+	 */
+	public boolean isCrawled(){
+		return this.isCrawled();
+	}
 	
 }

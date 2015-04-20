@@ -106,17 +106,11 @@ public class GETWorker implements Runnable {
 				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of no content was received, skipping");
 				return;
 			}
-			System.out.println("Crawled " + url);				
+			logger.info(CLASSNAME + ": Crawled " + url);				
 			String contentType = response.getContentType().name();
 			
 			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
 			this.contentForLinkExtractor.add(forLinkExtractor);
-			
-			if (CrawlLimitCounter.getCounterAndDecrement() < 0){
-				logger.info(CLASSNAME + ": Crawl limit reached");
-				GETWorker.active = false;
-			}
-			
 				
 		} catch (CrawlerException e){
 			System.out.println("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );

@@ -5,7 +5,7 @@ public class CrawlerConstants {
 	// Crawler related constants
 	
 	public static final String CHARSET = "utf-8";
-	public static final int QUEUE_CAPACITY = 200000;
+	public static final int QUEUE_CAPACITY = 250000;
 	public static final int NUM_HEAD_GET_THREADS = 10;
 	public static final int NUM_EXTRACTOR_THREADS = 10;
 	public static final int NUM_MATCHER_THREADS = 10;

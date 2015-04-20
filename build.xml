@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 
 <project name="555_project" default="build" basedir=".">
+	<property name="ant.build.javac.source" value="1.7"/>
+	<property name="ant.build.javac.target" value="1.7"/>
     <property name="shared.root" location="${basedir}"/>
     <property name="file.separator" location="/"/>
     <property name="project.root" location="${basedir}"/>
@@ -18,7 +20,7 @@
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
         <mkdir dir="${web-inf.classes.dir}"/>
-        <javac srcdir="src/cis555/database" destdir="${classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -72,7 +74,7 @@
     <target name="crawler-jar" depends="compile-crawler" description="Makes the JAR file for the crawler">
         <delete file="crawler.jar"/>
         <jar destfile="crawler.jar" update="true">
-        	<zipgroupfileset dir="${inputlib.dir}" includes="log4j-1.2.9.jar,je-6.2.31.jar,jsoup-1.8.2.jar"/>
+        	<zipgroupfileset dir="${inputlib.dir}"/>
             <fileset dir="${classes.dir}">
                 <include name="**/*.class"/>
                 <include name="**/*.jar"/>

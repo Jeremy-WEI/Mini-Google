@@ -3,6 +3,9 @@ package cis555.database;
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
+/**
+ * Refers only to documents that have been crawled
+ */
 @Entity
 public class CrawledDocument {
 

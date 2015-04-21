@@ -18,17 +18,17 @@ public class DocumentMeta {
 
 	private DocumentMeta(){}
 	
-	@DynamoDBHashKey(attributeName=AWSConstants.DOCUMENT_META_HASH_KEY)
+	@DynamoDBHashKey(attributeName=AWSConstants.DOCUMENT_META_URL_FIELD)
 	@PrimaryKey
 	private String url;
 
-	@DynamoDBAttribute(attributeName="docID")
+	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_DOCID_FIELD)
 	private long docID;
 	
-	@DynamoDBAttribute(attributeName="lastCrawledDate")
+	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_LAST_CRAWLED_DATE_FIELD)
 	private Date lastCrawledDate;
 
-	@DynamoDBAttribute(attributeName="isCrawled")
+	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_ISCRAWLED_FIELD)
 	private boolean isCrawled;
 	
 	public DocumentMeta(String url, long docID, Date lastCrawledDate, boolean isCrawled){

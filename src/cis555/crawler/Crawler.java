@@ -74,12 +74,14 @@ public class Crawler {
 	
 	private void testDynamo(){
 		DynamoAdapter adapter = new DynamoAdapter();
-		CrawledDocument c1 = new CrawledDocument(1, "url1", "contenttype1");
-		CrawledDocument c2 = new CrawledDocument(2, "url2", "contenttype2");
+		CrawledDocument c1 = new CrawledDocument(1, "gnuurl1", "newcontenttype1");
+		CrawledDocument c2 = new CrawledDocument(2, "gnuurl2", "newcontenttype2");
 		List<CrawledDocument> documents = new ArrayList<CrawledDocument>();
 		documents.add(c1);
 		documents.add(c2);
 		adapter.batchSaveCrawledDocuments(documents);
+		logger.info("URL for DocID 1 is: " + adapter.getURLFromDocID(1));
+		adapter.batchGetCrawledDocuments();
 	}
 
 	

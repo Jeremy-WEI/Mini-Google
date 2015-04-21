@@ -1,8 +1,11 @@
 package cis555.aws.utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.log4j.Logger;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -13,12 +16,18 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.BatchGetItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.TableKeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.dynamodbv2.model.PutItemResult;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 public class DynamoAdapter {
+	
+	private static final Logger logger = Logger.getLogger(DynamoAdapter.class);
+	private static final String CLASSNAME = DynamoAdapter.class.getName();
 	
 	private AmazonDynamoDBClient client;
 	private DynamoDBMapper mapper;
@@ -50,13 +59,54 @@ public class DynamoAdapter {
 		this.mapper.batchSave(documents);
 	}
 	
-	public void getAllCrawledDocuments(){
+	/**
+	 * Return all crawled documents stored in DynamoDB
+	 * For more info please refer to http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ScanJavaDocumentAPI.html
+	 * @return
+	 */
+	public List<CrawledDocument> batchGetCrawledDocuments(){
+		ScanRequest scanRequest = new ScanRequest().withTableName(AWSConstants.CRAWLED_DOCUMENT_TABLE);
+		ScanResult result = this.client.scan(scanRequest);
+		List<CrawledDocument> crawledDocuments = new ArrayList<CrawledDocument>();
+		
+		for (Map<String, AttributeValue> item : result.getItems()){
+			long docID = Long.parseLong(item.get(AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD).getN());
+			String url = item.get(AWSConstants.CRAWLED_DOCUMENT_URL_FIELD).getS();
+			String contentType = item.get(AWSConstants.CRAWLED_DOCUMENT_CONTENT_TYPE_FIELD).getS();
+			CrawledDocument document = new CrawledDocument(docID, url, contentType);
+			crawledDocuments.add(document);
+		}
+		return crawledDocuments;
+	}
+	
+	/**
+	 * Get the url associated with a docID. Returns null if item does not exist in the database, or if an exception is thrown
+	 * @param docID
+	 * @return
+	 */
+	public String getURLFromDocID(long docID) {
 		TableKeysAndAttributes crawledDocumentTable = new TableKeysAndAttributes(AWSConstants.CRAWLED_DOCUMENT_TABLE);
-		crawledDocumentTable.addHashOnlyPrimaryKeys(AWSConstants.CRAWLED_DOCUMENT_HASH_KEY);
+		crawledDocumentTable.addHashOnlyPrimaryKey(AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD, docID);
 		Map<String, TableKeysAndAttributes> requestItems = new HashMap<String, TableKeysAndAttributes>();
 		requestItems.put(AWSConstants.CRAWLED_DOCUMENT_TABLE, crawledDocumentTable);
-		BatchGetItemOutcome outcome = this.dynamoDB.batchGetItem(crawledDocumentTable);
+		
+		try {
+			BatchGetItemOutcome outcome = this.dynamoDB.batchGetItem(crawledDocumentTable);
+			List<Item> items = outcome.getTableItems().get(AWSConstants.CRAWLED_DOCUMENT_TABLE);
 
+			if (items.size() == 0){
+				logger.error(CLASSNAME + ": No items returned");
+				return null;				
+			}
+			// We assume that there is only one item
+
+			Item item = items.get(0);
+			return item.getString(AWSConstants.CRAWLED_DOCUMENT_URL_FIELD);
+			
+		} catch (AmazonClientException e){
+			logger.error(CLASSNAME + ": " + e.getMessage());
+			return null;
+		}		
 	}
 	
 	

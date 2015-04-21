@@ -2,14 +2,16 @@ package cis555.crawler;
 
 import java.net.URL;
 
+import cis555.crawler.Response.ContentType;
+
 public class RawCrawledItem {
 
 	private URL url;
 	private byte[] rawContents;
-	private String contentType;
+	private ContentType contentType;
 	private boolean isNew;
 	
-	public RawCrawledItem(URL url, byte[] rawContents, String contentType, boolean isNew){
+	public RawCrawledItem(URL url, byte[] rawContents, ContentType contentType, boolean isNew){
 		this.url = url;
 		this.rawContents = rawContents;
 		this.contentType = contentType;
@@ -24,7 +26,7 @@ public class RawCrawledItem {
 		return this.rawContents;
 	}
 	
-	public String getContentType(){
+	public ContentType getContentType(){
 		return this.contentType;
 	}
 	

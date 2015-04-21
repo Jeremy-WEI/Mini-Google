@@ -20,6 +20,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import cis555.crawler.Response.ContentType;
 import cis555.database.Dao;
 import cis555.utils.CrawlerConstants;
 
@@ -62,18 +63,22 @@ public class LinkExtractorWorker implements Runnable {
 				
 				URL url = content.getURL();
 				byte[] rawContents = content.getRawContents();
-				String contentType = content.getContentType();
-				
-				
+				ContentType contentType = content.getContentType();
+					
 				Document cleansedDoc = null;
 				
 				if (content.isNew()){
 					long docID = getDocID(url);
-					this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType);
-					if (!contentType.equals("PDF")){
+					this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
+					if (contentType != ContentType.PDF){
 						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
-						cleansedDoc = Jsoup.parse(stringContents);
-						storeCrawledContentsFile(cleansedDoc.toString(), docID);
+						if (contentType == ContentType.TEXT){
+							storeCrawledContentsFile(stringContents.toString(), docID);							
+						} else {
+							cleansedDoc = Jsoup.parse(stringContents);
+							storeCrawledContentsFile(cleansedDoc.toString(), docID);
+							
+						}
 					} else {
 						storePDF(rawContents, docID);
 					}

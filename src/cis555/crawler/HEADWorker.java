@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import cis555.crawler.Response.ContentType;
 import cis555.database.CrawledDocument;
 import cis555.database.Dao;
 import cis555.utils.CrawlerConstants;
@@ -144,7 +145,7 @@ public class HEADWorker implements Runnable {
 			String contents = retrieveDocument(url);
 			
 			if (!contents.isEmpty()){ // This means that it's an HTML document
-				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents.getBytes(CrawlerConstants.CHARSET), "HTML", false);
+				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents.getBytes(CrawlerConstants.CHARSET), ContentType.HTML, false);
 				this.contentForLinkExtractor.add(forLinkExtractor);
 			}
 		} else if (isTooBig(response.getContentLength())){

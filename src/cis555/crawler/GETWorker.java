@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 
+import cis555.crawler.Response.ContentType;
 import cis555.database.Dao;
 
 public class GETWorker implements Runnable {
@@ -108,7 +109,7 @@ public class GETWorker implements Runnable {
 			}
 			
 			logger.info(CLASSNAME + ": Crawled " + url);				
-			String contentType = response.getContentType().name();
+			ContentType contentType = response.getContentType();
 			
 			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
 			this.contentForLinkExtractor.add(forLinkExtractor);

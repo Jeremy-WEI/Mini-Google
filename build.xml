@@ -26,6 +26,7 @@
                     <include name="*.jar"/>
                 </fileset>
             </classpath>
+        	 <compilerarg value="-Xlint:-options" />
         </javac>
     </target>
 	
@@ -37,6 +38,7 @@
                     <include name="*.jar"/>
                 </fileset>
             </classpath>
+        	 <compilerarg value="-Xlint:-options" />
         </javac>
     </target>
     
@@ -58,6 +60,7 @@
                     <include name="*.jar"/>
                 </fileset>
             </classpath>
+        	 <compilerarg value="-Xlint:-options" />
         </javac>
         <copy file="${conf.dir}${file.separator}log4j.properties" tofile="${web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
     </target>
@@ -113,7 +116,13 @@
         </jar>
     </target>
 
-    <target name="build" depends="crawler-jar, servlet-war">
+    <target name="build" depends="crawler-jar, servlet-war, pack">
+    </target>
+	
+    <target name="pack" description="Create Crawler Pack">
+      <zip destfile="crawler_for_ec2.zip">
+        <zipfileset dir="${build.dir}" includes="log/,properties/,crawler.jar"/>
+      </zip>
     </target>
 
 </project>

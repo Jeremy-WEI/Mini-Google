@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import cis555.aws.utils.DynamoAdapter;
+import cis555.aws.utils.DynamoDao;
 import cis555.utils.CrawlerConstants;
 
 import com.amazonaws.AmazonClientException;

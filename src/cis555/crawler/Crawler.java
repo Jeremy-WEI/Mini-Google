@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 
 import cis555.aws.utils.CrawledDocument;
-import cis555.aws.utils.DynamoAdapter;
+import cis555.aws.utils.DynamoDao;
 import cis555.database.DBWrapper;
 import cis555.database.Dao;
 import cis555.database.PopulateDynamo;
@@ -73,7 +73,7 @@ public class Crawler {
 	}
 	
 	private void testDynamo(){
-		DynamoAdapter adapter = new DynamoAdapter();
+		DynamoDao adapter = new DynamoDao();
 		CrawledDocument c1 = new CrawledDocument(1, "gnuurl1", "newcontenttype1");
 		CrawledDocument c2 = new CrawledDocument(2, "gnuurl2", "newcontenttype2");
 		List<CrawledDocument> documents = new ArrayList<CrawledDocument>();

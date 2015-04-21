@@ -24,16 +24,16 @@ import com.amazonaws.services.dynamodbv2.model.PutItemResult;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
-public class DynamoAdapter {
+public class DynamoDao {
 	
-	private static final Logger logger = Logger.getLogger(DynamoAdapter.class);
-	private static final String CLASSNAME = DynamoAdapter.class.getName();
+	private static final Logger logger = Logger.getLogger(DynamoDao.class);
+	private static final String CLASSNAME = DynamoDao.class.getName();
 	
 	private AmazonDynamoDBClient client;
 	private DynamoDBMapper mapper;
 	private DynamoDB dynamoDB;
 
-	public DynamoAdapter(){
+	public DynamoDao(){
 		connect();
 	}
 	

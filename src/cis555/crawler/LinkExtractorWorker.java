@@ -2,6 +2,7 @@ package cis555.crawler;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -60,22 +61,32 @@ public class LinkExtractorWorker implements Runnable {
 				RawCrawledItem content = contentForLinkExtractor.take();
 				
 				URL url = content.getURL();
-				String rawContents = content.getRawContents();
+				byte[] rawContents = content.getRawContents();
 				String contentType = content.getContentType();
 				
-				Document cleansedDoc = Jsoup.parse(rawContents);
+				
+				Document cleansedDoc = null;
 				
 				if (content.isNew()){
 					long docID = getDocID(url);
 					this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType);
-					storeCrawledContentsFile(cleansedDoc.toString(), docID);
-					logger.info(CLASSNAME + " stored " + url.toString() + " to database");
+					if (!contentType.equals("PDF")){
+						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
+						cleansedDoc = Jsoup.parse(stringContents);
+						storeCrawledContentsFile(cleansedDoc.toString(), docID);
+					} else {
+						storePDF(rawContents, docID);
+					}
+
 				}
+				
 				if (contentType.equals("HTML")){
-					addAHrefLinks(cleansedDoc, content, url);
+					addAHrefLinks(cleansedDoc, content.isNew(), url);
 					addImgSrcLinks(cleansedDoc, url);
-				}
-									
+				}					
+
+				logger.info(CLASSNAME + " stored " + url.toString() + " to file system");
+				
 			} catch (InterruptedException | MalformedURLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -89,12 +100,12 @@ public class LinkExtractorWorker implements Runnable {
 	 * Stores the source and target links to file (if it's a newly crawled file)
 	 * and adds meta data for uncrawled new links
 	 * @param cleansedDoc
-	 * @param content
+	 * @param isNew
 	 * @param sourceUrl
 	 * @throws UnsupportedEncodingException
 	 * @throws MalformedURLException
 	 */
-	private void addAHrefLinks(Document cleansedDoc, RawCrawledItem content, URL sourceUrl) throws IllegalArgumentException, UnsupportedEncodingException, MalformedURLException{
+	private void addAHrefLinks(Document cleansedDoc, boolean isNew, URL sourceUrl) throws IllegalArgumentException, UnsupportedEncodingException, MalformedURLException{
 		Elements links = cleansedDoc.select("a[href]");
 		
 		List<URL> newUrls = new ArrayList<URL>();
@@ -118,7 +129,7 @@ public class LinkExtractorWorker implements Runnable {
 			}
 		} 
 		
-		if (content.isNew()){
+		if (isNew){
 			storeUrlsToFile(newUrls, sourceUrl);						
 		}		
 	}
@@ -195,6 +206,33 @@ public class LinkExtractorWorker implements Runnable {
 			if (null != writer){
 				try {
 					writer.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Store a PDF file
+	 * @param contents
+	 * @param docID
+	 */
+	private void storePDF(byte[] contents, long docID){
+		String fileName = Long.toString(docID) + ".pdf";
+		File storageFile = new File(this.storageDirectory + "/" + fileName);
+		FileOutputStream stream = null;
+		try {
+			stream = new FileOutputStream(storageFile);
+			stream.write(contents);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (null != stream){
+				try {
+					stream.close();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

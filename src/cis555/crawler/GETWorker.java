@@ -100,12 +100,13 @@ public class GETWorker implements Runnable {
 			
 			updateSiteInfo(info, domain);
 			
-			String rawContents = response.getResponseBody();
+			byte[] rawContents = response.getResponseBody();
 			
-			if (rawContents.isEmpty()){
+			if (null == rawContents){
 				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of no content was received, skipping");
 				return;
 			}
+			
 			logger.info(CLASSNAME + ": Crawled " + url);				
 			String contentType = response.getContentType().name();
 			

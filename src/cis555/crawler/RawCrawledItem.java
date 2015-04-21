@@ -5,11 +5,11 @@ import java.net.URL;
 public class RawCrawledItem {
 
 	private URL url;
-	private String rawContents;
+	private byte[] rawContents;
 	private String contentType;
 	private boolean isNew;
 	
-	public RawCrawledItem(URL url, String rawContents, String contentType, boolean isNew){
+	public RawCrawledItem(URL url, byte[] rawContents, String contentType, boolean isNew){
 		this.url = url;
 		this.rawContents = rawContents;
 		this.contentType = contentType;
@@ -20,7 +20,7 @@ public class RawCrawledItem {
 		return this.url;
 	}
 	
-	public String getRawContents(){
+	public byte[] getRawContents(){
 		return this.rawContents;
 	}
 	

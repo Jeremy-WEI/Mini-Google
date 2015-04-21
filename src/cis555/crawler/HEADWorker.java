@@ -144,7 +144,7 @@ public class HEADWorker implements Runnable {
 			String contents = retrieveDocument(url);
 			
 			if (!contents.isEmpty()){ // This means that it's an HTML document
-				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents, "HTML", false);
+				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents.getBytes(CrawlerConstants.CHARSET), "HTML", false);
 				this.contentForLinkExtractor.add(forLinkExtractor);
 			}
 		} else if (isTooBig(response.getContentLength())){

@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
+
+import cis555.utils.CrawlerConstants;
 
 
 /**
@@ -38,7 +38,6 @@ public class RobotsMatcher implements Runnable {
 
 			try {
 				url = newUrlQueue.take();
-				
 				
 				String domain = url.getHost();
 				if (this.siteInfoMap.containsKey(domain)){
@@ -95,13 +94,12 @@ public class RobotsMatcher implements Runnable {
 			
 			SiteInfo info = new SiteInfo();
 
-			String contents = response.getResponseBody();
+			String contents = new String(response.getResponseBody(), CrawlerConstants.CHARSET);
 			if (null == contents || contents.isEmpty()){
 				logger.debug(CLASSNAME + ": Unable to get Robots.txt for " + url.getHost() + " because response body was empty. Adding dummy site info. Original URL: " + url.toString());
 				
 			} else {
-				info.parseRobotsTxt(contents);
-				
+				info.parseRobotsTxt(contents);	
 			}
 			
 			this.siteInfoMap.put(url.getHost(), info);
@@ -143,7 +141,6 @@ public class RobotsMatcher implements Runnable {
 			
 //			logger.debug(CLASSNAME + ": Crawler delay imposed on " + url);
 			try {
-
 				this.newUrlQueue.add(url);
 				
 			} catch (IllegalStateException e){
@@ -151,8 +148,6 @@ public class RobotsMatcher implements Runnable {
 			}
 
 		} else {
-
-//			logger.debug(CLASSNAME + ": " + url + " added to HeadCrawlQueue");
 
 			// No need to wait - can add to headCrawlQueue 
 			try {

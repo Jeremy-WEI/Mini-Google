@@ -1,13 +1,16 @@
 package cis555.crawler;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
+
+import com.google.common.io.ByteStreams;
 
 import cis555.crawler.CrawlerUtils.Method;
 import cis555.utils.CrawlerConstants;
@@ -21,11 +24,11 @@ public class Response {
 	private static final Logger logger = Logger.getLogger(Response.class);
 	private static final String CLASSNAME = Response.class.getName();
 	
-	private String responseBody;	
-	public void setResponseBody(String responseBody){
+	private byte[] responseBody;	
+	public void setResponseBody(byte[] responseBody){
 		this.responseBody = responseBody;
 	}
-	public String getResponseBody(){
+	public byte[] getResponseBody(){
 		return this.responseBody;
 	}
 	
@@ -101,7 +104,6 @@ public class Response {
 	 */
 	public static Response parseResponse(HttpURLConnection connection, Method method) throws IOException{
 		Response response = new Response();
-		BufferedReader responseReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		int contentLength = connection.getContentLength();
 		response.parseContentType(connection.getContentType());
 		response.setResponseCode(Integer.toString(connection.getResponseCode()));
@@ -115,53 +117,14 @@ public class Response {
 		if (null != language && !language.isEmpty()){
 			response.setContentLanguage(language.toLowerCase());
 		}
-		
+
 		if (method == Method.GET){
-			response.setResponseBody(response.extractBody(responseReader, contentLength));
+			response.setResponseBody(ByteStreams.toByteArray(connection.getInputStream()));
 		} else {
-			response.setResponseBody("");
+			response.setResponseBody(null);
 		}
 		return response;
-	}
-	
-	
-	/**
-	 * Extracts the body of the response
-	 * @param response
-	 * @param contentLength
-	 * @return
-	 * @throws IOException
-	 */
-	private String extractBody(BufferedReader response, int contentLength) throws IOException {
-		
-		if (contentLength < 1){
-			contentLength = CrawlerConstants.DEFAULT_CONTENT_LENGTH;
-//			String error = "Non positive content length: " + contentLength;
-//			logger.error(CLASSNAME + ": " + error);
-//			throw new CrawlerException(error);
-		}
-		
-		StringBuilder responseString = new StringBuilder();
-		
-		try {
-			for (int i = 0; i < contentLength; i++){
-				int charRead = response.read();
-				if (charRead > -1){
-					responseString.append((char) charRead);
-				} else {
-					break;
-				}
-			}
-			return responseString.toString();
-			
-		} catch (SocketTimeoutException e){
-			String error = "Socket timed out";
-			logger.error(CLASSNAME + ": " + error);
-			throw new CrawlerException(error);
-		}
-		
-	}
-	
+	}	
 	
 //	/***
 //	 * Methods

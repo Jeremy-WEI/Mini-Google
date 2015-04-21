@@ -85,7 +85,7 @@ public class LinkExtractorWorker implements Runnable {
 
 				}
 				
-				if (contentType.equals("HTML")){
+				if (contentType == ContentType.HTML){
 					addAHrefLinks(cleansedDoc, content.isNew(), url);
 					addImgSrcLinks(cleansedDoc, url);
 				}					

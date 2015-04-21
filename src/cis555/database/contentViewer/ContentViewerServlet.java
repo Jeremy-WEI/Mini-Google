@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-import cis555.database.CrawledDocument;
+import cis555.aws.utils.CrawledDocument;
 import cis555.database.DBWrapper;
 
 @SuppressWarnings("serial")
@@ -60,8 +60,8 @@ public class ContentViewerServlet extends AbstractServlet {
     		
             for (CrawledDocument document : crawledDocuments){
             	str.append("<tr>");
-            	str.append("<td width=\"25%\">" + document.getID() + "</td>"); 
-                str.append("<td width=\"25%\"><a href=\"doc?docID=" + document.getID() + "\">" + document.getURL() + "</a></td>");
+            	str.append("<td width=\"25%\">" + document.getDocID() + "</td>"); 
+                str.append("<td width=\"25%\"><a href=\"doc?docID=" + document.getDocID() + "\">" + document.getURL() + "</a></td>");
                 str.append("<td width=\"25%\">" + document.getContentType() + "</td>");
             }	
             

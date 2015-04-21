@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import cis555.aws.utils.CrawledDocument;
+import cis555.aws.utils.DocumentMeta;
 import cis555.utils.CrawlerConstants;
 
 import com.sleepycat.persist.EntityCursor;
@@ -91,7 +93,7 @@ public class Dao {
 	 * @return
 	 */
 	public long getDocIDFromURL(String url){
-		return getDocumentMetaData(url).getID();
+		return getDocumentMetaData(url).getDocID();
 	}
 	
 	/**
@@ -150,7 +152,7 @@ public class Dao {
 	 * @throws EntryDoesNotExistException
 	 */
 	public CrawledDocument getCrawledDocumentByURL(String url) throws EntryDoesNotExistException {
-		long docID = getDocumentMetaData(url).getID();
+		long docID = getDocumentMetaData(url).getDocID();
 		return getCrawledDocumentByID(docID);
 	}
 	

@@ -40,7 +40,7 @@ public class PopulateDynamo {
 	}	
 	
 	public void setupDynamo(){
-		this.dynamoDB = DynamoAdapter.getClient();
+	
 	}
 	
 	public void populateDynamo(){
@@ -74,7 +74,7 @@ public class PopulateDynamo {
         Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
         item.put("docID", new AttributeValue().withN(Long.toString(docID)));
         item.put("url", new AttributeValue(url));
-        item.put("contentType", new AttributeValue().withSS(contentType));
+        item.put("contentType", new AttributeValue(contentType));
 
         return item;
     }

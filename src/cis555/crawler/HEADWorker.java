@@ -15,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import cis555.aws.utils.CrawledDocument;
 import cis555.crawler.Response.ContentType;
-import cis555.database.CrawledDocument;
 import cis555.database.Dao;
 import cis555.utils.CrawlerConstants;
 

@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import cis555.aws.utils.CrawledDocument;
+import cis555.aws.utils.DynamoAdapter;
 import cis555.database.DBWrapper;
 import cis555.database.Dao;
 import cis555.database.PopulateDynamo;
@@ -61,14 +63,23 @@ public class Crawler {
 	
 	public static void main(String[] args) throws MalformedURLException, InterruptedException {
 		Crawler crawler = new Crawler();
-//		PopulateDynamo p = new PopulateDynamo();
-//		p.populateDynamo();
+//		crawler.testDynamo();
 		crawler.setConfig();
 		crawler.initialise();
 //		while(GETWorker.active){
 //			Thread.sleep(1000);
 //		}
 //		crawler.shutdown();
+	}
+	
+	private void testDynamo(){
+		DynamoAdapter adapter = new DynamoAdapter();
+		CrawledDocument c1 = new CrawledDocument(1, "url1", "contenttype1");
+		CrawledDocument c2 = new CrawledDocument(2, "url2", "contenttype2");
+		List<CrawledDocument> documents = new ArrayList<CrawledDocument>();
+		documents.add(c1);
+		documents.add(c2);
+		adapter.batchSaveCrawledDocuments(documents);
 	}
 
 	

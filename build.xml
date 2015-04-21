@@ -15,11 +15,9 @@
     <property name="src.main.dir"  location="${build.dir}${file.separator}src${file.separator}"/>
     <property name="inputlib.dir"  location="${shared.root}${file.separator}lib"/>
     <property name="conf.dir"      location="${build.dir}${file.separator}conf"/>
-
     
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
-        <mkdir dir="${web-inf.classes.dir}"/>
         <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">

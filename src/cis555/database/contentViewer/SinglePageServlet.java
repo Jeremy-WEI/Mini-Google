@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-import cis555.database.CrawledDocument;
+import cis555.aws.utils.CrawledDocument;
 import cis555.utils.CrawlerConstants;
 
 @SuppressWarnings("serial")

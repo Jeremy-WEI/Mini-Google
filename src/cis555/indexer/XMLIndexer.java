@@ -1,5 +1,7 @@
 package cis555.indexer;
+
 import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,7 +19,17 @@ public class XMLIndexer extends Indexer {
         super(file, URL, docID);
         StringBuilder sb = new StringBuilder();
         int ch;
-        while ((ch = fis.read()) != -1) {
+        while ((ch = is.read()) != -1) {
+            sb.append((char) ch);
+        }
+        tokenizer = new StringTokenizer(sb.toString(), DELIMITER);
+    }
+
+    public XMLIndexer(InputStream is, String URL, long docID) throws Exception {
+        super(is, URL, docID);
+        StringBuilder sb = new StringBuilder();
+        int ch;
+        while ((ch = this.is.read()) != -1) {
             sb.append((char) ch);
         }
         tokenizer = new StringTokenizer(sb.toString(), DELIMITER);

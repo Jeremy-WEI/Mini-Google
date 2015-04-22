@@ -1,5 +1,7 @@
 package cis555.indexer;
+
 import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,7 +16,18 @@ public class PDFIndexer extends Indexer {
 
     public PDFIndexer(File file, String URL, long docID) throws Exception {
         super(file, URL, docID);
-        PDDocument document = PDDocument.load(fis);
+        PDDocument document = PDDocument.load(is);
+        // PDDocumentInformation info = document.getDocumentInformation();
+        PDFTextStripper stripper = new PDFTextStripper();
+        stripper.setStartPage(1);
+        stripper.setEndPage(Integer.MAX_VALUE);
+        String content = stripper.getText(document);
+        tokenizer = new StringTokenizer(content, DELIMITER);
+    }
+
+    public PDFIndexer(InputStream is, String URL, long docID) throws Exception {
+        super(is, URL, docID);
+        PDDocument document = PDDocument.load(this.is);
         // PDDocumentInformation info = document.getDocumentInformation();
         PDFTextStripper stripper = new PDFTextStripper();
         stripper.setStartPage(1);

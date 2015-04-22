@@ -1,5 +1,7 @@
 package cis555.indexer;
+
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +30,13 @@ public class HTMLIndexer extends Indexer {
 
     public HTMLIndexer(File file, String URL, long docID) throws Exception {
         super(file, URL, docID);
-        this.document = Jsoup.parse(fis, Charset.defaultCharset().name(), URL);
+        this.document = Jsoup.parse(is, Charset.defaultCharset().name(), URL);
+    }
+
+    public HTMLIndexer(InputStream is, String URL, long docID) throws Exception {
+        super(is, URL, docID);
+        this.document = Jsoup.parse(this.is, Charset.defaultCharset().name(),
+                URL);
     }
 
     // For testing only

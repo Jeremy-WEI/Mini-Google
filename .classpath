@@ -17,7 +17,6 @@
 	<classpathentry kind="lib" path="lib/pdfbox-app-1.8.9.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/guava-18.0.jar"/>
-	<classpathentry kind="lib" path="lib/aws-java-sdk-1.9.31-sources.jar"/>
 	<classpathentry kind="lib" path="lib/aws-java-sdk-1.9.31.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JSoup"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/PdfBox"/>

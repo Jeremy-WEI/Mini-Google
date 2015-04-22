@@ -82,7 +82,7 @@ public class CrawlerUtils {
 			if (method == Method.HEAD){
 				httpsConnection.setRequestMethod("HEAD");
 			}
-
+			httpsConnection.setInstanceFollowRedirects(false);
 			if (!ifModifiedDateString.isEmpty()){
 				httpsConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
 			}

@@ -232,22 +232,22 @@ public class HEADWorker implements Runnable {
 	 */
 	private String retrieveDocument(URL url){
 		
-		if (this.sitesCrawledThisSession.contains(url)){
+		if (!this.sitesCrawledThisSession.contains(url)){
 			
-			// We've already crawled this site, and added the links, so we don't want to add them again
-			
-			return "";
+			if (this.dao.hasUrlBeenCrawled(url.toString())){
+				CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
+				
+				if (document.getContentType().equals("HTML")){
+					return retrieveDocumentFromFileSystem(url);
+				}
+			}
 		}
 		
-		CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
-		
-		if (document.getContentType().equals("HTML")){
-			return retrieveDocumentFromFileSystem(url);
-		}
-		else {		
-			// Not an HTML document, so ignore
-			return "";
-		}
+		// Already crawled in this session
+		// Not an HTML document
+		// Or has not been crawled at all so ignore
+		return "";
+	
 	}
 	
 	

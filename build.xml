@@ -119,7 +119,7 @@
 	
     <target name="pack" description="Create Crawler Pack">
       <zip destfile="crawler_for_ec2.zip">
-        <zipfileset dir="${build.dir}" includes="log/,properties/,crawler.jar"/>
+        <zipfileset dir="${build.dir}" includes="log/,properties/,crawler.jar" excludes="log/*.log"/>
       </zip>
     </target>
 

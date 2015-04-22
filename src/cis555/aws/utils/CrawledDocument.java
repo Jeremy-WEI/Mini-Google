@@ -15,14 +15,14 @@ public class CrawledDocument {
 
 	private CrawledDocument(){}
 	
-	@DynamoDBHashKey(attributeName=AWSConstants.CRAWLED_DOCUMENT_HASH_KEY)
+	@DynamoDBHashKey(attributeName=AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD)
 	@PrimaryKey
 	private long docID;
 	
-	@DynamoDBAttribute(attributeName="url")
+	@DynamoDBAttribute(attributeName=AWSConstants.CRAWLED_DOCUMENT_URL_FIELD)
 	private String url;
 
-	@DynamoDBAttribute(attributeName="contentType")
+	@DynamoDBAttribute(attributeName=AWSConstants.CRAWLED_DOCUMENT_CONTENT_TYPE_FIELD)
 	private String contentType;
 	
 	public CrawledDocument(long id, String url, String contentType){

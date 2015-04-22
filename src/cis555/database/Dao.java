@@ -44,13 +44,15 @@ public class Dao {
 	}
 	
 	/**
-	 * Get the latest value of the coutner
+	 * Get the latest value of the counter
 	 * @return
 	 */
 	public long getLatestCounterValue(){
 		if (this.counterDao.contains(CrawlerConstants.DB_COUNTER_KEY)){
 			return this.counterDao.get(CrawlerConstants.DB_COUNTER_KEY).getDocID();
 		} else {
+			
+			// should not get here
 			return -1;
 		}
 	}
@@ -157,13 +159,23 @@ public class Dao {
 	}
 	
 	/**
-	 * Indicates whether the docid exists in the database
+	 * Indicates whether we have already crawled a particular docID
 	 * @param docid
 	 * @return
 	 */
-	public boolean doesDocumentExist(long docID){
+	public boolean hasDocIDBennCrawled(long docID){
 		return crawledDocumentDao.contains(docID);
 	}	
+	
+	/**
+	 * Indicates whether we have already crawled a particular URL
+	 * @param url
+	 * @return
+	 */
+	public boolean hasUrlBeenCrawled(String url){
+		long docID = getDocumentMetaData(url).getDocID();
+		return hasDocIDBennCrawled(docID);
+	}
 	
 	
 	

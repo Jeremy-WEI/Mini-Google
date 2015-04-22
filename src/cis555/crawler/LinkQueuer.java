@@ -19,20 +19,20 @@ public class LinkQueuer implements Runnable {
 	private BlockingQueue<URL> newUrlQueue;
 	private int crawlerID;
 	private List<String> otherCrawlerDetails;
-	public static boolean active;
+	private List<String> excludedPatterns;
 	
 	public LinkQueuer(BlockingQueue<URL> preRedistributionNewURLQueue, BlockingQueue<URL> newUrlQueue,
-			int crawlerID, List<String> otherCrawlerDetails){
+			int crawlerID, List<String> otherCrawlerDetails, List<String> excludedPatterns){
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.newUrlQueue = newUrlQueue;
 		this.crawlerID = crawlerID;
 		this.otherCrawlerDetails = otherCrawlerDetails;
-		LinkQueuer.active = true;
+		this.excludedPatterns = excludedPatterns;
 	}
 
 	@Override
 	public void run() {
-		while(LinkQueuer.active){
+		while(GETWorker.active){
 			try {
 				URL url = preRedistributionNewURLQueue.take();
 				URL filteredURL = filter(url);
@@ -68,11 +68,7 @@ public class LinkQueuer implements Runnable {
 		}else if (urlString.contains("#")){
 			String newUrlString = urlString.substring(0, urlString.indexOf("#"));
 			return new URL(newUrlString);
-		} else if (urlString.contains("/cgi-bin/")){
-			// Ignore all urls containing /cgi-bin/
-			return null;
-			
-		} else {
+		}  else {
 
 			return ignoreBlackListDomain(url);
 		}
@@ -85,9 +81,9 @@ public class LinkQueuer implements Runnable {
 	 * @return
 	 */
 	private URL ignoreBlackListDomain(URL url){
-		String[] blackListDomains = CrawlerConstants.DOMAIN_BLACKLIST;
-		for (String domain : blackListDomains){
-			if (url.toString().contains(domain)){
+
+		for (String excludedPattern : this.excludedPatterns){
+			if (url.toString().contains(excludedPattern)){
 				return null;
 			}
 		}

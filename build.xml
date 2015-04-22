@@ -15,6 +15,7 @@
     <property name="src.main.dir"  location="${build.dir}${file.separator}src${file.separator}"/>
     <property name="inputlib.dir"  location="${shared.root}${file.separator}lib"/>
     <property name="conf.dir"      location="${build.dir}${file.separator}conf"/>
+	<property name="non-crawler-libs" value="pdfbox-app-1.8.9.jar,servlet-api.jar,junit-4.12.jar"/>
     
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
@@ -22,6 +23,7 @@
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
+                	<exclude name="${non-crawler-libs}"/>
                 </fileset>
             </classpath>
         	 <compilerarg value="-Xlint:-options" />
@@ -40,6 +42,18 @@
         </javac>
     </target>
     
+    <target name="compile-transferer" description="Compiles the EC2 - S3 and Dynamo transferer">
+        <mkdir dir="${classes.dir}"/>
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+            <classpath>
+                <fileset dir="${inputlib.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        	 <compilerarg value="-Xlint:-options" />
+        </javac>
+    </target>
+	
     <target name="compile-crawler" depends="compile-database" description="Compiles the crawler">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/crawler/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
@@ -69,16 +83,17 @@
         <delete dir="${build.target.dir}"/>
     	<delete dir="${classes.dir}"/>
         <delete file="crawler.jar"/>
+    	<delete file="transferer.jar"/>
     	<delete file="servlet.war"/>
+    	
     </target>
     
     <target name="crawler-jar" depends="compile-crawler" description="Makes the JAR file for the crawler">
         <delete file="crawler.jar"/>
         <jar destfile="crawler.jar" update="true">
-        	<zipgroupfileset dir="${inputlib.dir}"/>
+        	<zipgroupfileset dir="${inputlib.dir}" excludes="${non-crawler-libs}"/>
             <fileset dir="${classes.dir}">
-                <include name="**/*.class"/>
-                <include name="**/*.jar"/>
+            <include name="**/*.class"/>
             </fileset>
         	<fileset dir="src">
         		<include name="log4j.properties"/>
@@ -101,7 +116,7 @@
         <copy file="${conf.dir}${file.separator}web.xml" tofile="${web-inf.dir}${file.separator}web.xml" overwrite="true" />
         <copy todir="${web-inf.lib.dir}" overwrite="true">
             <fileset dir="${inputlib.dir}">
-                <include name="*.jar"/>
+                <include name="servlet-api.jar,je-6.2.31.jar,log4j-1.2.9.jar"/>
             </fileset>
         </copy>
         <jar destfile="servlet.war" update="true">
@@ -114,12 +129,36 @@
         </jar>
     </target>
 
-    <target name="build" depends="crawler-jar, servlet-war, pack">
+    <target name="transferer-jar" depends="compile-crawler" description="Makes the JAR file for the crawler">
+        <delete file="transferer.jar"/>
+        <jar destfile="transferer.jar" update="true">
+        	<zipgroupfileset dir="${inputlib.dir}" excludes="${non-crawler-libs}"/>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+        	<fileset dir="src">
+        		<include name="log4j.properties"/>
+        	</fileset>
+        	<fileset dir="${basedir}" includes="log/**">
+        		<include name="*.log"/>
+        	</fileset>
+        	<fileset dir="${basedir}" includes="properties/**">
+        		<include name="settings.properties"/>
+        	</fileset>
+        	<manifest>
+        		<attribute name="DependencyFinder" value="main"/>
+        		<attribute name="Main-Class" value="cis555.contentTransferer.ContentTransferer"/>
+        	</manifest>
+        </jar>
+    </target>
+
+	
+    <target name="build" depends="crawler-jar, servlet-war, transferer-jar,pack">
     </target>
 	
     <target name="pack" description="Create Crawler Pack">
       <zip destfile="crawler_for_ec2.zip">
-        <zipfileset dir="${build.dir}" includes="log/,properties/,crawler.jar" excludes="log/*.log"/>
+        <zipfileset dir="${build.dir}" includes="log/,properties/,crawler.jar, transferer.jar" excludes="log/*.log"/>
       </zip>
     </target>
 

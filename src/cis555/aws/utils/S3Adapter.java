@@ -13,8 +13,8 @@ import com.amazonaws.services.s3.transfer.TransferManager;
 
 public class S3Adapter {
 
-	private static final Logger logger = Logger.getLogger(DynamoDao.class);
-	private static final String CLASSNAME = DynamoDao.class.getName();
+	private static final Logger logger = Logger.getLogger(S3Adapter.class);
+	private static final String CLASSNAME = S3Adapter.class.getName();
 
 	private AmazonS3 client;
 	private TransferManager manager;
@@ -30,9 +30,9 @@ public class S3Adapter {
         this.manager = new TransferManager(this.client);
 	}
 	
-	public void uploadDirectory(File directoryName){
+	public void uploadDirectory(File directoryName, String bucketName){
 		if (directoryName.isDirectory()){
-			this.manager.uploadDirectory(AWSConstants.DOCUMENT_BUCKET, "", directoryName, false);
+			this.manager.uploadDirectory(bucketName, "", directoryName, false);
 		} else {
 			logger.error(CLASSNAME + " : Unable to upload to s3 as " + directoryName + " is not a directory");
 		}

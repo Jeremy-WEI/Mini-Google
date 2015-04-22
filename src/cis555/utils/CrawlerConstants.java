@@ -29,9 +29,6 @@ public class CrawlerConstants {
 	public static final String PROPERTIES_FILE = "properties/settings.properties";
 	public static final String IP_PORT_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{2,5}";
 	
-	public static final int WRITE_TO_DYNAMO_INTERVAL = 3600; // 1 minute
-
-	
 	// DB constants
 	
 	public static final String DB_NAME = "Store";
@@ -45,13 +42,6 @@ public class CrawlerConstants {
 
 	// URL filter
 	public static final int MAX_URL_LENGTH = 50;
-	
-	public static final String[] DOMAIN_BLACKLIST = { "yahoo.uservoice.com",
-		"login.",
-		"games.yahoo.com",
-		"javascript:void",
-		"/forms",
-		};
 
 	
 	// Servlet paths

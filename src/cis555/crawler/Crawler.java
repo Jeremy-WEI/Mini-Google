@@ -8,10 +8,8 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
-import java.util.Timer;
 import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -19,12 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
-import cis555.aws.utils.DocumentMeta;
-import cis555.aws.utils.DynamoDao;
-import cis555.aws.utils.S3Adapter;
 import cis555.database.DBWrapper;
 import cis555.database.Dao;
-import cis555.database.PopulateDynamo;
 import cis555.utils.CrawlerConstants;
 
 public class Crawler {
@@ -55,6 +49,7 @@ public class Crawler {
 	private BlockingQueue<URL> headCrawlQueue;
 	private BlockingQueue<URL> getCrawlQueue;
 	private Vector<URL> sitesCrawledThisSession; // A list of sites crawled in this session, to prevent repeated crawl
+	private List<String> excludedPatterns;
 	
 	/* Link Extractor related */
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
@@ -70,7 +65,7 @@ public class Crawler {
 //		crawler.testDynamo();
 		crawler.setConfig();
 		crawler.initialise();
-		crawler.setUpPopulateDynamoTimerTask();
+//		crawler.setUpPopulateDynamoTimerTask();
 		
 //		while(GETWorker.active){
 //			Thread.sleep(1000);
@@ -78,38 +73,7 @@ public class Crawler {
 //		crawler.shutdown();
 	}
 	
-	private void testDynamo(){
-		DynamoDao adapter = new DynamoDao();
-		DocumentMeta c1 = new DocumentMeta("hello1", 1, new Date(), true);
-		DocumentMeta c2 = new DocumentMeta("hello2", 2, new Date(), false);
-		DocumentMeta c3 = new DocumentMeta("hello3", 3, new Date(), true);
-		List<DocumentMeta> documents = new ArrayList<DocumentMeta>();
-		documents.add(c1);
-		documents.add(c2);
-		documents.add(c3);
-		
-		
-		try {
 
-			adapter.batchSaveDocumentMeta(documents);	
-			adapter.batchGetDocumentMeta();
-		} catch (Exception e){
-			e.printStackTrace();
-			System.exit(1);
-		}
-//		List<String> urls = adapter.getUrlFromDocIDs(1, 2, 3);
-//		for (String url : urls){
-//			logger.info("URL: " + url);
-//		}
-//		adapter.batchGetCrawledDocuments();
-	}
-	
-	private void testS3(){
-		S3Adapter adapter = new S3Adapter();
-		File storageDirectory = new File(CrawlerConstants.STORAGE_DIRECTORY);
-		System.out.println(storageDirectory.getAbsolutePath());
-		adapter.uploadDirectory(storageDirectory);
-	}
 	
 	
 
@@ -156,7 +120,7 @@ public class Crawler {
 		this.linkQueuerThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_GET_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_HEAD_GET_THREADS; i++){
 			LinkQueuer linkQueuer = new LinkQueuer(this.preRedistributionNewURLQueue, 
-					this.newUrlQueue, this.crawlerID, this.allCrawlerIPs);
+					this.newUrlQueue, this.crawlerID, this.allCrawlerIPs, this.excludedPatterns);
 			Thread linkQueuerThread = new Thread(linkQueuer);
 			linkQueuerThread.start();
 			this.linkQueuerThreadPool.add(linkQueuerThread);
@@ -226,17 +190,6 @@ public class Crawler {
 			getThreadPool.add(thread);
 		}
 	}
-	
-	/**
-	 * Set up the timer task to populate DynamoDB
-	 */
-	private void setUpPopulateDynamoTimerTask(){
-		PopulateDynamo task = new PopulateDynamo(this.dao);
-		Timer timer = new Timer();
-		timer.scheduleAtFixedRate(task, 0, CrawlerConstants.WRITE_TO_DYNAMO_INTERVAL);
-	}
-
-	
 	
 	private void shutdown(){
 		// shut down all threads
@@ -312,6 +265,9 @@ public class Crawler {
 			
 			String[] allCrawlersArray = properties.getProperty("other_crawlers").split(";");
 			populateAllCrawlerDetails(allCrawlersArray);
+			
+			String[] excludedPatternsArray = properties.getProperty("excluded_patterns").split(";");
+			populateExcludedPatterns(excludedPatternsArray);
 			
 			this.storageDirectory = CrawlerConstants.STORAGE_DIRECTORY;
 			createDirectory(this.storageDirectory);
@@ -394,13 +350,24 @@ public class Crawler {
 	 * @param ipPortString
 	 * @return
 	 */
-	public String validateIPPortString(String iPPortString){
+	private String validateIPPortString(String iPPortString){
 		if (null != iPPortString && !iPPortString.isEmpty()){
 			if (iPPortString.matches(CrawlerConstants.IP_PORT_FORMAT)){
 				return iPPortString;				
 			}
 		}
 		throw new ValidationException("Invalid port number: " + iPPortString);
+	}
+	
+	/**
+	 * Populates the excluded patterns array
+	 * @param excludedPatternsArray
+	 */
+	private void populateExcludedPatterns(String[] excludedPatternsArray){
+		this.excludedPatterns = new ArrayList<String>();
+		for (String pattern : excludedPatternsArray){
+			this.excludedPatterns.add(pattern);
+		}
 	}
 	
 	

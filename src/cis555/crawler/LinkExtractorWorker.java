@@ -73,10 +73,10 @@ public class LinkExtractorWorker implements Runnable {
 					if (contentType != ContentType.PDF){
 						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
 						if (contentType == ContentType.TEXT){
-							storeCrawledContentsFile(stringContents.toString(), docID);							
+							storeCrawledContentsFile(stringContents.toString(), docID, contentType);							
 						} else {
 							cleansedDoc = Jsoup.parse(stringContents);
-							storeCrawledContentsFile(cleansedDoc.toString(), docID);
+							storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType);
 							
 						}
 					} else {
@@ -85,7 +85,7 @@ public class LinkExtractorWorker implements Runnable {
 
 				}
 				
-				if (contentType == ContentType.HTML){
+				if (contentType == ContentType.HTML && null != cleansedDoc){
 					addAHrefLinks(cleansedDoc, content.isNew(), url);
 					addImgSrcLinks(cleansedDoc, url);
 				}					
@@ -195,8 +195,10 @@ public class LinkExtractorWorker implements Runnable {
 	 * @param contents
 	 * @param docID
 	 */
-	private void storeCrawledContentsFile(String contents, long docID){
-		String fileName = Long.toString(docID) + ".txt";
+	private void storeCrawledContentsFile(String contents, long docID, ContentType contentType){
+		
+		
+		String fileName = generateFileName(docID, contentType);
 		File storageFile = new File(this.storageDirectory + "/" + fileName);
 		BufferedWriter writer = null;
 		try {
@@ -216,6 +218,25 @@ public class LinkExtractorWorker implements Runnable {
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Generates the file name with the appropriate extension
+	 * @param docID
+	 * @param contentType
+	 * @return
+	 */
+	private String generateFileName(long docID, ContentType contentType){
+		switch (contentType){
+		case HTML:
+			return Long.toString(docID) + ".html";
+		case XML:
+			return Long.toString(docID) + ".xml";
+		case TEXT:
+			return Long.toString(docID) + ".txt";
+		default:
+			throw new CrawlerException("Invalid content type: " + contentType.name());
 		}
 	}
 	

@@ -47,6 +47,8 @@ public class DBWrapper {
 
     private void buildDatabase() {
         AmazonDynamoDBClient dynamoDB;
+        String ACCESS_TOKEN = "AKIAI5LTOBMLPFVT4IUQ";
+        String SECRET_TOKEN = "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";
         dynamoDB = new AmazonDynamoDBClient(new BasicAWSCredentials(
                 ACCESS_TOKEN, SECRET_TOKEN));
         dynamoDB.setRegion(Region.getRegion(Regions.US_EAST_1));

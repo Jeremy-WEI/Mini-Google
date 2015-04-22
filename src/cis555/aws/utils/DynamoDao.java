@@ -1,9 +1,12 @@
 package cis555.aws.utils;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.log4j.Logger;
 
@@ -35,6 +38,7 @@ public class DynamoDao {
 
 	public DynamoDao(){
 		connect();
+
 	}
 	
 	private void connect(){
@@ -84,7 +88,7 @@ public class DynamoDao {
 	 * @param docID
 	 * @return
 	 */
-	public String getURLFromDocID(long docID) {
+	public String getUrlFromDocID(long docID) {
 		TableKeysAndAttributes crawledDocumentTable = new TableKeysAndAttributes(AWSConstants.CRAWLED_DOCUMENT_TABLE);
 		crawledDocumentTable.addHashOnlyPrimaryKey(AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD, docID);
 		Map<String, TableKeysAndAttributes> requestItems = new HashMap<String, TableKeysAndAttributes>();
@@ -110,19 +114,40 @@ public class DynamoDao {
 	}
 	
 	
-	
-	/**
-	 * DocumentMeta methods
-	 */
-	
-	/**
-	 * Batch-save a list of documentMeta
-	 * @param documentMeta
-	 */
-	public void batchSaveDocumentMeta(List<DocumentMeta> documentMeta){
-		this.mapper.batchSave(documentMeta);
-	}
-
+//	// WORK IN PROGRESS
+//	public List<String> getUrlFromDocIDs(long...docIDs){
+//		TableKeysAndAttributes crawledDocumentTable = new TableKeysAndAttributes(AWSConstants.CRAWLED_DOCUMENT_TABLE);
+//		for (long docID : docIDs){
+//			crawledDocumentTable.addHashOnlyPrimaryKey(AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD, docID);
+//			logger.info("added " + docID);
+//		}
+//		Map<String, TableKeysAndAttributes> requestItems = new HashMap<String, TableKeysAndAttributes>();
+//		requestItems.put(AWSConstants.CRAWLED_DOCUMENT_TABLE, crawledDocumentTable);
+//		
+//		List<String> urls = new ArrayList<String>();
+//		
+//		try {
+//			BatchGetItemOutcome outcome = this.dynamoDB.batchGetItem(crawledDocumentTable);
+//			logger.info(outcome.getBatchGetItemResult());
+//			List<Item> items = outcome.getTableItems().get(AWSConstants.CRAWLED_DOCUMENT_TABLE);
+//			
+//			if (items.size() == 0){
+//				logger.error(CLASSNAME + ": No items returned");
+//				return null;				
+//			}
+//			logger.info(CLASSNAME + ": " + items.size());
+//			for (Item item : items){
+//				logger.info(CLASSNAME + ": " + item.getString(AWSConstants.CRAWLED_DOCUMENT_URL_FIELD));
+//				urls.add(item.getString(AWSConstants.CRAWLED_DOCUMENT_URL_FIELD));
+//			}
+//			
+//			return urls;
+//			
+//		} catch (AmazonClientException e){
+//			logger.error(CLASSNAME + ": " + e.getMessage());
+//			return null;
+//		}	
+//	}
 	
 	/**
 	 * Add a single crawled document to the database
@@ -153,4 +178,57 @@ public class DynamoDao {
         item.put("contentType", new AttributeValue(contentType));
         return item;
     }
+    
+    
+	
+	/**
+	 * DocumentMeta methods
+	 */
+	
+	/**
+	 * Batch-save a list of documentMeta
+	 * @param documentMeta
+	 */
+	public void batchSaveDocumentMeta(List<DocumentMeta> documentMeta){
+		this.mapper.batchSave(documentMeta);
+	}
+	
+	
+	/**
+	 * Return all document meta objects stored in DynamoDB
+	 * For more info please refer to http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ScanJavaDocumentAPI.html
+	 * @return
+	 */
+	public List<DocumentMeta> batchGetDocumentMeta(){
+		ScanRequest scanRequest = new ScanRequest().withTableName(AWSConstants.DOCUMENT_META_TABLE);
+		ScanResult result = this.client.scan(scanRequest);
+		List<DocumentMeta> documentMetaObjects = new ArrayList<DocumentMeta>();
+		
+		for (Map<String, AttributeValue> item : result.getItems()){
+			
+			String url = item.get(AWSConstants.DOCUMENT_META_URL_FIELD).getS();
+			long docID = Long.parseLong(item.get(AWSConstants.DOCUMENT_META_DOCID_FIELD).getN());			
+			String isCrawledString = item.get(AWSConstants.DOCUMENT_META_ISCRAWLED_FIELD).getN();
+			boolean isCrawled = convert01toBoolean(isCrawledString);
+			String dateString = item.get(AWSConstants.DOCUMENT_META_LAST_CRAWLED_DATE_FIELD).getS();
+			Date lastCrawledDate = DatatypeConverter.parseDateTime(dateString).getTime();
+			DocumentMeta metaObject = new DocumentMeta(url, docID, lastCrawledDate, isCrawled);
+			documentMetaObjects.add(metaObject);
+		}
+		return documentMetaObjects;
+	}
+		
+	/**
+	 * Convert "0" or "1" to false or true	
+	 * @param zeroOne
+	 * @return
+	 */
+	private boolean convert01toBoolean(String zeroOne){
+		if (zeroOne.equals("0")){
+			return false;
+		} else if (zeroOne.equals("1")){
+			return true;
+		}
+		throw new RuntimeException("String returned neither 0 nor 1" + zeroOne);
+	}
 }

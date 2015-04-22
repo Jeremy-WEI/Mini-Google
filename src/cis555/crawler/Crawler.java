@@ -8,8 +8,10 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.Timer;
 import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -17,8 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
-import cis555.aws.utils.CrawledDocument;
+import cis555.aws.utils.DocumentMeta;
 import cis555.aws.utils.DynamoDao;
+import cis555.aws.utils.S3Adapter;
 import cis555.database.DBWrapper;
 import cis555.database.Dao;
 import cis555.database.PopulateDynamo;
@@ -63,9 +66,12 @@ public class Crawler {
 	
 	public static void main(String[] args) throws MalformedURLException, InterruptedException {
 		Crawler crawler = new Crawler();
+//		crawler.testS3();
 //		crawler.testDynamo();
 		crawler.setConfig();
 		crawler.initialise();
+		crawler.setUpPopulateDynamoTimerTask();
+		
 //		while(GETWorker.active){
 //			Thread.sleep(1000);
 //		}
@@ -74,17 +80,43 @@ public class Crawler {
 	
 	private void testDynamo(){
 		DynamoDao adapter = new DynamoDao();
-		CrawledDocument c1 = new CrawledDocument(1, "gnuurl1", "newcontenttype1");
-		CrawledDocument c2 = new CrawledDocument(2, "gnuurl2", "newcontenttype2");
-		List<CrawledDocument> documents = new ArrayList<CrawledDocument>();
+		DocumentMeta c1 = new DocumentMeta("hello1", 1, new Date(), true);
+		DocumentMeta c2 = new DocumentMeta("hello2", 2, new Date(), false);
+		DocumentMeta c3 = new DocumentMeta("hello3", 3, new Date(), true);
+		List<DocumentMeta> documents = new ArrayList<DocumentMeta>();
 		documents.add(c1);
 		documents.add(c2);
-		adapter.batchSaveCrawledDocuments(documents);
-		logger.info("URL for DocID 1 is: " + adapter.getURLFromDocID(1));
-		adapter.batchGetCrawledDocuments();
-	}
+		documents.add(c3);
+		
+		
+		try {
 
+			adapter.batchSaveDocumentMeta(documents);	
+			adapter.batchGetDocumentMeta();
+		} catch (Exception e){
+			e.printStackTrace();
+			System.exit(1);
+		}
+//		List<String> urls = adapter.getUrlFromDocIDs(1, 2, 3);
+//		for (String url : urls){
+//			logger.info("URL: " + url);
+//		}
+//		adapter.batchGetCrawledDocuments();
+	}
 	
+	private void testS3(){
+		S3Adapter adapter = new S3Adapter();
+		File storageDirectory = new File(CrawlerConstants.STORAGE_DIRECTORY);
+		System.out.println(storageDirectory.getAbsolutePath());
+		adapter.uploadDirectory(storageDirectory);
+	}
+	
+	
+
+	/**
+	 * Set up the entire crawler framework
+	 * @throws MalformedURLException
+	 */
 	private void initialise() throws MalformedURLException{
 		initialiseDb();
 		this.newUrlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
@@ -194,6 +226,16 @@ public class Crawler {
 			getThreadPool.add(thread);
 		}
 	}
+	
+	/**
+	 * Set up the timer task to populate DynamoDB
+	 */
+	private void setUpPopulateDynamoTimerTask(){
+		PopulateDynamo task = new PopulateDynamo(this.dao);
+		Timer timer = new Timer();
+		timer.scheduleAtFixedRate(task, 0, CrawlerConstants.WRITE_TO_DYNAMO_INTERVAL);
+	}
+
 	
 	
 	private void shutdown(){

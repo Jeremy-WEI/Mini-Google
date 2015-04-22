@@ -21,53 +21,37 @@ public class DocumentMeta {
 	@DynamoDBHashKey(attributeName=AWSConstants.DOCUMENT_META_URL_FIELD)
 	@PrimaryKey
 	private String url;
-
-	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_DOCID_FIELD)
-	private long docID;
 	
-	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_LAST_CRAWLED_DATE_FIELD)
-	private Date lastCrawledDate;
-
-	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_ISCRAWLED_FIELD)
-	private boolean isCrawled;
-	
-	public DocumentMeta(String url, long docID, Date lastCrawledDate, boolean isCrawled){
-		this.docID = docID;
-		this.url = url;
-		this.lastCrawledDate = lastCrawledDate;
-		this.isCrawled = isCrawled;
-	}
-	
-	/**
-	 * Get the URL of the document
-	 * @return
-	 */
-	public String getURL(){
+	public String getUrl(){
 		return this.url;
 	}
-
-	/**
-	 * Get the id of this document
-	 * @return
-	 */
+	
+	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_DOCID_FIELD)
+	public long docID;
+	
 	public long getDocID(){
 		return this.docID;
 	}
 	
-	/**
-	 * Return the last crawl date of the document
-	 * @return
-	 */
-	public Date getLastCrawledDate(){
-		return this.lastCrawledDate;
-	}
-		
-	/**
-	 * Indicates whether this document has been crawled or not
-	 * @return
-	 */
+	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_ISCRAWLED_FIELD)
+	private boolean isCrawled;
+	
 	public boolean isCrawled(){
-		return this.isCrawled();
+		return this.isCrawled;
+	}
+	
+	@DynamoDBAttribute(attributeName=AWSConstants.DOCUMENT_META_LAST_CRAWLED_DATE_FIELD)
+	private Date date;
+	
+	public Date getLastCrawledDate(){
+		return this.date;
+	}
+
+	public DocumentMeta(String url, long docID, Date date, boolean isCrawled) {
+		this.url = url;
+		this.docID = docID;
+		this.isCrawled = isCrawled;
+		this.date = date;
 	}
 	
 }

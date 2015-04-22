@@ -1,85 +1,42 @@
 package cis555.database;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 
+import cis555.aws.utils.CrawledDocument;
+import cis555.aws.utils.DocumentMeta;
 import cis555.aws.utils.DynamoDao;
-import cis555.utils.CrawlerConstants;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
-import com.amazonaws.services.dynamodbv2.model.PutItemResult;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
 
-public class PopulateDynamo {
+public class PopulateDynamo extends TimerTask {
 
-	private static final Logger logger = Logger.getLogger(DBWrapper.class);
-	private static final String CLASSNAME = DBWrapper.class.getName();
+	private static final Logger logger = Logger.getLogger(PopulateDynamo.class);
+	private static final String CLASSNAME = PopulateDynamo.class.getName();
 	
 	private Dao dao;
-    private AmazonDynamoDBClient dynamoDB;
     
 	
-	public PopulateDynamo(){
-		setupDatabase();
-		setupDynamo();
+	public PopulateDynamo(Dao dao){
+		this.dao = dao;
 	}
 
-	private void setupDatabase(){
-		
-//		if (null == dao){
-//			String directory = CrawlerConstants.STORAGE_DIRECTORY;
-//			DBWrapper wrapper = new DBWrapper(directory, true);
-//			dao = wrapper.getDao();
-//		}
-	}	
-	
-	public void setupDynamo(){
-	
-	}
-	
-	public void populateDynamo(){
+	@Override
+	public void run() {
 		try {
-			String tableName = "CrawledDocument";
-            // Add an item
-            Map<String, AttributeValue> item = newItem(1, "http://www.google.com", "HTML");
-            PutItemRequest putItemRequest = new PutItemRequest(tableName, item);
-            PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
-            logger.debug(CLASSNAME + ": Result: " + putItemResult);
-		} catch (AmazonServiceException ase) {
-            logger.error("Caught an AmazonServiceException, which means your request made it "
-                    + "to AWS, but was rejected with an error response for some reason.");
-            logger.error("Error Message:    " + ase.getMessage());
-            logger.error("HTTP Status Code: " + ase.getStatusCode());
-            logger.error("AWS Error Code:   " + ase.getErrorCode());
-            logger.error("Error Type:       " + ase.getErrorType());
-            logger.error("Request ID:       " + ase.getRequestId());
-        } catch (AmazonClientException ace) {
-        	logger.error("Caught an AmazonClientException, which means the client encountered "
-                    + "a serious internal problem while trying to communicate with AWS, "
-                    + "such as not being able to access the network.");
-        	logger.error("Error Message: " + ace.getMessage());
-        }
-//		List<CrawledDocument> crawledDocuments = this.dao.getAllCrawledDocuments();
+			List<CrawledDocument> crawledDocuments = this.dao.getAllCrawledDocuments();
+			List<DocumentMeta> documentMeta = this.dao.getAllDocumentMetaObjects();
+			DynamoDao dao = new DynamoDao();
+			dao.batchSaveCrawledDocuments(crawledDocuments);
+			dao.batchSaveDocumentMeta(documentMeta);
+			logger.info(CLASSNAME + ": Added " + crawledDocuments.size() + " crawled document objects and " + documentMeta.size() + " document meta objects to DynamoDB");
+			
+		} catch (DynamoDBMappingException e){
+			logger.error(e.getMessage());
+			System.exit(1);
+		}
 		
 	}
-	
-
-    private Map<String, AttributeValue> newItem(long docID, String url, String contentType) {
-        Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
-        item.put("docID", new AttributeValue().withN(Long.toString(docID)));
-        item.put("url", new AttributeValue(url));
-        item.put("contentType", new AttributeValue(contentType));
-
-        return item;
-    }
-	
-	
-	
-	
 }

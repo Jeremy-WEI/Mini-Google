@@ -13,7 +13,7 @@ public class AWSConstants {
 	public static final String DOCUMENT_META_URL_FIELD = "uRL";
 	public static final String DOCUMENT_META_DOCID_FIELD = "docID";
 	public static final String DOCUMENT_META_LAST_CRAWLED_DATE_FIELD = "lastCrawledDate";
-	public static final String DOCUMENT_META_ISCRAWLED_FIELD = "isCrawled";
+	public static final String DOCUMENT_META_ISCRAWLED_FIELD = "crawled";
 
 	// S3 buckets
 

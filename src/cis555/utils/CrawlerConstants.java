@@ -28,6 +28,8 @@ public class CrawlerConstants {
 	
 	public static final String PROPERTIES_FILE = "properties/settings.properties";
 	public static final String IP_PORT_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{2,5}";
+	
+	public static final int WRITE_TO_DYNAMO_INTERVAL = 3600; // 1 minute
 
 	
 	// DB constants

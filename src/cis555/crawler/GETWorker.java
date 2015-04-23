@@ -108,14 +108,14 @@ public class GETWorker implements Runnable {
 				return;
 			}
 			
-			logger.info(CLASSNAME + ": Crawled " + url);				
+			logger.debug(CLASSNAME + ": Crawled " + url);				
 			ContentType contentType = response.getContentType();
 			
 			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
 			this.contentForLinkExtractor.add(forLinkExtractor);
 				
 		} catch (CrawlerException e){
-			System.out.println("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );
+//			System.out.println("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );
 		} 
 	}
 	

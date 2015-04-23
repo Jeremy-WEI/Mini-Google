@@ -23,6 +23,8 @@ public class PopulateS3 {
 		
 		// Upload crawled documents
 		File storageDirectory = new File(CrawlerConstants.STORAGE_DIRECTORY);
+		logger.info(CLASSNAME + " About to upload " + storageDirectory.list().length + " crawled documents to S3");
+
 		adapter.uploadDirectory(storageDirectory, AWSConstants.DOCUMENT_BUCKET);
 		
 		logger.info(CLASSNAME + " Uploaded " + storageDirectory.list().length + " crawled documents to S3");
@@ -30,6 +32,9 @@ public class PopulateS3 {
 		// Upload links
 
 		File urlStorageDirectory = new File(CrawlerConstants.URL_STORAGE_DIRECTORY);
+		
+		logger.info(CLASSNAME + " About to upload " + storageDirectory.list().length + " crawled documents to S3");
+		
 		adapter.uploadDirectory(urlStorageDirectory, AWSConstants.DOCUMENT_BUCKET);
 
 		logger.info(CLASSNAME + " Uploaded URL file to S3");

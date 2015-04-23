@@ -41,13 +41,4 @@ public class ZipUtils {
 		out.close();
 		return out.toByteArray();
 	}
-	
-	public static void main(String[] args) throws Exception {
-		String s = "Hello";
-		String filename = "9.txt.gzip";
-		zip(s.getBytes(), filename);
-		File file = new File(filename);
-		byte[] unzipped = unzip(file);
-		System.out.println(new String(unzipped));
-	}	
 }

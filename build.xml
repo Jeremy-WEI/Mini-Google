@@ -42,7 +42,7 @@
         </javac>
     </target>
     
-    <target name="compile-transferer" description="Compiles the EC2 - S3 and Dynamo transferer">
+    <target name="compile-transferer" depends="compile-database" description="Compiles the EC2 - S3 and Dynamo transferer">
         <mkdir dir="${classes.dir}"/>
         <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
@@ -129,7 +129,7 @@
         </jar>
     </target>
 
-    <target name="transferer-jar" depends="compile-crawler" description="Makes the JAR file for the crawler">
+    <target name="transferer-jar" depends="compile-transferer" description="Makes the JAR file for the crawler">
         <delete file="transferer.jar"/>
         <jar destfile="transferer.jar" update="true">
         	<zipgroupfileset dir="${inputlib.dir}" excludes="${non-crawler-libs}"/>
@@ -157,7 +157,7 @@
     </target>
 	
     <target name="pack" description="Create Crawler Pack">
-      <zip destfile="crawler_for_ec2.zip">
+      <zip destfile="for_ec2.zip">
         <zipfileset dir="${build.dir}" includes="log/,properties/,crawler.jar, transferer.jar" excludes="log/*.log"/>
       </zip>
     </target>

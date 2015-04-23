@@ -19,6 +19,7 @@ import cis555.aws.utils.CrawledDocument;
 import cis555.crawler.Response.ContentType;
 import cis555.database.Dao;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.ZipUtils;
 
 
 /**
@@ -72,7 +73,7 @@ public class HEADWorker implements Runnable {
 				if (!siteInfoMap.containsKey(domain)){
 					// Missing Site info ... return to the new URL queue
 					
-					logger.info(CLASSNAME + ": Missing site info map for " + domain);
+					logger.warn(CLASSNAME + ": Missing site info map for " + domain);
 					this.newUrlQueue.add(url);
 					continue;
 				}
@@ -261,31 +262,15 @@ public class HEADWorker implements Runnable {
 		String fileName = this.storageDirectory + "/" + Long.toString(documentID) + ".txt";
 		File file = new File(fileName);
 		if (file.exists()){
-			StringBuilder str = new StringBuilder();
-			BufferedReader reader = null;
 			try {
-				reader = new BufferedReader(new FileReader(file));
-				String line = new String();
-				while ((line = reader.readLine()) != null){
-					str.append(line);
-				}
-				return str.toString();
+				byte[] bytes = ZipUtils.unzip(file);
+				return new String(bytes);				
 			} catch (IOException e){
-				logger.error("Error when reading from file " + fileName + ", skipping");
+				e.printStackTrace();
+				logger.error(CLASSNAME + ": Unable to open file " + fileName +  ", skipping");
 				return "";
-			} finally {
-				if (null != reader){
-					try {
-						reader.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						return "";
-					}
-				}
 			}
-			
-		} else {
+		}  else {
 			logger.error("File " + fileName + ", does not exist in storage, skipping");
 			return "";			
 		}

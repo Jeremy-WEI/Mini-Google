@@ -1,5 +1,10 @@
 package cis555.contentTransferer;
 
+import java.io.File;
+
+import cis555.aws.utils.AWSConstants;
+import cis555.aws.utils.S3Adapter;
+
 /**
  * Transfers documents to S3 and to Dynamo
  *
@@ -21,6 +26,12 @@ public class ContentTransferer {
 		PopulateS3 populateS3 = new PopulateS3();
 		populateS3.populateS3();
 	}
+	
+//	private void downloadFromS3(){
+//		S3Adapter adapter = new S3Adapter();
+//		File dir = new File("log");
+//		adapter.downloadDirectory(dir, AWSConstants.DOCUMENT_BUCKET);
+//	}
 	
 //	private void testDynamo(){
 //		DynamoDao adapter = new DynamoDao();

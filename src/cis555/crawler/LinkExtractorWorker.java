@@ -23,6 +23,7 @@ import org.jsoup.select.Elements;
 import cis555.crawler.Response.ContentType;
 import cis555.database.Dao;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.ZipUtils;
 
 public class LinkExtractorWorker implements Runnable {
 
@@ -90,7 +91,7 @@ public class LinkExtractorWorker implements Runnable {
 					addImgSrcLinks(cleansedDoc, url);
 				}					
 
-				logger.info(CLASSNAME + " stored " + url.toString() + " to file system");
+				logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
 				
 			} catch (InterruptedException | MalformedURLException e) {
 				// TODO Auto-generated catch block
@@ -196,29 +197,14 @@ public class LinkExtractorWorker implements Runnable {
 	 * @param docID
 	 */
 	private void storeCrawledContentsFile(String contents, long docID, ContentType contentType){
-		
-		
 		String fileName = generateFileName(docID, contentType);
 		File storageFile = new File(this.storageDirectory + "/" + fileName);
-		BufferedWriter writer = null;
 		try {
-			if (!storageFile.exists()){
-				storageFile.createNewFile();
-			}		
-			writer = new BufferedWriter(new FileWriter(storageFile.getAbsoluteFile()));
-			writer.write(contents);
+			ZipUtils.zip(contents.getBytes(CrawlerConstants.CHARSET), storageFile.toString());
 		} catch (IOException e){
+			e.printStackTrace();
 			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		} finally {
-			if (null != writer){
-				try {
-					writer.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
+		} 
 	}
 	
 	/**
@@ -230,11 +216,11 @@ public class LinkExtractorWorker implements Runnable {
 	private String generateFileName(long docID, ContentType contentType){
 		switch (contentType){
 		case HTML:
-			return Long.toString(docID) + ".html";
+			return Long.toString(docID) + ".html.gzip";
 		case XML:
-			return Long.toString(docID) + ".xml";
+			return Long.toString(docID) + ".xml.gzip";
 		case TEXT:
-			return Long.toString(docID) + ".txt";
+			return Long.toString(docID) + ".txt.gzip";
 		default:
 			throw new CrawlerException("Invalid content type: " + contentType.name());
 		}
@@ -246,24 +232,13 @@ public class LinkExtractorWorker implements Runnable {
 	 * @param docID
 	 */
 	private void storePDF(byte[] contents, long docID){
-		String fileName = Long.toString(docID) + ".pdf";
+		String fileName = Long.toString(docID) + ".pdf.gzip";
 		File storageFile = new File(this.storageDirectory + "/" + fileName);
-		FileOutputStream stream = null;
 		try {
-			stream = new FileOutputStream(storageFile);
-			stream.write(contents);
+			ZipUtils.zip(contents, storageFile.toString());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} finally {
-			if (null != stream){
-				try {
-					stream.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
 		}
 	}
 	

@@ -42,11 +42,22 @@ public class PopulateDynamo {
 	 * Copy files over
 	 */
 	private void copy(){
+		DynamoDao dynamoDao = new DynamoDao();
+		copyCrawledDocuments(dynamoDao);
+		copyDocumentMeta(dynamoDao);
+	}
+	
+	private void copyCrawledDocuments(DynamoDao dynamoDao){
 		List<CrawledDocument> crawledDocuments = this.dao.getAllCrawledDocuments();
+		logger.info(CLASSNAME + ": About to load " + crawledDocuments.size() + " crawled document objects");
+		dynamoDao.batchSaveCrawledDocuments(crawledDocuments);		
+		logger.info(CLASSNAME + ": Loaded " + crawledDocuments.size() + " crawled document objects to Dynamo");
+	}
+	
+	private void copyDocumentMeta(DynamoDao dynamoDao){
 		List<DocumentMeta> documentMeta = this.dao.getAllDocumentMetaObjects();
-		DynamoDao dao = new DynamoDao();
-		dao.batchSaveCrawledDocuments(crawledDocuments);
-		dao.batchSaveDocumentMeta(documentMeta);
-		logger.info(CLASSNAME + ": Added " + crawledDocuments.size() + " crawled document objects and " + documentMeta.size() + " document meta objects to DynamoDB");					
+		logger.info(CLASSNAME + ": About to load " + documentMeta.size() + " document meta objects");
+		dynamoDao.batchSaveDocumentMeta(documentMeta);
+		logger.info(CLASSNAME + ": Loaded " + documentMeta.size() + " document meta objects to Dynamo");
 	}
 }

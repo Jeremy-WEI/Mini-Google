@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 public class Indexer {
 
-    protected static final String DELIMITER = ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?=+\"";
+    protected static final String DELIMITER = ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?#=+\"";
 
     protected long docID;
     protected String URL;
@@ -54,11 +54,11 @@ public class Indexer {
     public static Indexer getInstance(InputStream is, String URL, long docID,
             String contentType) {
         try {
-            if (contentType.equals("text/html"))
+            if (contentType.equals("html"))
                 return new HTMLIndexer(is, URL, docID);
-            if (contentType.equals("text/plain"))
+            if (contentType.equals("txt"))
                 return new TXTIndexer(is, URL, docID);
-            if (contentType.equals("application/pdf"))
+            if (contentType.equals("pdf"))
                 return new PDFIndexer(is, URL, docID);
             if (contentType.endsWith("xml"))
                 return new XMLIndexer(is, URL, docID);
@@ -84,6 +84,10 @@ public class Indexer {
 
     // parse method should be implemented by extended class
     public void parse() {
+    }
+
+    public Map<String, Map<Long, DocHit>> getMap() {
+        return map;
     }
 
     public void displayResult() {

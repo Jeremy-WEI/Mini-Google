@@ -14,13 +14,13 @@ public class IndexerDriver {
         Configuration conf = new Configuration();
 
         // conf.set("key.value.separator.in.input.line", "\t");
-        Job job = Job.getInstance(conf, "JobName");
+        Job job = Job.getInstance(conf, "Indexer Job");
         job.setJarByClass(IndexerDriver.class);
         job.setMapperClass(IndexerMapper.class);
         job.setReducerClass(IndexerReducer.class);
 
         job.setInputFormatClass(WholeFileInputFormat.class);
-
+        
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);

@@ -1,4 +1,5 @@
 package cis555.indexer;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -8,9 +9,23 @@ public class DocHit {
     private long docID;
     private List<Integer> hitLst;
 
+    public DocHit(String line) {
+        String[] tokens = line.split(",");
+        docID = Long.parseLong(tokens[0]);
+        tf = Double.parseDouble(tokens[1]);
+        hitLst = new LinkedList<Integer>();
+        for (String hit : tokens[2].split(" "))
+            hitLst.add(Integer.valueOf(hit));
+    }
+
     public DocHit(long docID) {
         this.docID = docID;
         this.hitLst = new LinkedList<Integer>();
+    }
+
+    public void merge(DocHit docHit) {
+        tf = Math.max(tf, docHit.tf);
+        hitLst.addAll(docHit.hitLst);
     }
 
     public void addHit(int hit) {
@@ -25,16 +40,30 @@ public class DocHit {
         return hitLst.size();
     }
 
+    public long getDocID() {
+        return docID;
+    }
+
     public String toString() {
+        // StringBuilder sb = new StringBuilder();
+        // sb.append("TF: " + tf);
+        // sb.append(": DocID: " + docID);
+        // sb.append(",[");
+        // for (Integer hit : hitLst) {
+        // sb.append("{Type:" + Hit.getHitType(hit) + ", Pos:"
+        // + Hit.getHitPos(hit) + ", Cap:" + Hit.getHitCap(hit) + "}");
+        // }
+        // sb.append("]");
+        // return sb.toString();
         StringBuilder sb = new StringBuilder();
-        sb.append("TF: " + tf);
-        sb.append(": DocID: " + docID);
-        sb.append(",[");
+        sb.append(docID);
+        sb.append(',');
+        sb.append(tf);
+        sb.append(',');
         for (Integer hit : hitLst) {
-            sb.append("{Type:" + Hit.getHitType(hit) + ", Pos:"
-                    + Hit.getHitPos(hit) + ", Cap:" + Hit.getHitCap(hit) + "}");
+            sb.append(hit);
+            sb.append(' ');
         }
-        sb.append("]");
         return sb.toString();
     }
 }

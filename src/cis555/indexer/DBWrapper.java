@@ -123,7 +123,9 @@ public class DBWrapper {
     public static void main(String... args) {
         DBWrapper db = new DBWrapper("test");
         db.start();
-        System.out.println(db.getDocId("https://www.yahoo.com/"));
-        System.out.println(db.getDocId("https://www.yahoo.com123/"));
+        // System.out.println(db.getDocId("https://www.yahoo.com/"));
+        // System.out.println(db.getDocId("https://www.yahoo.com123/"));
+        System.out.println(db.getUrl(356));
+        System.out.println(Hit.getHitType(-1610612718));
     }
 }

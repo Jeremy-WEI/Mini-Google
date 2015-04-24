@@ -17,9 +17,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
-import cis555.database.DBWrapper;
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.DBWrapper;
+
+import com.sleepycat.persist.EntityStore;
 
 public class Crawler {
 	
@@ -29,7 +31,7 @@ public class Crawler {
 	
 	/* Database related */
 	private String dbEnvDir;
-	private Dao dao;
+	private CrawlerDao dao;
 	private int crawlerID;
 
 	/* Crawler settings related */
@@ -61,11 +63,8 @@ public class Crawler {
 	
 	public static void main(String[] args) throws MalformedURLException, InterruptedException {
 		Crawler crawler = new Crawler();
-//		crawler.testS3();
-//		crawler.testDynamo();
 		crawler.setConfig();
 		crawler.initialise();
-//		crawler.setUpPopulateDynamoTimerTask();
 		
 //		while(GETWorker.active){
 //			Thread.sleep(1000);
@@ -108,8 +107,8 @@ public class Crawler {
 	 * Initialise the database
 	 */
 	private void initialiseDb(){
-		DBWrapper wrapper = new DBWrapper(this.dbEnvDir, false);
-		this.dao = wrapper.getDao();
+		EntityStore store = DBWrapper.setupDatabase(this.dbEnvDir, false);
+		this.dao = new CrawlerDao(store);
 	}
 	
 	/**

@@ -15,16 +15,16 @@ import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
 
-public class Dao {
+public class CrawlerDao {
 
-	private static final Logger logger = Logger.getLogger(Dao.class);
-	private static final String CLASSNAME = Dao.class.getName();
+	private static final Logger logger = Logger.getLogger(CrawlerDao.class);
+	private static final String CLASSNAME = CrawlerDao.class.getName();
 
 	private PrimaryIndex<Long, CrawledDocument> crawledDocumentDao;
 	private PrimaryIndex<String, DocumentMeta> documentMetaDao;
 	private PrimaryIndex<String, CounterObject> counterDao;
 	
-	public Dao(EntityStore store){
+	public CrawlerDao(EntityStore store){
 		crawledDocumentDao = store.getPrimaryIndex(Long.class, CrawledDocument.class);
 		documentMetaDao = store.getPrimaryIndex(String.class, DocumentMeta.class);
 		counterDao = store.getPrimaryIndex(String.class, CounterObject.class);

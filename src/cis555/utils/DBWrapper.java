@@ -1,11 +1,9 @@
-package cis555.database;
-
+package cis555.utils;
 
 import java.io.File;
 
 import org.apache.log4j.Logger;
 
-import cis555.utils.CrawlerConstants;
 
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
@@ -13,21 +11,23 @@ import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.StoreConfig;
 
 public class DBWrapper {
-	
+
 	private static final Logger logger = Logger.getLogger(DBWrapper.class);
 	private static final String CLASSNAME = DBWrapper.class.getName();
-	
+
 	/* Environment fields */
-	private static String envDirectory = null;
+	
+	private static boolean isRunning = false;
 	private static Environment myEnv;
 	private static EntityStore store;
-	
-	public static boolean isRunning = false;
-	
-	private Dao dao;
-	
-	public DBWrapper(String directory, boolean readOnly){
-		
+
+	/**
+	 * Generates a database store
+	 * @param directory
+	 * @param readOnly
+	 * @return
+	 */
+	public static EntityStore setupDatabase(String directory, boolean readOnly){
 		if (null == directory || directory.isEmpty()){
 			String error = "Directory name is empty or null";
 			logger.error(CLASSNAME + ": " + error);
@@ -36,34 +36,21 @@ public class DBWrapper {
 		
 		if (!isRunning){
 			
-			envDirectory = directory;
+			logger.info(CLASSNAME + ": Opening database in " + directory);
 			
-			logger.info(CLASSNAME + ": Opening database in " + envDirectory);
-			
-			setupEnvironment(readOnly);
+			setupEnvironment(directory, readOnly);
 			setupStore(readOnly);
-			isRunning = true;
-			
+			isRunning = true;	
 		}
-
-	}
-	
-	/**
-	 * Shuts down the database
-	 */
-	public static void shutdown(){
-		if (isRunning){
-			store.close();
-			myEnv.close();
-			isRunning = false;
-		}
+		
+		return store;
 	}
 	
 	
 	/**
 	 * Set up the database environment
 	 */
-	private void setupEnvironment(boolean readOnly){
+	private static void setupEnvironment(String directory, boolean readOnly){
 		EnvironmentConfig envConfig = new EnvironmentConfig();
 
 		if (readOnly){
@@ -72,8 +59,8 @@ public class DBWrapper {
 		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, "5");
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);
-		createDirectory();			
-		myEnv = new Environment(new File(envDirectory), envConfig);
+		createDirectory(directory);			
+		myEnv = new Environment(new File(directory), envConfig);
 	}
 	
 	
@@ -81,7 +68,7 @@ public class DBWrapper {
 	/**
 	 * Creates a directory to store the database and environment settings
 	 */
-	private void createDirectory(){
+	private static void createDirectory(String envDirectory){
 		File directory = new File(envDirectory);
 		if (!directory.exists()){
 			try {
@@ -100,7 +87,7 @@ public class DBWrapper {
 	/**
 	 * Set up the store, and initiate the DAO
 	 */
-	private void setupStore(boolean readOnly){
+	private static void setupStore(boolean readOnly){
 		StoreConfig storeConfig = new StoreConfig();
 		if (readOnly){
 			storeConfig.setReadOnly(readOnly);			
@@ -109,15 +96,27 @@ public class DBWrapper {
 			storeConfig.setTransactional(true);			
 		}
 		store = new EntityStore(myEnv, CrawlerConstants.DB_NAME, storeConfig);
-		dao = new Dao(store);
 	}
-		
+	
 	/**
-	 * Returns the Database Access Object, which allows access to the entities of the database
-	 * @return
+	 * Synchronises the database
 	 */
-	public Dao getDao(){
-		return this.dao;
+    public static void sync() {
+        if (store != null)
+            store.sync();
+        if (myEnv != null)
+            myEnv.sync();
+    }
+	
+	/**
+	 * Shuts down the database
+	 */
+	public static void shutdown(){
+		if (isRunning){
+			store.close();
+			myEnv.close();
+			isRunning = false;
+		}
 	}
 	
 }

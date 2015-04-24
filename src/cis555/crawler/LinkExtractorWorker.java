@@ -21,7 +21,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import cis555.crawler.Response.ContentType;
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.ZipUtils;
 
@@ -33,14 +33,14 @@ public class LinkExtractorWorker implements Runnable {
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private int id;
-	private Dao dao;
+	private CrawlerDao dao;
 	private DocIDGenerator counterGenerator;
 	private String storageDirectory;
 	private String urlStorageDirectory;
 	public static boolean active;
 	
 	public LinkExtractorWorker(BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
-			BlockingQueue<URL> preRedistributionNewURLQueue, int id, Dao dao, DocIDGenerator counterGenerator,
+			BlockingQueue<URL> preRedistributionNewURLQueue, int id, CrawlerDao dao, DocIDGenerator counterGenerator,
 			String storageDirectory, String urlStorageDirectory) {
 		this.contentForLinkExtractor = contentForLinkExtractor;
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
@@ -180,12 +180,12 @@ public class LinkExtractorWorker implements Runnable {
 	 * @return
 	 */
 	private long getDocID(URL url){
-		// Document hasn't previously been retrieved
+
 		if (this.dao.doesDocumentMetaExist(url.toString())){
 			// Previously crawled document
 			return this.dao.getDocIDFromURL(url.toString());
 		} else {
-			// New document
+			// New document, so generate a new ID
 			return counterGenerator.getDocIDAndIncrement();
 		}
 

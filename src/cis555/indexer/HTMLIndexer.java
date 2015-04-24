@@ -7,11 +7,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import cis555.utils.UrlDocIDMapper;
+
 public class HTMLIndexer extends Indexer {
 
     private Document document;
 
-    public HTMLIndexer(InputStream is, String URL, long docID, DBWrapper db)
+    public HTMLIndexer(InputStream is, String URL, long docID, UrlDocIDMapper db)
             throws Exception {
         super(is, URL, docID, db);
         this.document = Jsoup.parse(this.is, Charset.defaultCharset().name(),

@@ -1,13 +1,13 @@
 package cis555.crawler;
 
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 
 public class DocIDGenerator {
 	
 	private long docID;
-	private Dao dao;
+	private CrawlerDao dao;
 	
-	public DocIDGenerator(int crawlerNumber, Dao dao){
+	public DocIDGenerator(int crawlerNumber, CrawlerDao dao){
 		this.dao = dao;
 		long lastSavedDocID = this.dao.getLatestCounterValue();
 		if (lastSavedDocID == -1){

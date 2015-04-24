@@ -2,21 +2,22 @@ package cis555.database.contentViewer;
 
 import javax.servlet.http.HttpServlet;
 
-import cis555.database.DBWrapper;
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.DBWrapper;
+
+import com.sleepycat.persist.EntityStore;
 
 @SuppressWarnings("serial")
 public abstract class AbstractServlet extends HttpServlet{
 	
-	protected static Dao dao;
+	protected static CrawlerDao dao;
 	
 	protected void setupDatabase(){
 		
 		if (null == dao){
-			String directory = CrawlerConstants.SERVLET_DB_DIRECTORY;
-			DBWrapper wrapper = new DBWrapper(directory, true);
-			dao = wrapper.getDao();
+			EntityStore store = DBWrapper.setupDatabase(CrawlerConstants.SERVLET_DB_DIRECTORY, true);
+			dao = new CrawlerDao(store);
 		}
 	}	
 

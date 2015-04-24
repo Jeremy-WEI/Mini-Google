@@ -1,6 +1,6 @@
 package com.primacy.hadoop;
 
-import indexer.DocHit;
+import cis555.indexer.DocHit;
 
 import java.io.IOException;
 import java.util.HashMap;

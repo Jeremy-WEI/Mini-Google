@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 
 import cis555.aws.utils.CrawledDocument;
 import cis555.crawler.Response.ContentType;
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.ZipUtils;
 
@@ -38,12 +38,12 @@ public class HEADWorker implements Runnable {
 	private BlockingQueue<URL> newUrlQueue; // Only used for re-directs
 	private int id;
 	private int maxDocSize;
-	private Dao dao;
+	private CrawlerDao dao;
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
 	private Vector<URL> sitesCrawledThisSession;
 	private String storageDirectory;
 	
-	public HEADWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> headCrawlQueue, Dao dao, BlockingQueue<URL> getCrawlQueue, 
+	public HEADWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> headCrawlQueue, CrawlerDao dao, BlockingQueue<URL> getCrawlQueue, 
 			int id, int maxDocSize, BlockingQueue<URL> newUrlQueue, BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
 			Vector<URL> sitesCrawledThisSession, String storageDirectory){
 		this.siteInfoMap = siteInfoMap;

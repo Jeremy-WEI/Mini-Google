@@ -8,6 +8,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import cis555.utils.UrlDocIDMapper;
+
 public class Indexer {
 
     protected static final String DELIMITER = ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?#=+\"";
@@ -27,7 +29,7 @@ public class Indexer {
     protected String content;
     protected InputStream is;
     protected Stemmer stemmer;
-    protected DBWrapper db;
+    protected UrlDocIDMapper db;
     protected Map<String, Map<Long, DocHit>> map;
 
     // @formatter:off
@@ -81,7 +83,7 @@ public class Indexer {
         }
     }
 
-    public Indexer(InputStream is, String URL, long docID, DBWrapper db)
+    public Indexer(InputStream is, String URL, long docID, UrlDocIDMapper db)
             throws Exception {
         this.URL = URL;
         this.docID = docID;
@@ -92,7 +94,7 @@ public class Indexer {
     }
 
     public static Indexer getInstance(InputStream is, String URL, long docID,
-            String contentType, DBWrapper db) {
+            String contentType, UrlDocIDMapper db) {
         try {
             if (contentType.equals("html"))
                 return new HTMLIndexer(is, URL, docID, db);

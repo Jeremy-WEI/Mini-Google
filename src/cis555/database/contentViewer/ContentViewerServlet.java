@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 import cis555.aws.utils.CrawledDocument;
-import cis555.database.DBWrapper;
+import cis555.utils.DBWrapper;
 
 @SuppressWarnings("serial")
 public class ContentViewerServlet extends AbstractServlet {

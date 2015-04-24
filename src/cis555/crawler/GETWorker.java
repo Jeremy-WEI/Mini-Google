@@ -14,7 +14,7 @@ import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 
 import cis555.crawler.Response.ContentType;
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 
 public class GETWorker implements Runnable {
 	

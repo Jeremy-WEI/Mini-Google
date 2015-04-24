@@ -7,18 +7,18 @@ import org.apache.log4j.Logger;
 import cis555.aws.utils.CrawledDocument;
 import cis555.aws.utils.DocumentMeta;
 import cis555.aws.utils.DynamoDao;
-import cis555.database.DBWrapper;
-import cis555.database.Dao;
+import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.DBWrapper;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
+import com.sleepycat.persist.EntityStore;
 
 public class PopulateDynamo {
 
 	private static final Logger logger = Logger.getLogger(PopulateDynamo.class);
 	private static final String CLASSNAME = PopulateDynamo.class.getName();
 	
-	private Dao dao;
+	private CrawlerDao dao;
 	
 	public PopulateDynamo(){}
 	
@@ -34,8 +34,8 @@ public class PopulateDynamo {
 	 * Initialise the database
 	 */
 	private void initialiseDb(){
-		DBWrapper wrapper = new DBWrapper(CrawlerConstants.DB_DIRECTORY, true);
-		this.dao = wrapper.getDao();
+		EntityStore store = DBWrapper.setupDatabase(CrawlerConstants.DB_DIRECTORY, true);
+		this.dao = new CrawlerDao(store);
 	}
 
 	/**

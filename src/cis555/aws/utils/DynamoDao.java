@@ -42,11 +42,9 @@ public class DynamoDao {
 	}
 	
 	private void connect(){
-		this.client = new AmazonDynamoDBClient(new InstanceProfileCredentialsProvider());
-		Region usEast1 = Region.getRegion(Regions.US_EAST_1);
-		this.client.setRegion(usEast1);
-		mapper = new DynamoDBMapper(this.client);
-		dynamoDB = new DynamoDB(this.client);
+		this.client = AWSClientAdapters.getDynamoClient();
+		mapper = AWSClientAdapters.getDynamoDBMapper();
+		dynamoDB = AWSClientAdapters.getDynamoDB();
 	}
 	
 	// For more on batch writing: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/JavaQueryScanORMBatchWriteExample.html
@@ -69,22 +67,29 @@ public class DynamoDao {
 	 * @return
 	 */
 	public List<CrawledDocument> batchGetCrawledDocuments(){
-		ScanRequest scanRequest = new ScanRequest().withTableName(AWSConstants.CRAWLED_DOCUMENT_TABLE);
-		ScanResult result = this.client.scan(scanRequest);
+		ScanResult result = null;
 		List<CrawledDocument> crawledDocuments = new ArrayList<CrawledDocument>();
+		do {
+			ScanRequest scanRequest = new ScanRequest().withTableName(AWSConstants.CRAWLED_DOCUMENT_TABLE);
+            if (result != null) {
+                scanRequest.setExclusiveStartKey(result.getLastEvaluatedKey());
+            }
+            result = this.client.scan(scanRequest);
+    		for (Map<String, AttributeValue> item : result.getItems()){
+    			long docID = Long.parseLong(item.get(AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD).getN());
+    			String url = item.get(AWSConstants.CRAWLED_DOCUMENT_URL_FIELD).getS();
+    			String contentType = item.get(AWSConstants.CRAWLED_DOCUMENT_CONTENT_TYPE_FIELD).getS();
+    			CrawledDocument document = new CrawledDocument(docID, url, contentType);
+    			crawledDocuments.add(document);
+    		}
+		} while (result.getLastEvaluatedKey() != null);
 		
-		for (Map<String, AttributeValue> item : result.getItems()){
-			long docID = Long.parseLong(item.get(AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD).getN());
-			String url = item.get(AWSConstants.CRAWLED_DOCUMENT_URL_FIELD).getS();
-			String contentType = item.get(AWSConstants.CRAWLED_DOCUMENT_CONTENT_TYPE_FIELD).getS();
-			CrawledDocument document = new CrawledDocument(docID, url, contentType);
-			crawledDocuments.add(document);
-		}
 		return crawledDocuments;
 	}
 	
 	/**
 	 * Get the url associated with a docID. Returns null if item does not exist in the database, or if an exception is thrown
+	 * If you are looking get a significant number of urls, consider using cis555.utils.UrlDocIDMapper.java
 	 * @param docID
 	 * @return
 	 */
@@ -200,21 +205,31 @@ public class DynamoDao {
 	 * @return
 	 */
 	public List<DocumentMeta> batchGetDocumentMeta(){
-		ScanRequest scanRequest = new ScanRequest().withTableName(AWSConstants.DOCUMENT_META_TABLE);
-		ScanResult result = this.client.scan(scanRequest);
-		List<DocumentMeta> documentMetaObjects = new ArrayList<DocumentMeta>();
 		
-		for (Map<String, AttributeValue> item : result.getItems()){
+		ScanResult result = null;
+		List<DocumentMeta> documentMetaObjects = new ArrayList<DocumentMeta>();
+				
+		do {
+			ScanRequest scanRequest = new ScanRequest().withTableName(AWSConstants.DOCUMENT_META_TABLE);
+			if (null != result){
+                scanRequest.setExclusiveStartKey(result.getLastEvaluatedKey());
+			}
+			result = this.client.scan(scanRequest);
 			
-			String url = item.get(AWSConstants.DOCUMENT_META_URL_FIELD).getS();
-			long docID = Long.parseLong(item.get(AWSConstants.DOCUMENT_META_DOCID_FIELD).getN());			
-			String isCrawledString = item.get(AWSConstants.DOCUMENT_META_ISCRAWLED_FIELD).getN();
-			boolean isCrawled = convert01toBoolean(isCrawledString);
-			String dateString = item.get(AWSConstants.DOCUMENT_META_LAST_CRAWLED_DATE_FIELD).getS();
-			Date lastCrawledDate = DatatypeConverter.parseDateTime(dateString).getTime();
-			DocumentMeta metaObject = new DocumentMeta(url, docID, lastCrawledDate, isCrawled);
-			documentMetaObjects.add(metaObject);
-		}
+			for (Map<String, AttributeValue> item : result.getItems()){
+				
+				String url = item.get(AWSConstants.DOCUMENT_META_URL_FIELD).getS();
+				long docID = Long.parseLong(item.get(AWSConstants.DOCUMENT_META_DOCID_FIELD).getN());			
+				String isCrawledString = item.get(AWSConstants.DOCUMENT_META_ISCRAWLED_FIELD).getN();
+				boolean isCrawled = convert01toBoolean(isCrawledString);
+				String dateString = item.get(AWSConstants.DOCUMENT_META_LAST_CRAWLED_DATE_FIELD).getS();
+				Date lastCrawledDate = DatatypeConverter.parseDateTime(dateString).getTime();
+				DocumentMeta metaObject = new DocumentMeta(url, docID, lastCrawledDate, isCrawled);
+				documentMetaObjects.add(metaObject);
+				
+			}
+		} while (result.getLastEvaluatedKey() != null);
+
 		return documentMetaObjects;
 	}
 		

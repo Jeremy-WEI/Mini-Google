@@ -1,4 +1,4 @@
-package cis555.database;
+package cis555.utils;
 
 public class DBException extends RuntimeException {
 	

@@ -13,6 +13,8 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
+import cis555.utils.ZipUtils;
+
 public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
 
     private FileSplit split;
@@ -45,7 +47,8 @@ public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
         try {
             in = fs.open(split.getPath());
             IOUtils.readFully(in, result, 0, fileLength);
-            currValue.set(result, 0, fileLength);
+            byte[] content = ZipUtils.unzip(result);
+            currValue.set(content, 0, content.length);
 
         } finally {
             IOUtils.closeStream(in);

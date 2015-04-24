@@ -1,6 +1,5 @@
 package cis555.indexer;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,18 +10,19 @@ public class TXTIndexer extends Indexer {
 
     private StringTokenizer tokenizer;
 
-    public TXTIndexer(File file, String URL, long docID) throws Exception {
-        super(file, URL, docID);
-        StringBuilder sb = new StringBuilder();
-        int ch;
-        while ((ch = is.read()) != -1) {
-            sb.append((char) ch);
-        }
-        tokenizer = new StringTokenizer(sb.toString(), DELIMITER);
-    }
+    // public TXTIndexer(File file, String URL, long docID) throws Exception {
+    // super(file, URL, docID);
+    // StringBuilder sb = new StringBuilder();
+    // int ch;
+    // while ((ch = is.read()) != -1) {
+    // sb.append((char) ch);
+    // }
+    // tokenizer = new StringTokenizer(sb.toString(), DELIMITER);
+    // }
 
-    public TXTIndexer(InputStream is, String URL, long docID) throws Exception {
-        super(is, URL, docID);
+    public TXTIndexer(InputStream is, String URL, long docID, DBWrapper db)
+            throws Exception {
+        super(is, URL, docID, db);
         StringBuilder sb = new StringBuilder();
         int ch;
         while ((ch = this.is.read()) != -1) {
@@ -73,12 +73,6 @@ public class TXTIndexer extends Indexer {
             index++;
         }
         calTFValue();
-    }
-
-    public static void main(String... args) throws Exception {
-        Indexer indexer = new TXTIndexer(new File("test.txt"), " ", 0);
-        indexer.parse();
-        indexer.displayResult();
     }
 
 }

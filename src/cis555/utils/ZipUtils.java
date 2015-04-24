@@ -1,5 +1,6 @@
 package cis555.utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,36 +10,58 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class ZipUtils {
-	
-	/**
-	 * Zips a file. The filename should end in gzip
-	 * @param contents
-	 * @param fileName
-	 * @throws IOException
-	 */
-	public static void zip(byte[] contents, String fileName) throws IOException {
-		FileOutputStream fos = new FileOutputStream(fileName);
-		GZIPOutputStream gz = new GZIPOutputStream(fos);
-		gz.write(contents);
-		gz.close();
-	}
-	
-	/**
-	 * Unzips a file. Assumes file is a valid gzip file
-	 * @param file
-	 * @return
-	 * @throws IOException
-	 */
-	public static byte[] unzip(File file) throws IOException {
-		GZIPInputStream gs = new GZIPInputStream(new FileInputStream(file));
-		byte[] buffer = new byte[1024];
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		int len;
-		while ((len = gs.read(buffer)) > 0){
-			out.write(buffer, 0, len);
-		}
-		gs.close();
-		out.close();
-		return out.toByteArray();
-	}
+
+    /**
+     * Zips a file. The filename should end in gzip
+     * 
+     * @param contents
+     * @param fileName
+     * @throws IOException
+     */
+    public static void zip(byte[] contents, String fileName) throws IOException {
+        FileOutputStream fos = new FileOutputStream(fileName);
+        GZIPOutputStream gz = new GZIPOutputStream(fos);
+        gz.write(contents);
+        gz.close();
+    }
+
+    /**
+     * Unzips a file. Assumes file is a valid gzip file
+     * 
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static byte[] unzip(File file) throws IOException {
+        GZIPInputStream gs = new GZIPInputStream(new FileInputStream(file));
+        byte[] buffer = new byte[1024];
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int len;
+        while ((len = gs.read(buffer)) > 0) {
+            out.write(buffer, 0, len);
+        }
+        gs.close();
+        out.close();
+        return out.toByteArray();
+    }
+
+    /**
+     * Unzips a byte array
+     * 
+     * @param bytes
+     * @return
+     * @throws IOException
+     */
+    public static byte[] unzip(byte[] bytes) throws IOException {
+        GZIPInputStream gs = new GZIPInputStream(new ByteArrayInputStream(bytes));
+        byte[] buffer = new byte[1024];
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int len;
+        while ((len = gs.read(buffer)) > 0) {
+            out.write(buffer, 0, len);
+        }
+        gs.close();
+        out.close();
+        return out.toByteArray();
+    }
 }

@@ -17,15 +17,6 @@ import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
-/*
- * Database Wrapper class;
- * Usage:
- *  DBWrapper db = new DBWrapper("directory");
- *  db.start();
- *  ......
- *  db.sync();
- *  db.shutdown();
- */
 public class DBWrapper {
 
     private static final String STORE_NAME = "CIS555";
@@ -33,7 +24,8 @@ public class DBWrapper {
 
     private static Environment myEnv;
     private static EntityStore store;
-    private PrimaryIndex<String, UrlDocIdInfo> index;
+    private PrimaryIndex<String, UrlDocIdInfo> urlIndex;
+    private PrimaryIndex<Long, DocIdUrlInfo> docIdIndex;
 
     public DBWrapper(String envDirectory) {
         this.envDirectory = envDirectory;
@@ -52,15 +44,31 @@ public class DBWrapper {
         dynamoDB = new AmazonDynamoDBClient(new BasicAWSCredentials(
                 ACCESS_TOKEN, SECRET_TOKEN));
         dynamoDB.setRegion(Region.getRegion(Regions.US_EAST_1));
-        ScanRequest scanRequest = new ScanRequest()
-                .withTableName("CrawledDocument");
-        ScanResult result = dynamoDB.scan(scanRequest);
-        System.out.println(result.getScannedCount());
-        for (Map<String, AttributeValue> item : result.getItems()) {
-            saveUrlDocIdInfo(item.get("uRL").getS(),
-                    Long.parseLong(item.get("docID").getN()));
-            System.out.println(item.get("uRL").getS());
-        }
+        ScanResult result = null;
+        // Set<Long> set = new HashSet<>();
+        // long maxDocID = -1;
+        do {
+            ScanRequest scanRequest = new ScanRequest()
+                    .withTableName("DocumentMeta");
+            if (result != null) {
+                scanRequest.setExclusiveStartKey(result.getLastEvaluatedKey());
+            }
+            result = dynamoDB.scan(scanRequest);
+            // System.out.println(result.getScannedCount());
+            for (Map<String, AttributeValue> item : result.getItems()) {
+                saveInfo(item.get("uRL").getS(),
+                        Long.parseLong(item.get("docID").getN()));
+                // System.out.println(item.get("uRL").getS());
+                // maxDocID = Math.max(maxDocID,
+                // Long.parseLong(item.get("docID").getN()));
+                // set.add(Long.parseLong(item.get("docID").getN()));
+            }
+        } while (result.getLastEvaluatedKey() != null);
+        // for (long i = 0; i < 28400; i++) {
+        // if (!set.contains(i))
+        // System.out.println(i);
+        // }
+        // System.out.println(maxDocID);
         shutdown();
     }
 
@@ -72,7 +80,8 @@ public class DBWrapper {
             storeConfig.setAllowCreate(true);
             myEnv = new Environment(new File(envDirectory), envConfig);
             store = new EntityStore(myEnv, STORE_NAME, storeConfig);
-            index = store.getPrimaryIndex(String.class, UrlDocIdInfo.class);
+            urlIndex = store.getPrimaryIndex(String.class, UrlDocIdInfo.class);
+            docIdIndex = store.getPrimaryIndex(Long.class, DocIdUrlInfo.class);
         } catch (DatabaseException dbe) {
             dbe.printStackTrace();
         }
@@ -92,15 +101,23 @@ public class DBWrapper {
             myEnv.sync();
     }
 
-    public void saveUrlDocIdInfo(String url, long docId) {
-        index.put(new UrlDocIdInfo(url, docId));
+    public void saveInfo(String url, long docId) {
+        urlIndex.put(new UrlDocIdInfo(url, docId));
+        docIdIndex.put(new DocIdUrlInfo(url, docId));
     }
 
     public long getDocId(String url) {
-        UrlDocIdInfo item = index.get(url);
+        UrlDocIdInfo item = urlIndex.get(url);
         if (item == null)
             return -1;
         return item.getDocId();
+    }
+
+    public String getUrl(long docId) {
+        DocIdUrlInfo item = docIdIndex.get(docId);
+        if (item == null)
+            return null;
+        return item.getURL();
     }
 
     public static void main(String... args) {

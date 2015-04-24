@@ -1,6 +1,5 @@
 package cis555.indexer;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -28,22 +27,23 @@ public class HTMLIndexer extends Indexer {
 	}
 	// @formatter:on
 
-    public HTMLIndexer(File file, String URL, long docID) throws Exception {
-        super(file, URL, docID);
-        this.document = Jsoup.parse(is, Charset.defaultCharset().name(), URL);
-    }
+//    public HTMLIndexer(File file, String URL, long docID) throws Exception {
+//        super(file, URL, docID);
+//        this.document = Jsoup.parse(is, Charset.defaultCharset().name(), URL);
+//    }
 
-    public HTMLIndexer(InputStream is, String URL, long docID) throws Exception {
-        super(is, URL, docID);
+    public HTMLIndexer(InputStream is, String URL, long docID, DBWrapper db)
+            throws Exception {
+        super(is, URL, docID, db);
         this.document = Jsoup.parse(this.is, Charset.defaultCharset().name(),
                 URL);
     }
 
     // For testing only
-    public HTMLIndexer(String URL, long docID) throws Exception {
-        super(new File("test.txt"), URL, docID);
-        this.document = Jsoup.connect(URL).get();
-    }
+    // public HTMLIndexer(String URL, long docID) throws Exception {
+    // super(new File("test.txt"), URL, docID);
+    // this.document = Jsoup.connect(URL).get();
+    //    }
 
     private void parseElement(long docID, String tagName, String text) {
         text = text.trim();
@@ -133,10 +133,10 @@ public class HTMLIndexer extends Indexer {
         // System.out.println();
         // HTMLIndexer indexer = new HTMLIndexer(
         // "https://en.wikipedia.org/wiki/Main_Page", 0);
-        Indexer indexer = new HTMLIndexer(new File("wiki.html"),
-                "https://en.wikipedia.org/wiki/Main_Page", 0);
-        indexer.parse();
-        indexer.displayResult();
+        // Indexer indexer = new HTMLIndexer(new File("wiki.html"),
+        // "https://en.wikipedia.org/wiki/Main_Page", 0);
+        // indexer.parse();
+        // indexer.displayResult();
     }
 
 }

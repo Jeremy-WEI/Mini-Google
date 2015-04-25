@@ -35,12 +35,12 @@ public class UrlDocIDMapper {
         File directory = new File(envDirectory);
         if (!directory.exists()) {
             directory.mkdir();
-            start();
             buildDatabase();
         }
     }
 
     private void buildDatabase() {
+        start();
         AmazonDynamoDBClient dynamoDB = AWSClientAdapters.getDynamoClient();
         ScanResult result = null;
         // Set<Long> set = new HashSet<>();
@@ -54,8 +54,10 @@ public class UrlDocIDMapper {
             result = dynamoDB.scan(scanRequest);
             // System.out.println(result.getScannedCount());
             for (Map<String, AttributeValue> item : result.getItems()) {
-                saveInfo(item.get(AWSConstants.DOCUMENT_META_URL_FIELD).getS(),
-                        Long.parseLong(item.get(AWSConstants.DOCUMENT_META_DOCID_FIELD).getN()));
+                saveInfo(
+                        item.get(AWSConstants.DOCUMENT_META_URL_FIELD).getS(),
+                        Long.parseLong(item.get(
+                                AWSConstants.DOCUMENT_META_DOCID_FIELD).getN()));
                 // System.out.println(item.get("uRL").getS());
                 // maxDocID = Math.max(maxDocID,
                 // Long.parseLong(item.get("docID").getN()));
@@ -81,11 +83,11 @@ public class UrlDocIDMapper {
     }
 
     public void shutdown() {
-    	DBWrapper.shutdown();
+        DBWrapper.shutdown();
     }
 
     public void sync() {
-    	DBWrapper.sync();
+        DBWrapper.sync();
     }
 
     private void saveInfo(String url, long docId) {
@@ -93,9 +95,9 @@ public class UrlDocIDMapper {
         docIdIndex.put(new DocIdUrlInfo(url, docId));
     }
 
-    
     /**
      * Returns the docID for the corresponding URL
+     * 
      * @param url
      * @return
      */
@@ -108,6 +110,7 @@ public class UrlDocIDMapper {
 
     /**
      * Returns the url for a particular docID
+     * 
      * @param docId
      * @return
      */
@@ -119,13 +122,13 @@ public class UrlDocIDMapper {
     }
 
     // FOR TESTING PURPOSES ONLY
-//    public static void main(String... args) {
-//        UrlDocIDMapper db = new UrlDocIDMapper("test");
-//        db.start();
-//        // System.out.println(db.getDocId("https://www.yahoo.com/"));
-//        // System.out.println(db.getDocId("https://www.yahoo.com123/"));
-//        System.out.println(db.getUrl(356));
-//        System.out.println(Hit.getHitType(-1610612718));
-//    }
-    
+    // public static void main(String... args) {
+    // UrlDocIDMapper db = new UrlDocIDMapper("test");
+    // db.start();
+    // // System.out.println(db.getDocId("https://www.yahoo.com/"));
+    // // System.out.println(db.getDocId("https://www.yahoo.com123/"));
+    // System.out.println(db.getUrl(356));
+    // System.out.println(Hit.getHitType(-1610612718));
+    // }
+
 }

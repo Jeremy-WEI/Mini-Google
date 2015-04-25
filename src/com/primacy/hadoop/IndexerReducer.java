@@ -1,7 +1,5 @@
 package com.primacy.hadoop;
 
-import indexer.DocHit;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,6 +8,8 @@ import java.util.Map.Entry;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
+
+import cis555.indexer.DocHit;
 
 // TODO: need to write idf value to somewhere --> DynamoDB?
 public class IndexerReducer extends Reducer<Text, Text, Text, Text> {

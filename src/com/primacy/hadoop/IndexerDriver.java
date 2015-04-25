@@ -20,7 +20,7 @@ public class IndexerDriver {
         job.setReducerClass(IndexerReducer.class);
 
         job.setInputFormatClass(WholeFileInputFormat.class);
-        
+
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);

@@ -35,7 +35,7 @@ public class PopulateS3 {
 		
 		logger.info(CLASSNAME + " About to upload " + storageDirectory.list().length + " crawled documents to S3");
 		
-		adapter.uploadDirectory(urlStorageDirectory, AWSConstants.DOCUMENT_BUCKET);
+		adapter.uploadDirectory(urlStorageDirectory, AWSConstants.URL_BUCKET);
 
 		logger.info(CLASSNAME + " Uploaded URL file to S3");
 		

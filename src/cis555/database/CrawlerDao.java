@@ -173,6 +173,9 @@ public class CrawlerDao {
 	 * @return
 	 */
 	public boolean hasUrlBeenCrawled(String url){
+		if (!doesDocumentMetaExist(url)){
+			return false;
+		}
 		long docID = getDocumentMetaData(url).getDocID();
 		return hasDocIDBennCrawled(docID);
 	}

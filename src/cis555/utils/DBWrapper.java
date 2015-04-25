@@ -56,7 +56,7 @@ public class DBWrapper {
 		if (readOnly){
 			envConfig = envConfig.setReadOnly(readOnly);
 		} 
-		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, "5");
+		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, CrawlerConstants.LOCK_N_LOCK_TABLES);
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);
 		createDirectory(directory);			

@@ -29,6 +29,8 @@ public class CrawlerConstants {
 	public static final String PROPERTIES_FILE = "properties/settings.properties";
 	public static final String IP_PORT_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{2,5}";
 	
+	public static final String LOCK_N_LOCK_TABLES = "17";
+	
 	// DB constants
 	
 	public static final String DB_NAME = "Store";
@@ -41,7 +43,7 @@ public class CrawlerConstants {
 	public static final String URL_STORAGE_FILENAME = "urls.txt";
 
 	// URL filter
-	public static final int MAX_URL_LENGTH = 50;
+	public static final int MAX_URL_LENGTH = 200;
 
 	
 	// Servlet paths

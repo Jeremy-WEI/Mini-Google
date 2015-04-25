@@ -1,23 +1,24 @@
-package cis555.indexer;
+package cis555.utils;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
 @Entity
-public class UrlDocIdInfo {
+public class DocIdUrlInfo {
 
     @PrimaryKey
-    private String url;
     private long docId;
+    private String url;
 
-    private UrlDocIdInfo() {
+    private DocIdUrlInfo() {
     }
 
-    public UrlDocIdInfo(String url, long docId) {
+    public DocIdUrlInfo(String url, long docId) {
         this.url = url;
         this.docId = docId;
     }
 
-    public long getDocId() {
-        return docId;
+    public String getURL() {
+        return url;
     }
 }

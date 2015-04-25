@@ -5,8 +5,6 @@ import java.util.Map;
 
 import cis555.aws.utils.AWSClientAdapters;
 import cis555.aws.utils.AWSConstants;
-import cis555.indexer.DocIdUrlInfo;
-import cis555.indexer.UrlDocIdInfo;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;

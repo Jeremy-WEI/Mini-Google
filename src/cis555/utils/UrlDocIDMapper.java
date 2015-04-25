@@ -6,7 +6,6 @@ import java.util.Map;
 import cis555.aws.utils.AWSClientAdapters;
 import cis555.aws.utils.AWSConstants;
 import cis555.indexer.DocIdUrlInfo;
-import cis555.indexer.Hit;
 import cis555.indexer.UrlDocIdInfo;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -72,7 +71,7 @@ public class UrlDocIDMapper {
         shutdown();
     }
 
-    private void start() {
+    public void start() {
         try {
             store = DBWrapper.setupDatabase(envDirectory, false);
             urlIndex = store.getPrimaryIndex(String.class, UrlDocIdInfo.class);

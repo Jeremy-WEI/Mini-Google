@@ -12,7 +12,8 @@ import cis555.utils.UrlDocIDMapper;
 
 public class Indexer {
 
-    protected static final String DELIMITER = ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?#=+\"";
+    // protected static final String DELIMITER =
+    // ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?#=+\"";
     protected static final Set<String> URL_STOP_LIST = new HashSet<String>();
     protected static final Set<String> STOP_LIST = new HashSet<String>();
     static {
@@ -81,34 +82,47 @@ public class Indexer {
     }
     // @formatter:on
 
+    protected static String trimWord(String word) {
+        int leftIndex = 0, rightIndex = word.length() - 1;
+        for (; leftIndex < word.length(); leftIndex++) {
+            if (Character.isLetterOrDigit(word.charAt(leftIndex)))
+                break;
+        }
+        for (; rightIndex >= leftIndex; rightIndex--) {
+            if (Character.isLetterOrDigit(word.charAt(rightIndex)))
+                break;
+        }
+        if (rightIndex < leftIndex)
+            return "";
+        return word.substring(leftIndex, rightIndex + 1);
+    }
+
     protected void parseElement(long docID, int hitType, String text) {
         text = text.trim();
         if (text.length() == 0)
             return;
-        StringTokenizer tokenizer = new StringTokenizer(text, DELIMITER);
+        // StringTokenizer tokenizer = new StringTokenizer(text, DELIMITER);
+        StringTokenizer tokenizer = new StringTokenizer(text);
         int index = 0;
         while (tokenizer.hasMoreTokens()) {
             String word = tokenizer.nextToken().toLowerCase();
+            word = trimWord(word);
             if (hitType == 7) {
                 if (URL_STOP_LIST.contains(word))
                     continue;
             }
 
-            if (STOP_LIST.contains(word)) {
+            if (STOP_LIST.contains(word) || word.length() < 1) {
                 index++;
                 continue;
             }
 
             String stemWord = getStem(word);
 
-            // word length longer than 30 characters is ignored
-            // word length == 1 and if it's not a digit or character is
-            // ignored
-
-            if (isBasicLatin(stemWord)
-                    && (stemWord.length() <= 30 && stemWord.length() >= 2)
-                    || (stemWord.length() == 1 && Character
-                            .isLetterOrDigit(stemWord.charAt(0)))) {
+            /*
+             * word length longer than 30 characters is ignored
+             */
+            if (isBasicLatin(stemWord) && stemWord.length() <= 30) {
                 Map<Long, DocHit> hits = map.get(stemWord);
                 if (hits == null) {
                     hits = new HashMap<Long, DocHit>();
@@ -186,6 +200,7 @@ public class Indexer {
 
     protected long getDocID(String url) {
         return db.getDocId(url);
+        // return -1;
     }
 
     public void parse() {
@@ -196,7 +211,8 @@ public class Indexer {
 
     public String getWordByIndex(int index) {
         int i = 0;
-        StringTokenizer tokenizer = new StringTokenizer(content, DELIMITER);
+        // StringTokenizer tokenizer = new StringTokenizer(content, DELIMITER);
+        StringTokenizer tokenizer = new StringTokenizer(content);
         while (tokenizer.hasMoreTokens() && i++ < index) {
             tokenizer.nextToken();
         }
@@ -216,4 +232,5 @@ public class Indexer {
             }
         }
     }
+
 }

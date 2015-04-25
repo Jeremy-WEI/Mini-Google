@@ -1,9 +1,5 @@
 package com.primacy.hadoop;
 
-import indexer.DBWrapper;
-import indexer.DocHit;
-import indexer.Indexer;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Map;
@@ -12,6 +8,10 @@ import java.util.Map.Entry;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
+
+import cis555.indexer.DocHit;
+import cis555.indexer.Indexer;
+import cis555.utils.UrlDocIDMapper;
 
 /*
  * InputFormat: key --> filename(docID.html/txt/xml/pdf)
@@ -29,9 +29,10 @@ public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
         String type = fileName.substring(fileName.indexOf('.') + 1,
                 fileName.indexOf('.', fileName.indexOf('.') + 1));
 
-        DBWrapper db = new DBWrapper("test");
+        UrlDocIDMapper db = new UrlDocIDMapper("test");
         db.start();
         String url = db.getUrl(docID);
+        // String url = "as";
         // System.out.println("DOCID: " + docID + " URL: " + url);
         // Indexer indexer = Indexer.getInstance(
         // new ByteArrayInputStream(value.getBytes()), "www.google.com",

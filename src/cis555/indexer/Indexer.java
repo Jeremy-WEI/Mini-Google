@@ -13,15 +13,52 @@ import cis555.utils.UrlDocIDMapper;
 public class Indexer {
 
     protected static final String DELIMITER = ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?#=+\"";
+    protected static final Set<String> URL_STOP_LIST = new HashSet<String>();
     protected static final Set<String> STOP_LIST = new HashSet<String>();
-    {
-        STOP_LIST.add("http");
-        STOP_LIST.add("https");
-        STOP_LIST.add("com");
-        STOP_LIST.add("edu");
-        STOP_LIST.add("org");
-        STOP_LIST.add("the");
+    static {
+        URL_STOP_LIST.add("http");
+        URL_STOP_LIST.add("https");
+        URL_STOP_LIST.add("edu");
+        URL_STOP_LIST.add("org");
+        URL_STOP_LIST.add("html");
+        URL_STOP_LIST.add("htm");
+        URL_STOP_LIST.add("net");
+        URL_STOP_LIST.add("int");
+        STOP_LIST.add("i");
         STOP_LIST.add("a");
+        STOP_LIST.add("about");
+        STOP_LIST.add("an");
+        STOP_LIST.add("are");
+        STOP_LIST.add("as");
+        STOP_LIST.add("at");
+        STOP_LIST.add("be");
+        STOP_LIST.add("by");
+        STOP_LIST.add("com");
+        STOP_LIST.add("de");
+        STOP_LIST.add("en");
+        STOP_LIST.add("for");
+        STOP_LIST.add("from");
+        STOP_LIST.add("how");
+        STOP_LIST.add("in");
+        STOP_LIST.add("is");
+        STOP_LIST.add("it");
+        STOP_LIST.add("la");
+        STOP_LIST.add("of");
+        STOP_LIST.add("on");
+        STOP_LIST.add("or");
+        STOP_LIST.add("that");
+        STOP_LIST.add("the");
+        STOP_LIST.add("this");
+        STOP_LIST.add("to");
+        STOP_LIST.add("was");
+        STOP_LIST.add("what");
+        STOP_LIST.add("when");
+        STOP_LIST.add("where");
+        STOP_LIST.add("who");
+        STOP_LIST.add("will");
+        STOP_LIST.add("with");
+        STOP_LIST.add("und");
+        STOP_LIST.add("www");
     }
 
     protected long docID;
@@ -53,9 +90,15 @@ public class Indexer {
         while (tokenizer.hasMoreTokens()) {
             String word = tokenizer.nextToken().toLowerCase();
             if (hitType == 7) {
-                if (STOP_LIST.contains(word))
+                if (URL_STOP_LIST.contains(word))
                     continue;
             }
+
+            if (STOP_LIST.contains(word)) {
+                index++;
+                continue;
+            }
+
             String stemWord = getStem(word);
 
             // word length longer than 30 characters is ignored

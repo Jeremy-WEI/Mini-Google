@@ -63,7 +63,7 @@
 	
     <target name="compile-dispatcherMaster" description="Compiles the dispatcherMaster">
     	<mkdir dir="${master_web-inf.classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="**/urlDispatcherMaster/*.java,**/utils/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="**/urlDispatcher/master/*.java,**/utils/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>

@@ -1,4 +1,4 @@
-package cis555.urlDispatcherMaster;
+package cis555.urlDispatcher.master;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,9 +13,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-import cis555.utils.DispatcherConstants;
-import cis555.utils.DispatcherException;
-import cis555.utils.DispatcherUtils;
+import cis555.urlDispatcher.utils.DispatcherConstants;
+import cis555.urlDispatcher.utils.DispatcherException;
+import cis555.urlDispatcher.utils.DispatcherUtils;
 
 @SuppressWarnings("serial")
 public class MasterServlet extends HttpServlet {

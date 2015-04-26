@@ -1,8 +1,8 @@
-package cis555.urlDispatcherMaster;
+package cis555.urlDispatcher.master;
 
 import java.util.Map;
 
-import cis555.utils.DispatcherConstants;
+import cis555.urlDispatcher.utils.DispatcherConstants;
 
 public class StatusPageContentGenerator {
 	

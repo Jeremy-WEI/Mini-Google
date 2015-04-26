@@ -1,4 +1,4 @@
-package cis555.utils;
+package cis555.urlDispatcher.utils;
 
 import java.io.File;
 import java.net.HttpURLConnection;
@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.log4j.Logger;
+
+import cis555.utils.CrawlerConstants;
 
 public class DispatcherUtils {
 

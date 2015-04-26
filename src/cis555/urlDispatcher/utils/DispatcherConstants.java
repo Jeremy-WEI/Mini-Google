@@ -1,4 +1,4 @@
-package cis555.utils;
+package cis555.urlDispatcher.utils;
 
 public class DispatcherConstants {
 	

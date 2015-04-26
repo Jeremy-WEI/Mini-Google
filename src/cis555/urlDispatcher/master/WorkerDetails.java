@@ -1,4 +1,4 @@
-package cis555.urlDispatcherMaster;
+package cis555.urlDispatcher.master;
 
 import java.util.Date;
 

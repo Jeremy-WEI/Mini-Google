@@ -8,9 +8,17 @@
     <property name="project.root" location="${basedir}"/>
     <property name="build.dir" location="${project.root}"/>
     <property name="build.target.dir" location="${project.root}${file.separator}target"/>
-    <property name="web-inf.dir" location="${build.target.dir}${file.separator}WEB-INF"/>
-    <property name="web-inf.classes.dir" location="${web-inf.dir}${file.separator}classes"/>
-    <property name="web-inf.lib.dir" location="${web-inf.dir}${file.separator}lib"/>
+
+	<property name="master_dispatcher.dir" location="${build.target.dir}${file.separator}master"/>
+    <property name="master_web-inf.dir" location="${master_dispatcher.dir}${file.separator}WEB-INF"/>
+    <property name="master_web-inf.classes.dir" location="${master_web-inf.dir}${file.separator}classes"/>
+    <property name="master_web-inf.lib.dir" location="${master_web-inf.dir}${file.separator}lib"/>
+
+    <property name="worker_dispatcher.dir" location="${build.target.dir}${file.separator}worker"/>
+    <property name="worker_web-inf.dir" location="${worker_dispatcher.dir}${file.separator}WEB-INF"/>
+    <property name="worker_web-inf.classes.dir" location="${worker_web-inf.dir}${file.separator}classes"/>
+    <property name="worker_web-inf.lib.dir" location="${worker_web-inf.dir}${file.separator}lib"/>
+	
     <property name="classes.dir"     location="${basedir}${file.separator}classes"/>
     <property name="src.main.dir"  location="${build.dir}${file.separator}src${file.separator}"/>
     <property name="inputlib.dir"  location="${shared.root}${file.separator}lib"/>
@@ -24,18 +32,6 @@
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
                 	<exclude name="${non-crawler-libs}"/>
-                </fileset>
-            </classpath>
-        	 <compilerarg value="-Xlint:-options" />
-        </javac>
-    </target>
-	
-    <target name="compile-database_servlet" description="Compiles the local database">
-        <mkdir dir="${web-inf.classes.dir}"/>
-        <javac srcdir="src/cis555" destdir="${web-inf.classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
                 </fileset>
             </classpath>
         	 <compilerarg value="-Xlint:-options" />
@@ -56,7 +52,7 @@
 	
     <target name="compile-crawler" depends="compile-database" description="Compiles the crawler">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/crawler/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -65,8 +61,9 @@
         </javac>
     </target>
 	
-    <target name="compile-servlet" depends="compile-database_servlet" description="Compiles the servlet">
-        <javac srcdir="src/cis555" destdir="${web-inf.classes.dir}" includes="**/database/*.java,**/contentViewer/*.java,**/utils/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+    <target name="compile-dispatcherMaster" description="Compiles the dispatcherMaster">
+    	<mkdir dir="${master_web-inf.classes.dir}"/>
+        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="**/urlDispatcherMaster/*.java,**/utils/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -74,10 +71,8 @@
             </classpath>
         	 <compilerarg value="-Xlint:-options" />
         </javac>
-        <copy file="${conf.dir}${file.separator}log4j.properties" tofile="${web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
+        <copy file="${conf.dir}${file.separator}log4j.properties" tofile="${master_web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
     </target>
-	
-	
     
     <target name="clean" description="Deletes all the compiled files">
         <delete dir="${build.target.dir}"/>
@@ -111,16 +106,18 @@
         </jar>
     </target>
 	
-    <target name="servlet-war" depends="compile-servlet" description="Makes the WAR file for the servlet">
-        <delete file="servlet.war"/>
-        <copy file="${conf.dir}${file.separator}web.xml" tofile="${web-inf.dir}${file.separator}web.xml" overwrite="true" />
-        <copy todir="${web-inf.lib.dir}" overwrite="true">
+    <target name="compile-dispatcherMaster-war" depends="compile-dispatcherMaster" description="Makes the WAR file for the dispatcherMaster">
+        <delete file="master.war"/>
+        <copy file="${conf.dir}${file.separator}masterWeb.xml" tofile="${master_web-inf.dir}${file.separator}web.xml" overwrite="true" />
+        <copy file="${conf.dir}${file.separator}log4j.properties" tofile="${master_web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
+        <copy todir="${master_web-inf.lib.dir}" overwrite="true">
             <fileset dir="${inputlib.dir}">
-                <include name="servlet-api.jar,je-6.2.31.jar,log4j-1.2.9.jar"/>
+                <include name="servlet-api.jar" />
+            	<include name="log4j-1.2.9.jar"/>
             </fileset>
         </copy>
-        <jar destfile="servlet.war" update="true">
-            <fileset dir="target">
+        <jar destfile="master.war" update="true">
+            <fileset dir="target/master/">
                 <include name="**/*.class"/>
                 <include name="**/*.jar"/>
                 <include name="WEB-INF/web.xml"/>
@@ -153,7 +150,7 @@
     </target>
 
 	
-    <target name="build" depends="crawler-jar, servlet-war, transferer-jar,pack">
+    <target name="build" depends="crawler-jar, compile-dispatcherMaster-war, transferer-jar,pack">
     </target>
 	
     <target name="pack" description="Create Crawler Pack">

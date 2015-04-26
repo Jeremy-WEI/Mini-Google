@@ -1,9 +1,9 @@
 package cis555.utils;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
-
 
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
@@ -57,6 +57,7 @@ public class DBWrapper {
 			envConfig = envConfig.setReadOnly(readOnly);
 		} 
 		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, CrawlerConstants.LOCK_N_LOCK_TABLES);
+		envConfig.setLockTimeout(CrawlerConstants.LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);
 		createDirectory(directory);			

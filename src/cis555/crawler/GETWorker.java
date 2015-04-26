@@ -111,6 +111,11 @@ public class GETWorker implements Runnable {
 			logger.debug(CLASSNAME + ": Crawled " + url);				
 			ContentType contentType = response.getContentType();
 			
+			if (contentType == Response.ContentType.OTHERS){
+				// Ignore if content type is not recognised
+				return;
+			}
+			
 			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
 			this.contentForLinkExtractor.add(forLinkExtractor);
 				

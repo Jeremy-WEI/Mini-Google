@@ -20,23 +20,19 @@ public class CrawlerConstants {
 	
 	public static final String[] REDIRECT_STATUS_CODES = {"301", "302", "303", "307"};
 	
-	public static final String ENCODING = "UTF-8";
-	public static final int PORT = 80;
-	public static final int SOCKET_TIMEOUT = 10000;
-
 	public static final int MAX_RETRY = 20;
 	
 	public static final String PROPERTIES_FILE = "properties/settings.properties";
 	public static final String IP_PORT_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{2,5}";
-	
-	public static final String LOCK_N_LOCK_TABLES = "17";
 	
 	// DB constants
 	
 	public static final String DB_NAME = "Store";
 	public static final String DB_COUNTER_KEY = "COUNTER_KEY";
 	public static final String DB_DIRECTORY = "crawler_db";
-
+	public static final String LOCK_N_LOCK_TABLES = "17";
+	public static final int LOCK_TIMEOUT = 1000;
+	
 	// File storage contents
 	public static final String STORAGE_DIRECTORY = DB_DIRECTORY + "/crawled_files";
 	public static final String URL_STORAGE_DIRECTORY = DB_DIRECTORY + "/crawled_urls";

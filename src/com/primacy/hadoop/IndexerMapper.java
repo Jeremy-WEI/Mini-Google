@@ -33,6 +33,8 @@ public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
                 new ByteArrayInputStream(value.getBytes()), url, docID,
                 type.toLowerCase());
 
+        if (indexer == null)
+            return;
         indexer.parse();
         Text word = new Text();
         Text val = new Text();

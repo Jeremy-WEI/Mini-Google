@@ -39,6 +39,17 @@ public class PopulateS3 {
 
 		logger.info(CLASSNAME + " Uploaded URL file to S3");
 		
+		// Upload document meta
+		
+		File documentMetaDirectory = new File(CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY);
+		
+		logger.info(CLASSNAME + " About to upload " + documentMetaDirectory.list().length + " crawled documents to S3");
+		
+		adapter.uploadDirectory(documentMetaDirectory, AWSConstants.DOCUMENT_META_BUCKET);
+
+		logger.info(CLASSNAME + " Uploaded document meta file to S3");
+
+		
 	}
 	
 	

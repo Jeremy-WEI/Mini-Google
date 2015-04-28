@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 import cis555.urlDispatcher.utils.DispatcherConstants;
 import cis555.urlDispatcher.utils.DispatcherException;
 import cis555.urlDispatcher.utils.DispatcherUtils;
+import cis555.utils.Utils;
 
 @SuppressWarnings("serial")
 public class MasterServlet extends HttpServlet {
@@ -60,7 +61,7 @@ public class MasterServlet extends HttpServlet {
 			generateStatus(response.getWriter(), e.getMessage());
 
 		} catch (Exception e) {
-			DispatcherUtils.logStackTrace(e);
+			Utils.logStackTrace(e);
 		}
 
 	}
@@ -94,7 +95,8 @@ public class MasterServlet extends HttpServlet {
 		int crawlerNumber = 0;
 		for (String workerIPAddress : this.workerDetailMap.keySet()){
 			String ipAddress = this.workerDetailMap.get(workerIPAddress).getIP(); 
-			String urlString = "http://" + ipAddress + ":8080/worker/" + DispatcherConstants.START_URL;
+			int port = this.workerDetailMap.get(workerIPAddress).getPort();
+			String urlString = "http://" + ipAddress + ":" + port + "/worker/" + DispatcherConstants.START_URL;
 			String content = generateStartingUrls(crawlerNumber);
 			
 			try {
@@ -118,8 +120,8 @@ public class MasterServlet extends HttpServlet {
 	 */
 	private String generateStartingUrls(int crawlerNumber){
 		StringBuilder str = new StringBuilder();
-		str.append(DispatcherConstants.CRAWLER_NUMBER_KEY + "=" + crawlerNumber);
-		str.append(DispatcherConstants.STARTING_URL_KEY + "=");
+		str.append(DispatcherConstants.CRAWLER_NUMBER_PARAM + "=" + crawlerNumber);
+		str.append(DispatcherConstants.STARTING_URL_PARAM + "=");
 		return str.toString() + "https://www.yahoo.com;http://ga.berkeley.edu/wp-content/uploads/2015/02/pdf-sample.pdf;";
 	}
 	
@@ -139,7 +141,8 @@ public class MasterServlet extends HttpServlet {
 		validateStatus();
 		for (String workerIPAddress : this.workerDetailMap.keySet()){
 			String ipAddress = this.workerDetailMap.get(workerIPAddress).getIP(); 
-			String urlString = "http://" + ipAddress + ":8080/worker/" + DispatcherConstants.STOP_URL;
+			int port = this.workerDetailMap.get(workerIPAddress).getPort();
+			String urlString = "http://" + ipAddress + ":" + port + "/worker/" + DispatcherConstants.STOP_URL;
 			String content = "";
 			
 			try {
@@ -181,7 +184,7 @@ public class MasterServlet extends HttpServlet {
 			}
 			
 		}  catch (Exception e){
-			DispatcherUtils.logStackTrace(e);
+			Utils.logStackTrace(e);
 		}
 		
 	}
@@ -201,14 +204,14 @@ public class MasterServlet extends HttpServlet {
 	private void populateWorkerDetails(HttpServletRequest request){
 		
 		WorkerDetails workerStatus = new WorkerDetails(request);
-		String key = workerStatus.getIP();
-		if (key.matches(DispatcherConstants.IP_FORMAT)){
-			this.workerDetailMap.put(key, workerStatus);
-			logger.debug(CLASSNAME + ": Received update from " + key);
+		String ipAddress = workerStatus.getIP();
+		if (ipAddress.matches(DispatcherConstants.IP_FORMAT)){
+			this.workerDetailMap.put(ipAddress, workerStatus);
+			logger.debug(CLASSNAME + ": Received update from " + ipAddress);
 			
 		} else {
-			logger.debug(CLASSNAME + ": Invald key syntax" + key);
-			throw new DispatcherException("Invalid key syntax: " + key);
+			logger.debug(CLASSNAME + ": Invald key syntax" + ipAddress);
+			throw new DispatcherException("Invalid key syntax: " + ipAddress);
 		}
 	}
 	

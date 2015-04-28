@@ -19,4 +19,5 @@ public class AWSConstants {
 
 	public static final String DOCUMENT_BUCKET = "cis555crawleddata";
 	public static final String URL_BUCKET = "cis555urls";
+	public static final String DOCUMENT_META_BUCKET = "documentmeta";
 }

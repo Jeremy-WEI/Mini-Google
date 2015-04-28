@@ -19,7 +19,7 @@ import cis555.aws.utils.CrawledDocument;
 import cis555.crawler.Response.ContentType;
 import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
-import cis555.utils.ZipUtils;
+import cis555.utils.Utils;
 
 
 /**
@@ -258,12 +258,12 @@ public class HEADWorker implements Runnable {
 	 * @return
 	 */
 	private String retrieveDocumentFromFileSystem(URL url){
-		long documentID = this.dao.getDocIDFromURL(url.toString());
-		String fileName = this.storageDirectory + "/" + Long.toString(documentID) + ".txt";
+		String documentID = this.dao.getDocIDFromURL(url.toString());
+		String fileName = this.storageDirectory + "/" + documentID + ".html.gzip";
 		File file = new File(fileName);
 		if (file.exists()){
 			try {
-				byte[] bytes = ZipUtils.unzip(file);
+				byte[] bytes = Utils.unzip(file);
 				return new String(bytes);				
 			} catch (IOException e){
 				e.printStackTrace();
@@ -284,9 +284,10 @@ public class HEADWorker implements Runnable {
 	 */
 	private String generateIfModifiedSinceString(URL url){
 		
-		if (!this.dao.doesDocumentMetaExist(url.toString())){
+		if (!this.dao.hasUrlBeenCrawled(url.toString())){
 			return "";
 		} else {
+						
 			Date lastCrawlDate = this.dao.getLastCrawlDate(url.toString());
 			SimpleDateFormat format = new SimpleDateFormat();
 			format.applyPattern("EEE, dd MMM yyyy HH:mm:ss zzz");

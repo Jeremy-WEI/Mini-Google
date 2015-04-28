@@ -23,7 +23,7 @@ import org.jsoup.select.Elements;
 import cis555.crawler.Response.ContentType;
 import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
-import cis555.utils.ZipUtils;
+import cis555.utils.Utils;
 
 public class LinkExtractorWorker implements Runnable {
 
@@ -69,29 +69,33 @@ public class LinkExtractorWorker implements Runnable {
 				Document cleansedDoc = null;
 				
 				if (content.isNew()){
-					long docID = getDocID(url);
+					String docID = getDocID(url);
 					this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
 					if (contentType != ContentType.PDF){
 						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
 						if (contentType == ContentType.TEXT){
-							storeCrawledContentsFile(stringContents.toString(), docID, contentType);							
+							storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
 						} else {
 							cleansedDoc = Jsoup.parse(stringContents);
-							storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType);
+							storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
 							
 						}
 					} else {
-						storePDF(rawContents, docID);
+						storePDF(rawContents, docID, url);
 					}
-
+					logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
 				}
 				
-				if (contentType == ContentType.HTML && null != cleansedDoc){
+				if (contentType == ContentType.HTML){				
+					if (null == cleansedDoc){
+						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
+						cleansedDoc = Jsoup.parse(stringContents);						
+					}
+					
 					addAHrefLinks(cleansedDoc, content.isNew(), url);
 					addImgSrcLinks(cleansedDoc, url);
 				}					
 
-				logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
 				
 			} catch (InterruptedException | MalformedURLException e) {
 				// TODO Auto-generated catch block
@@ -128,7 +132,7 @@ public class LinkExtractorWorker implements Runnable {
 						this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
 						newUrls.add(newUrl);
 					} catch (IllegalStateException e){
-						logger.info(CLASSNAME + " Queue is full, dropping " + newUrl);
+						logger.info(CLASSNAME + " New preRedistributionNewURLQueue is full, dropping " + newUrl);
 						
 					} 
 				}
@@ -179,14 +183,14 @@ public class LinkExtractorWorker implements Runnable {
 	 * @param url
 	 * @return
 	 */
-	private long getDocID(URL url){
+	private String getDocID(URL url){
 
 		if (this.dao.doesDocumentMetaExist(url.toString())){
 			// Previously crawled document
 			return this.dao.getDocIDFromURL(url.toString());
 		} else {
 			// New document, so generate a new ID
-			return counterGenerator.getDocIDAndIncrement();
+			return Utils.hashUrlToHexStringArray(url.toString());
 		}
 
 	}
@@ -195,12 +199,14 @@ public class LinkExtractorWorker implements Runnable {
 	 * Store the crawled document in a file
 	 * @param contents
 	 * @param docID
+	 * @param url
 	 */
-	private void storeCrawledContentsFile(String contents, long docID, ContentType contentType){
+	private void storeCrawledContentsFile(String contents, String docID, ContentType contentType, URL url){
 		String fileName = generateFileName(docID, contentType);
 		File storageFile = new File(this.storageDirectory + "/" + fileName);
 		try {
-			ZipUtils.zip(contents.getBytes(CrawlerConstants.CHARSET), storageFile.toString());
+			byte[] urlPlusContents = Utils.appendURL(url, contents.getBytes(CrawlerConstants.CHARSET));
+			Utils.zip(urlPlusContents, storageFile.toString());
 		} catch (IOException e){
 			e.printStackTrace();
 			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
@@ -213,14 +219,14 @@ public class LinkExtractorWorker implements Runnable {
 	 * @param contentType
 	 * @return
 	 */
-	private String generateFileName(long docID, ContentType contentType){
+	private String generateFileName(String docID, ContentType contentType){
 		switch (contentType){
 		case HTML:
-			return Long.toString(docID) + ".html.gzip";
+			return docID + ".html.gzip";
 		case XML:
-			return Long.toString(docID) + ".xml.gzip";
+			return docID + ".xml.gzip";
 		case TEXT:
-			return Long.toString(docID) + ".txt.gzip";
+			return docID + ".txt.gzip";
 		default:
 			throw new CrawlerException("Invalid content type: " + contentType.name());
 		}
@@ -230,12 +236,14 @@ public class LinkExtractorWorker implements Runnable {
 	 * Store a PDF file
 	 * @param contents
 	 * @param docID
+	 * @param url
 	 */
-	private void storePDF(byte[] contents, long docID){
-		String fileName = Long.toString(docID) + ".pdf.gzip";
+	private void storePDF(byte[] contents, String docID, URL url){
+		String fileName = docID + ".pdf.gzip";
 		File storageFile = new File(this.storageDirectory + "/" + fileName);
 		try {
-			ZipUtils.zip(contents, storageFile.toString());
+			byte[] urlPlusContents = Utils.appendURL(url, contents);
+			Utils.zip(urlPlusContents, storageFile.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
@@ -257,9 +265,9 @@ public class LinkExtractorWorker implements Runnable {
 			}
 			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
 			if (newUrls.size() > 0){
-				writer.write(sourceUrl.toString() + "\t");
+				writer.write(Utils.hashUrlToHexStringArray(sourceUrl.toString()) + "\t");
 				for (URL newUrl : newUrls){
-					writer.write(newUrl.toString() + ";");
+					writer.write(Utils.hashUrlToHexStringArray(newUrl.toString()) + ";");
 				}				
 			}
 			writer.write("\n");

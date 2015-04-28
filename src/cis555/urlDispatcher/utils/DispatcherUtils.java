@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 
 import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
 public class DispatcherUtils {
 
@@ -54,7 +55,7 @@ public class DispatcherUtils {
 			logger.info(CLASSNAME + ": sending request to " + url);
 		
 		} catch (Exception e){
-			DispatcherUtils.logStackTrace(e);
+			Utils.logStackTrace(e);
 		}
 	}
 	
@@ -113,22 +114,6 @@ public class DispatcherUtils {
                     }
                 }
             }
-		}
-	}
-	
-	
-	
-	/**
-	 * Log the entire stack trace to the logger
-	 * @param e
-	 */
-	public static void logStackTrace(Exception e){
-		StackTraceElement[] traces = e.getStackTrace();
-		if (null != traces && traces.length > 0){
-			logger.error(CLASSNAME);
-			for (int i = 0; i < traces.length; i++){
-				logger.error(traces[i]);
-			}
 		}
 	}
 	

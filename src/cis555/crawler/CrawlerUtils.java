@@ -53,8 +53,7 @@ public class CrawlerUtils {
 			
 		} catch (IOException | IllegalArgumentException e) {
 			String error = "Unable to open connection to " + absoluteURL + ", skipping";
-			logger.error(CLASSNAME + ": " + error);
-//			e.printStackTrace();
+			logger.debug(CLASSNAME + ": " + error);
 			throw new CrawlerException(error);
 		} finally {
 			if (null != httpConnection){
@@ -93,7 +92,7 @@ public class CrawlerUtils {
 
 		} catch (IOException e) {
 			String error = "Unable to open connection to " + absoluteURL + ", skipping";
-			logger.error(CLASSNAME + ": " + error);
+			logger.debug(CLASSNAME + ": " + error);
 //			e.printStackTrace();
 			throw new CrawlerException(error);
 		}  finally {
@@ -112,6 +111,23 @@ public class CrawlerUtils {
 	 */
 	public static URL convertToUrl(String rawUrl, URL originalUrl) throws MalformedURLException {
 		
+		if (rawUrl.isEmpty()){
+			throw new MalformedURLException();
+		}
+		
+		rawUrl = rawUrl.trim();
+		
+		if (rawUrl.toLowerCase().startsWith("http")){
+			
+			if (rawUrl.charAt(rawUrl.length() - 1) == '/'){
+				// Remove trailing /
+				rawUrl = rawUrl.substring(0, rawUrl.length() - 1);
+			}
+			
+			// Starts with http
+			return new URL(rawUrl);
+		}
+		
 		String domain = originalUrl.getHost();
 		String protocol = originalUrl.getProtocol();
 		String directoryPath = originalUrl.getFile();
@@ -121,24 +137,15 @@ public class CrawlerUtils {
 		if (directoryPath.isEmpty()){
 			directoryPath = "/";
 		} else if (dot > -1){
+			
+			// No dot, so not a file
+			
 			directoryPath = directoryPath.substring(0, slash + 1);
 		} else if (directoryPath.charAt(directoryPath.length() - 1) != '/'){
 			
 			// Missing a "/" at the end
 			directoryPath = directoryPath + "/";
 
-		}
-		
-		
-		if (rawUrl.isEmpty()){
-			throw new MalformedURLException();
-		}
-		
-		rawUrl = rawUrl.trim();
-		
-		if (rawUrl.toLowerCase().startsWith("http")){
-			// Starts with http
-			return new URL(rawUrl);
 		}
 		
 		// Relative uri
@@ -161,8 +168,12 @@ public class CrawlerUtils {
 
 			rawUrl = protocol + "://" + domain + directoryPath + rawUrl;
 		} 
-		
 
+		if (rawUrl.charAt(rawUrl.length() - 1) == '/'){
+			// Remove trailing /
+			rawUrl = rawUrl.substring(0, rawUrl.length() - 1);
+		}
+		
 		return new URL(rawUrl);
 		
 	}

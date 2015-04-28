@@ -24,6 +24,7 @@
     <property name="inputlib.dir"  location="${shared.root}${file.separator}lib"/>
     <property name="conf.dir"      location="${build.dir}${file.separator}conf"/>
 	<property name="non-crawler-libs" value="pdfbox-app-1.8.9.jar,servlet-api.jar,junit-4.12.jar"/>
+	<property name="crawler-libs" value="je-6.2.31.jar,log4j-1.2.9.jar,jsoup-1.8.2.jar,guava-18.0.jar"/>
     
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
@@ -86,7 +87,7 @@
     <target name="crawler-jar" depends="compile-crawler" description="Makes the JAR file for the crawler">
         <delete file="crawler.jar"/>
         <jar destfile="crawler.jar" update="true">
-        	<zipgroupfileset dir="${inputlib.dir}" excludes="${non-crawler-libs}"/>
+        	<zipgroupfileset dir="${inputlib.dir}" includes="${crawler-libs}"/>
             <fileset dir="${classes.dir}">
             <include name="**/*.class"/>
             </fileset>

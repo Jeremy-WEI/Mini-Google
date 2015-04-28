@@ -1,37 +1,30 @@
 package cis555.aws.utils;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
 /**
  * Refers only to documents that have been crawled
  */
-@DynamoDBTable(tableName=AWSConstants.CRAWLED_DOCUMENT_TABLE)
 @Entity
 public class CrawledDocument {
 
 	private CrawledDocument(){}
 	
-	@DynamoDBHashKey(attributeName=AWSConstants.CRAWLED_DOCUMENT_DOCID_FIELD)
 	@PrimaryKey
-	private long docID;
+	private String docID;
 	
-	@DynamoDBAttribute(attributeName=AWSConstants.CRAWLED_DOCUMENT_URL_FIELD)
 	private String url;
 
-	@DynamoDBAttribute(attributeName=AWSConstants.CRAWLED_DOCUMENT_CONTENT_TYPE_FIELD)
 	private String contentType;
 	
-	public CrawledDocument(long id, String url, String contentType){
-		this.docID = id;
+	public CrawledDocument(String docID, String url, String contentType){
+		this.docID = docID;
 		this.url = url;
 		this.contentType = contentType;
 	}
 		
-	public long getDocID(){
+	public String getDocID(){
 		return this.docID;
 	}
 	

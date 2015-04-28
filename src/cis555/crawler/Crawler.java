@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.DBWrapper;
+import cis555.utils.Utils;
 
 import com.sleepycat.persist.EntityStore;
 
@@ -269,9 +270,9 @@ public class Crawler {
 			populateExcludedPatterns(excludedPatternsArray);
 			
 			this.storageDirectory = CrawlerConstants.STORAGE_DIRECTORY;
-			createDirectory(this.storageDirectory);
+			Utils.createDirectory(this.storageDirectory);
 			this.urlStorageDirectory = CrawlerConstants.URL_STORAGE_DIRECTORY;
-			createDirectory(this.urlStorageDirectory);
+			Utils.createDirectory(this.urlStorageDirectory);
 			
 			
 		} catch (ValidationException e){
@@ -370,23 +371,5 @@ public class Crawler {
 	}
 	
 	
-	/****
-	 * Other helper methods
-	 */
-	
-	/**
-	 * Creates a directory to store the database and environment settings
-	 */
-	private void createDirectory(String path){
-		File directory = new File(path);
-		if (!directory.exists()){
-			try {
-				directory.mkdirs();
-				logger.info(CLASSNAME + ": New directory created " + path);
-			} catch (SecurityException e){
-				throw new ValidationException("Unable to create directory");
-			}
-		}
-		
-	}
+
 }

@@ -20,12 +20,12 @@ public class CrawlerDao {
 	private static final Logger logger = Logger.getLogger(CrawlerDao.class);
 	private static final String CLASSNAME = CrawlerDao.class.getName();
 
-	private PrimaryIndex<Long, CrawledDocument> crawledDocumentDao;
+	private PrimaryIndex<String, CrawledDocument> crawledDocumentDao;
 	private PrimaryIndex<String, DocumentMeta> documentMetaDao;
 	private PrimaryIndex<String, CounterObject> counterDao;
 	
 	public CrawlerDao(EntityStore store){
-		crawledDocumentDao = store.getPrimaryIndex(Long.class, CrawledDocument.class);
+		crawledDocumentDao = store.getPrimaryIndex(String.class, CrawledDocument.class);
 		documentMetaDao = store.getPrimaryIndex(String.class, DocumentMeta.class);
 		counterDao = store.getPrimaryIndex(String.class, CounterObject.class);
 	}
@@ -71,7 +71,7 @@ public class CrawlerDao {
 	 * @param crawlDate
 	 * @param isCrawled
 	 */
-	public void addNewDocumentMeta(String url, long docID, Date crawlDate, boolean isCrawled){
+	public void addNewDocumentMeta(String url, String docID, Date crawlDate, boolean isCrawled){
 		documentMetaDao.putNoReturn(new DocumentMeta(url, docID, crawlDate, isCrawled));
 	}
 	
@@ -94,7 +94,7 @@ public class CrawlerDao {
 	 * @param url
 	 * @return
 	 */
-	public long getDocIDFromURL(String url){
+	public String getDocIDFromURL(String url){
 		return getDocumentMetaData(url).getDocID();
 	}
 	
@@ -128,7 +128,7 @@ public class CrawlerDao {
 	 * @param contents
 	 * @param crawlDate
 	 */
-	public void addNewCrawledDocument(long docID, String url, Date crawlDate, String contentType){
+	public void addNewCrawledDocument(String docID, String url, Date crawlDate, String contentType){
 		crawledDocumentDao.putNoReturn(new CrawledDocument(docID, url, contentType));
 		addNewDocumentMeta(url, docID, crawlDate, true);
 	}
@@ -139,11 +139,11 @@ public class CrawlerDao {
 	 * @return
 	 * @throws EntryDoesNotExistException
 	 */
-	public CrawledDocument getCrawledDocumentByID(long docID) throws EntryDoesNotExistException {
+	public CrawledDocument getCrawledDocumentByID(String docID) throws EntryDoesNotExistException {
 		if (crawledDocumentDao.contains(docID)){
 			return crawledDocumentDao.get(docID);
 		} else {
-			throw new EntryDoesNotExistException(Long.toString(docID));
+			throw new EntryDoesNotExistException(docID);
 		}
 	}
 	
@@ -154,7 +154,7 @@ public class CrawlerDao {
 	 * @throws EntryDoesNotExistException
 	 */
 	public CrawledDocument getCrawledDocumentByURL(String url) throws EntryDoesNotExistException {
-		long docID = getDocumentMetaData(url).getDocID();
+		String docID = getDocumentMetaData(url).getDocID();
 		return getCrawledDocumentByID(docID);
 	}
 	
@@ -163,7 +163,7 @@ public class CrawlerDao {
 	 * @param docid
 	 * @return
 	 */
-	public boolean hasDocIDBennCrawled(long docID){
+	public boolean hasDocIDBennCrawled(String docID){
 		return crawledDocumentDao.contains(docID);
 	}	
 	
@@ -176,7 +176,7 @@ public class CrawlerDao {
 		if (!doesDocumentMetaExist(url)){
 			return false;
 		}
-		long docID = getDocumentMetaData(url).getDocID();
+		String docID = getDocumentMetaData(url).getDocID();
 		return hasDocIDBennCrawled(docID);
 	}
 	
@@ -215,7 +215,7 @@ public class CrawlerDao {
 	 * Returns a list of all docids in the database
 	 * @return
 	 */
-	public Set<Long> getAllDocIDs(){
+	public Set<String> getAllDocIDs(){
 		return this.crawledDocumentDao.map().keySet();
 	}
 	
@@ -255,11 +255,11 @@ public class CrawlerDao {
 	/**
 	 * Delete a single crawled document
 	 */
-	private void deleteCrawledDocument(long docID) throws EntryDoesNotExistException {
+	private void deleteCrawledDocument(String docID) throws EntryDoesNotExistException {
 		if (this.crawledDocumentDao.contains(docID)){
 			this.crawledDocumentDao.delete(docID);
 		} else {
-			throw new EntryDoesNotExistException(Long.toString(docID));
+			throw new EntryDoesNotExistException(docID);
 		}
 	}
 	
@@ -277,8 +277,8 @@ public class CrawlerDao {
 	 * Delete all crawled document entries
 	 */
 	private void deleteAllCrawledDocuments(){
-		Set<Long> docIDs = getAllDocIDs();
-		for (long docID : docIDs){
+		Set<String> docIDs = getAllDocIDs();
+		for (String docID : docIDs){
 			deleteCrawledDocument(docID);
 		}
 	}

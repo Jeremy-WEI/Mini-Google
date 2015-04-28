@@ -1,9 +1,21 @@
 package cis555.contentTransferer;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
 
-import cis555.aws.utils.AWSConstants;
-import cis555.aws.utils.S3Adapter;
+import org.apache.log4j.Logger;
+
+import cis555.aws.utils.DocumentMeta;
+import cis555.database.CrawlerDao;
+import cis555.utils.CrawlerConstants;
+import cis555.utils.DBWrapper;
+import cis555.utils.Utils;
+
+import com.sleepycat.persist.EntityStore;
+
 
 /**
  * Transfers documents to S3 and to Dynamo
@@ -11,20 +23,69 @@ import cis555.aws.utils.S3Adapter;
  */
 public class ContentTransferer {
 	
+	private static final Logger logger = Logger.getLogger(ContentTransferer.class);
+	private static final String CLASSNAME = ContentTransferer.class.getName();
+
+	
 	public static void main(String[] args){
 		ContentTransferer transferer = new ContentTransferer();
-		transferer.copyToDynamo();
+		transferer.extractDocumentMeta();
 		transferer.copyToS3();
-	}
-	
-	private void copyToDynamo(){
-		PopulateDynamo populateDynamo = new PopulateDynamo();
-		populateDynamo.populateDynamo();
 	}
 
 	private void copyToS3(){
 		PopulateS3 populateS3 = new PopulateS3();
 		populateS3.populateS3();
+	}
+	
+	private void extractDocumentMeta(){
+		CrawlerDao dao = initialiseDb();
+		saveDocumentMetaToDisk(dao);
+	}
+	
+	/**
+	 * Initialise the database
+	 */
+	private CrawlerDao initialiseDb(){
+		EntityStore store = DBWrapper.setupDatabase(CrawlerConstants.DB_DIRECTORY, true);
+		return new CrawlerDao(store);
+	}
+	
+	/**
+	 * Extract all document meta from the database and save to flat file
+	 * @param dao
+	 */
+	private void saveDocumentMetaToDisk(CrawlerDao dao){
+		List<DocumentMeta> documentMeta = dao.getAllDocumentMetaObjects();
+		String fileName = CrawlerConstants.DOCUMENT_META_STORAGE_FILENAME;
+		Utils.createDirectory(CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY);
+		File urlStorageFile = new File(CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY + "/" + fileName);
+		BufferedWriter writer = null;
+		try {
+			if (!urlStorageFile.exists()){
+				urlStorageFile.createNewFile();
+			}
+			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
+			if (documentMeta.size() > 0){
+				for (DocumentMeta document : documentMeta){
+					writer.write(document.getDocID() + '\t' + document.getUrl() + '\t' + document.isCrawled() + "\t" + document.getLastCrawledDate());
+					writer.write("\n");
+				}
+			}
+			
+		} catch (IOException e){
+			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
+		} finally {
+			if (null != writer){
+				try {
+					writer.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+
 	}
 	
 //	private void downloadFromS3(){

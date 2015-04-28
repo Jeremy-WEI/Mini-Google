@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import cis555.utils.Utils;
 
@@ -82,31 +81,32 @@ public class Indexer {
 //    }
     // @formatter:on
 
-    protected static String trimWord(String word) {
-        int leftIndex = 0, rightIndex = word.length() - 1;
-        for (; leftIndex < word.length(); leftIndex++) {
-            if (Character.isLetterOrDigit(word.charAt(leftIndex)))
-                break;
-        }
-        for (; rightIndex >= leftIndex; rightIndex--) {
-            if (Character.isLetterOrDigit(word.charAt(rightIndex)))
-                break;
-        }
-        if (rightIndex < leftIndex)
-            return "";
-        return word.substring(leftIndex, rightIndex + 1);
-    }
+    // protected static String trimWord(String word) {
+    // int leftIndex = 0, rightIndex = word.length() - 1;
+    // for (; leftIndex < word.length(); leftIndex++) {
+    // if (Character.isLetterOrDigit(word.charAt(leftIndex)))
+    // break;
+    // }
+    // for (; rightIndex >= leftIndex; rightIndex--) {
+    // if (Character.isLetterOrDigit(word.charAt(rightIndex)))
+    // break;
+    // }
+    // if (rightIndex < leftIndex)
+    // return "";
+    // return word.substring(leftIndex, rightIndex + 1);
+    // }
 
     protected void parseElement(String docID, int hitType, String text) {
         text = text.trim();
         if (text.length() == 0)
             return;
         // StringTokenizer tokenizer = new StringTokenizer(text, DELIMITER);
-        StringTokenizer tokenizer = new StringTokenizer(text);
+        // StringTokenizer tokenizer = new StringTokenizer(text);
+        FastTokenizer tokenizer = new FastTokenizer(text);
         int index = 0;
         while (tokenizer.hasMoreTokens()) {
-            String word = tokenizer.nextToken().toLowerCase();
-            word = trimWord(word);
+            String word = tokenizer.nextToken();
+            // word = trimWord(word);
             if (hitType == 7) {
                 if (URL_STOP_LIST.contains(word))
                     continue;
@@ -117,12 +117,13 @@ public class Indexer {
                 continue;
             }
 
-            String stemWord = getStem(word);
+            String stemWord = getStem(word.toLowerCase());
 
             /*
              * word length longer than 30 characters is ignored
              */
-            if (isBasicLatin(stemWord) && stemWord.length() <= 30) {
+            // if (isBasicLatin(stemWord) && stemWord.length() <= 30) {
+            if (stemWord.length() <= 30) {
                 Map<String, DocHit> hits = map.get(stemWord);
                 if (hits == null) {
                     hits = new HashMap<String, DocHit>();
@@ -173,12 +174,13 @@ public class Indexer {
         return stemmer.toString();
     }
 
-    protected boolean isBasicLatin(String word) {
-        for (int i = 0; i < word.length(); i++)
-            if (Character.UnicodeBlock.of(word.charAt(i)) != Character.UnicodeBlock.BASIC_LATIN)
-                return false;
-        return true;
-    }
+    // protected boolean isBasicLatin(String word) {
+    // for (int i = 0; i < word.length(); i++)
+    // if (Character.UnicodeBlock.of(word.charAt(i)) !=
+    // Character.UnicodeBlock.BASIC_LATIN)
+    // return false;
+    // return true;
+    // }
 
     protected void calTFValue() {
         int max = 0;
@@ -209,7 +211,7 @@ public class Indexer {
     public String getWordByIndex(int index) {
         int i = 0;
         // StringTokenizer tokenizer = new StringTokenizer(content, DELIMITER);
-        StringTokenizer tokenizer = new StringTokenizer(content);
+        FastTokenizer tokenizer = new FastTokenizer(content);
         while (tokenizer.hasMoreTokens() && i++ < index) {
             tokenizer.nextToken();
         }

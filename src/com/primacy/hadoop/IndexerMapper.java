@@ -11,7 +11,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import cis555.indexer.DocHit;
 import cis555.indexer.Indexer;
-import cis555.utils.UrlDocIDMapper;
+import cis555.utils.Utils;
 
 /*
  * InputFormat: key --> filename(docID.html/txt/xml/pdf)
@@ -22,31 +22,23 @@ public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
 
     protected void map(Text key, BytesWritable value, Context context)
             throws IOException, InterruptedException {
+
+        // System.out.println("Mapper Job Starting...");
         String fileName = key.toString();
-        long docID = Long
-                .parseLong(fileName.substring(0, fileName.indexOf('.')));
-
-        String type = fileName.substring(fileName.indexOf('.') + 1,
-                fileName.indexOf('.', fileName.indexOf('.') + 1));
-
-        UrlDocIDMapper db = new UrlDocIDMapper("test");
-        db.start();
-        String url = db.getUrl(docID);
-        // String url = "as";
-        // System.out.println("DOCID: " + docID + " URL: " + url);
-        // Indexer indexer = Indexer.getInstance(
-        // new ByteArrayInputStream(value.getBytes()), "www.google.com",
-        // docID, type.toLowerCase());
+        int index = fileName.lastIndexOf('.');
+        String url = fileName.substring(0, index);
+        String type = fileName.substring(index + 1);
+        String docID = Utils.hashUrlToHexStringArray(url);
         Indexer indexer = Indexer.getInstance(
                 new ByteArrayInputStream(value.getBytes()), url, docID,
-                type.toLowerCase(), db);
+                type.toLowerCase());
 
         indexer.parse();
         Text word = new Text();
         Text val = new Text();
 
         // indexer.displayResult();
-        for (Entry<String, Map<Long, DocHit>> entry : indexer.getMap()
+        for (Entry<String, Map<String, DocHit>> entry : indexer.getMap()
                 .entrySet()) {
             word.set(entry.getKey());
             for (DocHit docHit : entry.getValue().values()) {

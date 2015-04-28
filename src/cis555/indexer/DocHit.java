@@ -6,19 +6,19 @@ import java.util.List;
 public class DocHit {
 
     private double tf;
-    private long docID;
+    private String docID;
     private List<Integer> hitLst;
 
-    public DocHit(String line) {
+    public DocHit(String line, boolean flag) {
         String[] tokens = line.split(",");
-        docID = Long.parseLong(tokens[0]);
+        docID = tokens[0];
         tf = Double.parseDouble(tokens[1]);
         hitLst = new LinkedList<Integer>();
-        for (String hit : tokens[2].split(" "))
+        for (String hit : tokens[2].split("\\s+"))
             hitLst.add(Integer.valueOf(hit));
     }
 
-    public DocHit(long docID) {
+    public DocHit(String docID) {
         this.docID = docID;
         this.hitLst = new LinkedList<Integer>();
     }
@@ -40,7 +40,7 @@ public class DocHit {
         return hitLst.size();
     }
 
-    public long getDocID() {
+    public String getDocID() {
         return docID;
     }
 

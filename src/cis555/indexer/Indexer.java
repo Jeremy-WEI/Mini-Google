@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import cis555.utils.UrlDocIDMapper;
+import cis555.utils.Utils;
 
 public class Indexer {
 
@@ -16,6 +16,7 @@ public class Indexer {
     // ", \t\n\r\f|:/.![]{}()*^&%~'\\<>?#=+\"";
     protected static final Set<String> URL_STOP_LIST = new HashSet<String>();
     protected static final Set<String> STOP_LIST = new HashSet<String>();
+    // protected static Table table;
     static {
         URL_STOP_LIST.add("http");
         URL_STOP_LIST.add("https");
@@ -62,24 +63,23 @@ public class Indexer {
         STOP_LIST.add("www");
     }
 
-    protected long docID;
+    protected String docID;
     protected String URL;
     protected String content;
     protected InputStream is;
     protected Stemmer stemmer;
-    protected UrlDocIDMapper db;
-    protected Map<String, Map<Long, DocHit>> map;
+    protected Map<String, Map<String, DocHit>> map;
 
     // @formatter:off
-    protected static int tagToHitType(String tag) {
-        switch (tag) {
-            case "title": return 6;
-            case "meta": return 5;
-            case "a": return 4;
-            case "img": return 3;
-            default: return 0;
-        }
-    }
+//    protected static int tagToHitType(String tag) {
+//        switch (tag) {  
+//            case "title": return 6;
+//            case "meta": return 5;
+//            case "a": return 4;
+//            case "img": return 3;
+//            default: return 0;
+//        }
+//    }
     // @formatter:on
 
     protected static String trimWord(String word) {
@@ -97,7 +97,7 @@ public class Indexer {
         return word.substring(leftIndex, rightIndex + 1);
     }
 
-    protected void parseElement(long docID, int hitType, String text) {
+    protected void parseElement(String docID, int hitType, String text) {
         text = text.trim();
         if (text.length() == 0)
             return;
@@ -123,9 +123,9 @@ public class Indexer {
              * word length longer than 30 characters is ignored
              */
             if (isBasicLatin(stemWord) && stemWord.length() <= 30) {
-                Map<Long, DocHit> hits = map.get(stemWord);
+                Map<String, DocHit> hits = map.get(stemWord);
                 if (hits == null) {
-                    hits = new HashMap<Long, DocHit>();
+                    hits = new HashMap<String, DocHit>();
                     map.put(stemWord, hits);
                 }
                 DocHit hitLst = hits.get(docID);
@@ -140,27 +140,25 @@ public class Indexer {
         }
     }
 
-    public Indexer(InputStream is, String URL, long docID, UrlDocIDMapper db)
-            throws Exception {
+    public Indexer(InputStream is, String URL, String docID) throws Exception {
         this.URL = URL;
         this.docID = docID;
         this.stemmer = new Stemmer();
         this.is = is;
-        this.db = db;
-        this.map = new HashMap<String, Map<Long, DocHit>>();
+        this.map = new HashMap<String, Map<String, DocHit>>();
     }
 
-    public static Indexer getInstance(InputStream is, String URL, long docID,
-            String contentType, UrlDocIDMapper db) {
+    public static Indexer getInstance(InputStream is, String URL, String docID,
+            String contentType) {
         try {
             if (contentType.equals("html"))
-                return new HTMLIndexer(is, URL, docID, db);
+                return new HTMLIndexer(is, URL, docID);
             if (contentType.equals("txt"))
-                return new TXTIndexer(is, URL, docID, db);
+                return new TXTIndexer(is, URL, docID);
             if (contentType.equals("pdf"))
-                return new PDFIndexer(is, URL, docID, db);
+                return new PDFIndexer(is, URL, docID);
             if (contentType.endsWith("xml"))
-                return new XMLIndexer(is, URL, docID, db);
+                return new XMLIndexer(is, URL, docID);
             return null;
         } catch (Exception e) {
             e.printStackTrace();
@@ -184,23 +182,22 @@ public class Indexer {
 
     protected void calTFValue() {
         int max = 0;
-        for (Entry<String, Map<Long, DocHit>> e1 : map.entrySet()) {
-            for (Entry<Long, DocHit> e2 : e1.getValue().entrySet()) {
-                if (e2.getKey() == docID)
+        for (Entry<String, Map<String, DocHit>> e1 : map.entrySet()) {
+            for (Entry<String, DocHit> e2 : e1.getValue().entrySet()) {
+                if (e2.getKey().equals(docID))
                     max = Math.max(e2.getValue().getFreq(), max);
             }
         }
-        for (Entry<String, Map<Long, DocHit>> e1 : map.entrySet()) {
-            for (Entry<Long, DocHit> e2 : e1.getValue().entrySet()) {
-                if (e2.getKey() == docID)
+        for (Entry<String, Map<String, DocHit>> e1 : map.entrySet()) {
+            for (Entry<String, DocHit> e2 : e1.getValue().entrySet()) {
+                if (e2.getKey().equals(docID))
                     e2.getValue().calTFvalue(max);
             }
         }
     }
 
-    protected long getDocID(String url) {
-        return db.getDocId(url);
-        // return -1;
+    protected static String getDocID(String url) {
+        return Utils.hashUrlToHexStringArray(url);
     }
 
     public void parse() {
@@ -221,16 +218,19 @@ public class Indexer {
         return null;
     }
 
-    public Map<String, Map<Long, DocHit>> getMap() {
+    public Map<String, Map<String, DocHit>> getMap() {
         return map;
     }
 
     public void displayResult() {
-        for (Entry<String, Map<Long, DocHit>> e1 : map.entrySet()) {
-            for (Entry<Long, DocHit> e2 : e1.getValue().entrySet()) {
+        for (Entry<String, Map<String, DocHit>> e1 : map.entrySet()) {
+            for (Entry<String, DocHit> e2 : e1.getValue().entrySet()) {
                 System.out.println(e1.getKey() + " : " + e2.getValue());
             }
         }
     }
 
+    public static void main(String... args) {
+        System.out.println(getDocID("https://www.yahoo.com/"));
+    }
 }

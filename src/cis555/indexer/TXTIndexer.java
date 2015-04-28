@@ -2,13 +2,11 @@ package cis555.indexer;
 
 import java.io.InputStream;
 
-import cis555.utils.UrlDocIDMapper;
-
 public class TXTIndexer extends Indexer {
 
-    public TXTIndexer(InputStream is, String URL, long docID, UrlDocIDMapper db)
+    public TXTIndexer(InputStream is, String URL, String docID)
             throws Exception {
-        super(is, URL, docID, db);
+        super(is, URL, docID);
         StringBuilder sb = new StringBuilder();
         int ch;
         while ((ch = this.is.read()) != -1) {

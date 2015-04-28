@@ -12,7 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 public class DocHitObject {
 
     private String word;
-    private long docID;
+    private String docID;
     private double tfValue;
     private List<Integer> hitLst;
 
@@ -26,11 +26,11 @@ public class DocHitObject {
     }
 
     @DynamoDBRangeKey(attributeName = "docID")
-    public long getDocID() {
+    public String getDocID() {
         return docID;
     }
 
-    public void setDocID(long docID) {
+    public void setDocID(String docID) {
         this.docID = docID;
     }
 
@@ -55,11 +55,10 @@ public class DocHitObject {
     public DocHitObject(String line) {
         String[] tokens = line.split("\\s+|,");
         word = tokens[0];
-        docID = Long.parseLong(tokens[1]);
+        docID = tokens[1];
         tfValue = Double.parseDouble(tokens[2]);
         hitLst = new LinkedList<Integer>();
         for (int i = 3; i < tokens.length; i++)
             hitLst.add(Integer.valueOf(tokens[i]));
     }
-
 }

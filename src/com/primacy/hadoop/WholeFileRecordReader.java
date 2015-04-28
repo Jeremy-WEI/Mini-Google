@@ -13,13 +13,15 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
-import cis555.utils.ZipUtils;
+import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
 public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
 
     private FileSplit split;
     private Configuration conf;
     private Text key;
+    private String type;
 
     private final BytesWritable currValue = new BytesWritable();
     private boolean fileProcessed = false;
@@ -29,7 +31,10 @@ public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
             throws IOException, InterruptedException {
         this.split = (FileSplit) split;
         String fileName = this.split.getPath().getName();
-        this.key = new Text(fileName);
+        // this.key = new Text(fileName);
+        int startIndex = fileName.indexOf('.') + 1;
+        type = fileName
+                .substring(startIndex, fileName.indexOf('.', startIndex));
         this.conf = context.getConfiguration();
     }
 
@@ -42,13 +47,15 @@ public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
         int fileLength = (int) split.getLength();
         byte[] result = new byte[fileLength];
 
-        FileSystem fs = FileSystem.get(conf);
+        FileSystem fs = FileSystem.get(split.getPath().toUri(), conf);
         FSDataInputStream in = null;
         try {
             in = fs.open(split.getPath());
             IOUtils.readFully(in, result, 0, fileLength);
-            byte[] content = ZipUtils.unzip(result);
-            currValue.set(content, 0, content.length);
+            byte[] content = Utils.unzip(result);
+            key = new Text(Utils.getURL(content) + '.' + type);
+            currValue.set(content, CrawlerConstants.MAX_URL_LENGTH * 2,
+                    content.length - CrawlerConstants.MAX_URL_LENGTH * 2);
 
         } finally {
             IOUtils.closeStream(in);

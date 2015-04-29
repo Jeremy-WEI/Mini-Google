@@ -1,4 +1,4 @@
-package cis555.indexer;
+package cis555.utils;
 /*
 
  Porter stemmer in Java. The original paper is in
@@ -42,7 +42,7 @@ package cis555.indexer;
  * the various stem(something) methods.
  */
 
-class Stemmer {
+public class Stemmer {
 	private char[] b;
 	private int i, /* offset into b */
 	i_end, /* offset to end of stemmed word */

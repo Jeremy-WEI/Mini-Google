@@ -24,7 +24,6 @@ public class UrlDocIDMapper {
     private String envDirectory;
 
     private static EntityStore store;
-    private PrimaryIndex<String, UrlDocIdInfo> urlIndex;
     private PrimaryIndex<Long, DocIdUrlInfo> docIdIndex;
 
     public UrlDocIDMapper(String envDirectory) {
@@ -38,7 +37,6 @@ public class UrlDocIDMapper {
     public void start() {
         try {
             store = DBWrapper.setupDatabase(envDirectory, false);
-            urlIndex = store.getPrimaryIndex(String.class, UrlDocIdInfo.class);
             docIdIndex = store.getPrimaryIndex(Long.class, DocIdUrlInfo.class);
         } catch (DatabaseException dbe) {
             dbe.printStackTrace();
@@ -54,21 +52,7 @@ public class UrlDocIDMapper {
     }
 
     private void saveInfo(String url, String docId) {
-        urlIndex.put(new UrlDocIdInfo(url, docId));
         docIdIndex.put(new DocIdUrlInfo(url, docId));
-    }
-
-    /**
-     * Returns the docID for the corresponding URL
-     * 
-     * @param url
-     * @return
-     */
-    public String getDocId(String url) {
-        UrlDocIdInfo item = urlIndex.get(url);
-        if (item == null)
-            return null;
-        return item.getDocId();
     }
 
     /**

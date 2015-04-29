@@ -32,41 +32,7 @@ public class UrlDocIDMapper {
         File directory = new File(envDirectory);
         if (!directory.exists()) {
             directory.mkdir();
-            buildDatabase();
         }
-    }
-
-    private void buildDatabase() {
-        start();
-        AmazonDynamoDBClient dynamoDB = AWSClientAdapters.getDynamoClient();
-        ScanResult result = null;
-        // Set<Long> set = new HashSet<>();
-        // long maxDocID = -1;
-        do {
-            ScanRequest scanRequest = new ScanRequest()
-                    .withTableName(AWSConstants.DOCUMENT_META_TABLE);
-            if (result != null) {
-                scanRequest.setExclusiveStartKey(result.getLastEvaluatedKey());
-            }
-            result = dynamoDB.scan(scanRequest);
-            // System.out.println(result.getScannedCount());
-            for (Map<String, AttributeValue> item : result.getItems()) {
-                saveInfo(
-                        item.get(AWSConstants.DOCUMENT_META_URL_FIELD).getS(),
-                        Long.parseLong(item.get(
-                                AWSConstants.DOCUMENT_META_DOCID_FIELD).getN()));
-                // System.out.println(item.get("uRL").getS());
-                // maxDocID = Math.max(maxDocID,
-                // Long.parseLong(item.get("docID").getN()));
-                // set.add(Long.parseLong(item.get("docID").getN()));
-            }
-        } while (result.getLastEvaluatedKey() != null);
-        // for (long i = 0; i < 28400; i++) {
-        // if (!set.contains(i))
-        // System.out.println(i);
-        // }
-        // System.out.println(maxDocID);
-        shutdown();
     }
 
     public void start() {
@@ -87,7 +53,7 @@ public class UrlDocIDMapper {
         DBWrapper.sync();
     }
 
-    private void saveInfo(String url, long docId) {
+    private void saveInfo(String url, String docId) {
         urlIndex.put(new UrlDocIdInfo(url, docId));
         docIdIndex.put(new DocIdUrlInfo(url, docId));
     }
@@ -98,10 +64,10 @@ public class UrlDocIDMapper {
      * @param url
      * @return
      */
-    public long getDocId(String url) {
+    public String getDocId(String url) {
         UrlDocIdInfo item = urlIndex.get(url);
         if (item == null)
-            return -1;
+            return null;
         return item.getDocId();
     }
 

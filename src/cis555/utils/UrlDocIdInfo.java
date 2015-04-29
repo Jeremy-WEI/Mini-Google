@@ -1,4 +1,5 @@
 package cis555.utils;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
@@ -7,17 +8,17 @@ public class UrlDocIdInfo {
 
     @PrimaryKey
     private String url;
-    private long docId;
+    private String docId;
 
     private UrlDocIdInfo() {
     }
 
-    public UrlDocIdInfo(String url, long docId) {
+    public UrlDocIdInfo(String url, String docId) {
         this.url = url;
         this.docId = docId;
     }
 
-    public long getDocId() {
+    public String getDocId() {
         return docId;
     }
 }

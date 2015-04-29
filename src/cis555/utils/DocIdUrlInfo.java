@@ -7,13 +7,13 @@ import com.sleepycat.persist.model.PrimaryKey;
 public class DocIdUrlInfo {
 
     @PrimaryKey
-    private long docId;
+    private String docId;
     private String url;
 
     private DocIdUrlInfo() {
     }
 
-    public DocIdUrlInfo(String url, long docId) {
+    public DocIdUrlInfo(String url, String docId) {
         this.url = url;
         this.docId = docId;
     }

@@ -106,6 +106,10 @@ public class Indexer {
         int index = 0;
         while (tokenizer.hasMoreTokens()) {
             String word = tokenizer.nextToken();
+            if (!isBasicLatin(word)) {
+                index++;
+                continue;
+            }
             // word = trimWord(word);
             if (hitType == 7) {
                 if (URL_STOP_LIST.contains(word))
@@ -122,8 +126,8 @@ public class Indexer {
             /*
              * word length longer than 30 characters is ignored
              */
-            // if (isBasicLatin(stemWord) && stemWord.length() <= 30) {
             if (stemWord.length() <= 30) {
+                // if (stemWord.length() <= 30) {
                 Map<String, DocHit> hits = map.get(stemWord);
                 if (hits == null) {
                     hits = new HashMap<String, DocHit>();
@@ -174,13 +178,12 @@ public class Indexer {
         return stemmer.toString();
     }
 
-    // protected boolean isBasicLatin(String word) {
-    // for (int i = 0; i < word.length(); i++)
-    // if (Character.UnicodeBlock.of(word.charAt(i)) !=
-    // Character.UnicodeBlock.BASIC_LATIN)
-    // return false;
-    // return true;
-    // }
+    protected static boolean isBasicLatin(String word) {
+        for (int i = 0; i < word.length(); i++)
+            if (Character.UnicodeBlock.of(word.charAt(i)) != Character.UnicodeBlock.BASIC_LATIN)
+                return false;
+        return true;
+    }
 
     protected void calTFValue() {
         int max = 0;

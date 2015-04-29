@@ -18,6 +18,12 @@ import com.sleepycat.persist.PrimaryIndex;
 import com.sleepycat.persist.SecondaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
+/*
+ * DBWrapper for SearchEngine database.
+ * Provided Interface:
+ * 
+ * 
+ */
 public class DBWrapper {
 
     private static final String STORE_NAME = "CIS455SEARCH_ENGINE";
@@ -173,7 +179,6 @@ public class DBWrapper {
         db.start();
         // db.populateDocIDUrl("document_meta.txt");
         // db.populateIndexTerm("indexer");
-        // EntityCursor<DocHitEntity> cursor = db.getDocHit("hello");
         Set<DocHitEntity> lst1 = db.getDocHit("hello");
         Set<DocHitEntity> lst2 = db.getDocHit("donor");
         Set<DocHitEntity> lst3 = db.getDocHit("donor");

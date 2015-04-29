@@ -9,6 +9,16 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+/*
+ * DocHitEntity is the class representing the DocHit.
+ * The class is written as an Entity, to difference from the DocHit in cis555.indexer.
+ * 
+ * DocHitEntity use an auto-increment ID for PrimaryKey, which we don't really care about it.
+ * DocHitEntity use the word as SecondaryKey, so we can search for given word and get all the matching DocHitEntity as a Cursor.  
+ * 
+ * The class's hashcode and equals is overrided for custom purposes.
+ * 
+ */
 @Entity
 public class DocHitEntity {
 

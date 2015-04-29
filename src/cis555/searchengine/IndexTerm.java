@@ -3,6 +3,14 @@ package cis555.searchengine;
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
+/*
+ * IndexTerm is the class representing the term in Inverted Index. 
+ * Each IndexTerm contains the word and the corresponding idf-value;
+ * 
+ * e.g. IndexTerm indexTerm;
+ *      indexTerm.getIdfValue();
+ *      indexTerm.getWord();
+ */
 @Entity
 public class IndexTerm {
 
@@ -15,10 +23,6 @@ public class IndexTerm {
 
     public String getWord() {
         return word;
-    }
-
-    public void setWord(String word) {
-        this.word = word;
     }
 
     public double getIdfValue() {

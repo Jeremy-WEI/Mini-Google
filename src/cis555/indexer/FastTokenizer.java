@@ -11,9 +11,13 @@ public class FastTokenizer {
         this.length = content.length();
     }
 
+    public static boolean isLetterOrDigit(char ch) {
+        return (ch <= 90 && ch >= 65) || (ch <= 122 && ch >= 97)
+                || (ch <= 57 && ch >= 48);
+    }
+
     public String nextToken() {
-        while (index < length
-                && !Character.isLetterOrDigit(content.charAt(index))) {
+        while (index < length && !isLetterOrDigit(content.charAt(index))) {
             index++;
         }
         if (index >= length)
@@ -30,12 +34,11 @@ public class FastTokenizer {
     public boolean hasMoreTokens() {
         return index < length;
     }
-
-    public static void main(String... args) {
-        FastTokenizer tokenizer = new FastTokenizer(
-                "asdsadasa asdsa. asd lkwq asdjl! adfl213vasd.asdu913 !#!@#$");
-        while (tokenizer.hasMoreTokens()) {
-            System.out.println(tokenizer.nextToken());
-        }
-    }
+    //
+    // public static void main(String... args) {
+    // FastTokenizer tokenizer = new FastTokenizer("雅虎香港財經");
+    // while (tokenizer.hasMoreTokens()) {
+    // System.out.println(tokenizer.nextToken());
+    // }
+    // }
 }

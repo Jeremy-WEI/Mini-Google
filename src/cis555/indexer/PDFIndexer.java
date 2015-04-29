@@ -16,6 +16,7 @@ public class PDFIndexer extends Indexer {
         stripper.setStartPage(1);
         stripper.setEndPage(Integer.MAX_VALUE);
         content = stripper.getText(document);
+        document.close();
     }
 
 }

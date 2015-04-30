@@ -175,38 +175,41 @@ public class Utils {
         return new String(bytes, 0, i);
     }
 
-    /**
-     * Log the entire stack trace to the logger
-     * 
-     * @param e
-     */
-    public static void logStackTrace(Exception e) {
-        StackTraceElement[] traces = e.getStackTrace();
-        if (null != traces && traces.length > 0) {
-            logger.error(CLASSNAME);
-            for (int i = 0; i < traces.length; i++) {
-                logger.error(traces[i]);
-            }
-        }
-    }
+	
+	/**
+	 * Log the entire stack trace to the logger
+	 * @param e
+	 */
+	public static void logStackTrace(Exception e){
+		StackTraceElement[] traces = e.getStackTrace();
+		if (null != traces && traces.length > 0){
+			logger.error(CLASSNAME + " EXCEPTION THROWN: " + e.getMessage() + "\n");
+			logger.error(CLASSNAME);
+			for (int i = 0; i < traces.length; i++){
+				logger.error(traces[i]);
+			}
+		}
+	}
+	
+	
+	/****
+	 * Other helper methods
+	 */
+	
+	/**
+	 * Creates a directory to store the database and environment settings
+	 */
+	public static void createDirectory(String path){
+		File directory = new File(path);
+		if (!directory.exists()){
+			try {
+				directory.mkdirs();
+				logger.info(CLASSNAME + ": New directory created " + path);
+			} catch (SecurityException e){
+				throw new RuntimeException("Unable to create directory");
+			}
+		}
+		
+	}
 
-    /****
-     * Other helper methods
-     */
-
-    /**
-     * Creates a directory to store the database and environment settings
-     */
-    public static void createDirectory(String path) {
-        File directory = new File(path);
-        if (!directory.exists()) {
-            try {
-                directory.mkdirs();
-                logger.info(CLASSNAME + ": New directory created " + path);
-            } catch (SecurityException e) {
-                throw new RuntimeException("Unable to create directory");
-            }
-        }
-
-    }
 }

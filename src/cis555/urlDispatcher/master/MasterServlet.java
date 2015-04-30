@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
+import java.util.Collection;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServlet;
@@ -24,12 +24,12 @@ public class MasterServlet extends HttpServlet {
 	private static final Logger logger = Logger.getLogger(MasterServlet.class);
 	private static final String CLASSNAME = MasterServlet.class.getName();
 	
-	private Map<String, WorkerDetails> workerDetailMap;
+	private TreeMap<String, WorkerDetails> workerDetailMap;
 	private boolean isCrawling;
 	
 	public MasterServlet(){
 		this.workerDetailMap = new TreeMap<String, WorkerDetails>(); // NB TreeMap is sorted
-		this.isCrawling = false;
+		this.isCrawling = false;	
 	}
 	
 	
@@ -69,8 +69,9 @@ public class MasterServlet extends HttpServlet {
 	/**
 	 * Parses out response from user, and sends a message to /runmap
 	 * @param request
+	 * @throws IOException 
 	 */
-	private void handleStatus(HttpServletRequest request){
+	private void handleStatus(HttpServletRequest request) throws IOException{
 		
 		if (null != request.getParameter(DispatcherConstants.START_URL)){
 			startCrawl();
@@ -89,19 +90,21 @@ public class MasterServlet extends HttpServlet {
 	
 	/**
 	 * Send command to start crawling
+	 * @throws IOException 
 	 */
-	private void startCrawl(){
+	private void startCrawl() throws IOException{
 		validateStatus();
 		int crawlerNumber = 0;
 		for (String workerIPAddress : this.workerDetailMap.keySet()){
 			String ipAddress = this.workerDetailMap.get(workerIPAddress).getIP(); 
 			int port = this.workerDetailMap.get(workerIPAddress).getPort();
-			String urlString = "http://" + ipAddress + ":" + port + "/worker/" + DispatcherConstants.START_URL;
-			String content = generateStartingUrls(crawlerNumber);
+			String content = "";
+			String urlString = "http://" + ipAddress + ":" + port + "/worker/" + DispatcherConstants.START_URL + "?" + generateStartContents(crawlerNumber);
 			
 			try {
 				URL url = new URL(urlString);
-				DispatcherUtils.sendHttpRequest(url, content, DispatcherUtils.Method.POST, true);
+				logger.debug(CLASSNAME + ": " + url);
+				DispatcherUtils.sendHttpRequest(url, content, DispatcherUtils.Method.POST, false);
 				
 				
 			} catch (MalformedURLException e) {
@@ -114,15 +117,38 @@ public class MasterServlet extends HttpServlet {
 	}
 	
 	/**
-	 * Generates the starting urls for a particular worker. WILL NEED MODIFYING
+	 * Generates the contents to kickstart the workers
 	 * @param i
 	 * @return
 	 */
-	private String generateStartingUrls(int crawlerNumber){
+	private String generateStartContents(int crawlerNumber){
 		StringBuilder str = new StringBuilder();
-		str.append(DispatcherConstants.CRAWLER_NUMBER_PARAM + "=" + crawlerNumber);
-		str.append(DispatcherConstants.STARTING_URL_PARAM + "=");
-		return str.toString() + "https://www.yahoo.com;http://ga.berkeley.edu/wp-content/uploads/2015/02/pdf-sample.pdf;";
+		str.append(DispatcherConstants.CRAWLER_NAME_PARAM + "=worker" + crawlerNumber + "&");
+		str.append(DispatcherConstants.STARTING_URL_PARAM + "=" + generateStartingUrlString(crawlerNumber)+ "&");
+		
+		Collection<WorkerDetails> workerDetails = this.workerDetailMap.values();
+		
+		int i = 0;
+		for (WorkerDetails workerDetail : workerDetails){
+			if (i == 0){
+				str.append("worker" + i + "=" + workerDetail.getIP());				
+			} else {
+				str.append("&worker" + i + "=" + workerDetail.getIP());								
+			}
+			i++;
+		}
+		
+		return str.toString();
+	}
+	
+	/**
+	 * Generates the starting urls for the specified crawler number
+	 * @param crawlerNumber
+	 * @return
+	 */
+	private String generateStartingUrlString(int crawlerNumber){
+		// WILL NEED MODIFYING
+		return "https://www.yahoo.com;http://ga.berkeley.edu/wp-content/uploads/2015/02/pdf-sample.pdf;";
 	}
 	
 	/**
@@ -136,8 +162,9 @@ public class MasterServlet extends HttpServlet {
 	
 	/**
 	 * Issue a stop crawl order for all crawlers
+	 * @throws IOException 
 	 */
-	private void stopCrawl(){
+	private void stopCrawl() throws IOException{
 		validateStatus();
 		for (String workerIPAddress : this.workerDetailMap.keySet()){
 			String ipAddress = this.workerDetailMap.get(workerIPAddress).getIP(); 
@@ -164,6 +191,8 @@ public class MasterServlet extends HttpServlet {
 	 */
   
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		
+		logger.info(CLASSNAME + request.getRequestURI());
 		
 		String extension = DispatcherUtils.extractExtension(request);
 		

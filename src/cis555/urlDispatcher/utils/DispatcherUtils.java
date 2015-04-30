@@ -1,6 +1,7 @@
 package cis555.urlDispatcher.utils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Path;
@@ -29,34 +30,31 @@ public class DispatcherUtils {
 	 * @param content
 	 * @param method
 	 * @param postParameter - True if POST contents relates to parameters, false otherwise. Irrelevant for GET requests
+	 * @throws IOException 
 	 */
-	public static void sendHttpRequest(URL url, String content, Method method, boolean postParameters) {
-		HttpURLConnection httpConnection = null;
-		try {
-			httpConnection = (HttpURLConnection) url.openConnection();
-			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
-			
-			if (method == Method.GET){
-				httpConnection.setRequestMethod("GET");
-				httpConnection.addRequestProperty("Content-type", "text/plain");
+	public static void sendHttpRequest(URL url, String content, Method method, boolean postParameters) throws IOException {
+		HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+		httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
+		httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
+		
+		if (method == Method.GET){
+			httpConnection.setRequestMethod("GET");
+			httpConnection.addRequestProperty("Content-type", "text/plain");
+		} else {
+			httpConnection.setRequestMethod("POST");
+			httpConnection.addRequestProperty("Content-length", Integer.toString(content.length()));
+			if (postParameters){
+				httpConnection.addRequestProperty("Content-type", "application/x-www-form-urlencoded");
 			} else {
-				httpConnection.setRequestMethod("POST");
-				httpConnection.addRequestProperty("Content-length", Integer.toString(content.length()));
-				if (postParameters){
-					httpConnection.addRequestProperty("Content-type", "application/x-www-form-urlencoded");
-				} else {
-					httpConnection.addRequestProperty("Content-type", "text/plain");
-				}
-				
+				httpConnection.addRequestProperty("Content-type", "text/plain");
 			}
 			
-			httpConnection.connect();
-		
-			logger.info(CLASSNAME + ": sending request to " + url);
-		
-		} catch (Exception e){
-			Utils.logStackTrace(e);
 		}
+		
+		httpConnection.connect();
+	
+		logger.info(CLASSNAME + ": sending request to " + url + " with response code " + httpConnection.getResponseCode());
+		
 	}
 	
 	/**

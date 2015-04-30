@@ -16,8 +16,6 @@ import com.sleepycat.persist.model.SecondaryKey;
  * DocHitEntity use an auto-increment ID for PrimaryKey, which we don't really care about it.
  * DocHitEntity use the word as SecondaryKey, so we can search for given word and get all the matching DocHitEntity as a Cursor.  
  * 
- * The class's hashCode and equals function is override for custom purposes (boolean model).
- * 
  */
 @Entity
 public class DocHitEntity {
@@ -60,18 +58,18 @@ public class DocHitEntity {
         return hitLst;
     }
 
-    @Override
-    public int hashCode() {
-        return docID.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof DocHitEntity))
-            return false;
-        DocHitEntity docHit = (DocHitEntity) obj;
-        return docHit.docID.equals(docID);
-    }
+    // @Override
+    // public int hashCode() {
+    // return docID.hashCode();
+    // }
+    //
+    // @Override
+    // public boolean equals(Object obj) {
+    // if (!(obj instanceof DocHitEntity))
+    // return false;
+    // DocHitEntity docHit = (DocHitEntity) obj;
+    // return docHit.docID.equals(docID);
+    // }
 
     public String toString() {
         return "DocID: " + docID + " tf: " + tf;

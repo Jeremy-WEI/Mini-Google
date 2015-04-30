@@ -1,5 +1,6 @@
 package cis555.searchengine;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,7 +15,8 @@ public class SearchEngine {
     }
 
     /*
-     * Search using Boolean Model, binary decision, no tf-idf value used
+     * Search using Boolean Model, binary decision, no tf-idf value is used for
+     * testing...
      * 
      * @param: query, from user input
      * 
@@ -25,15 +27,38 @@ public class SearchEngine {
         if (queryTerms.size() == 0)
             return new LinkedList<String>();
         Iterator<QueryTerm> iter = queryTerms.iterator();
-        Set<DocHitEntity> set = db.getDocHit(iter.next().getWord());
+        Set<String> docIDSet = new HashSet<String>();
+        Set<DocHitEntity> docHitSet = db.getDocHit(iter.next().getWord());
+        for (DocHitEntity docHit : docHitSet) {
+            docIDSet.add(docHit.getDocID());
+        }
         for (QueryTerm queryTerm : queryTerms) {
-            Set<DocHitEntity> newSet = db.getDocHit(queryTerm.getWord());
-            set.retainAll(newSet);
+            docHitSet = db.getDocHit(queryTerm.getWord());
+            Set<String> newDocIDSet = new HashSet<String>();
+            for (DocHitEntity docHit : docHitSet) {
+                newDocIDSet.add(docHit.getDocID());
+            }
+            docIDSet.retainAll(newDocIDSet);
         }
         List<String> results = new LinkedList<String>();
-        for (DocHitEntity docHit : set) {
-            results.add(db.getUrl(docHit.getDocID()));
+        for (String docID : docIDSet) {
+            results.add(db.getUrl(docID));
         }
+        return results;
+    }
+
+    /*
+     * Search using Vector Model, just a protoType
+     * 
+     * @param: query, from user input
+     * 
+     * @return: List of matching WeightedDocID, sorted by weight
+     */
+    public static List<WeightedDocID> vectorSearch(String query) {
+        Set<QueryTerm> queryTerms = SEHelper.parseQuery(query);
+        if (queryTerms.size() == 0)
+            return new LinkedList<WeightedDocID>();
+        List<WeightedDocID> results = new LinkedList<WeightedDocID>();
         return results;
     }
 

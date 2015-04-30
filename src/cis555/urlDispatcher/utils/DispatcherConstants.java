@@ -4,6 +4,7 @@ public class DispatcherConstants {
 	
 	public static final String IP_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
 	public static final int TIMER_TASK_FREQUENCY_MS = 10000;
+	public static final int HTTP_TIMEOUT = 1000;
 
 	
 	// GET / PUT URL paths
@@ -23,9 +24,9 @@ public class DispatcherConstants {
 	public static final String PAGES_CRAWLED_PARAM = "pagesCrawled";
 
 	public static final String STARTING_URL_PARAM = "startingUrl";
-	public static final String CRAWLER_NUMBER_PARAM = "crawlerNumber";
+	public static final String CRAWLER_NAME_PARAM = "crawlerName";
 	
-	public static final String NEW_URLS_PARAM = "newUrls";
+	public static final String STARTING_URLS_PARAM = "startingUrls";
 
 	// Worker Web.xml
 	

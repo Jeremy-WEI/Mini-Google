@@ -3,10 +3,11 @@ package cis555.urlDispatcher.worker;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -17,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 import cis555.urlDispatcher.utils.DispatcherConstants;
+import cis555.urlDispatcher.utils.DispatcherException;
 import cis555.urlDispatcher.utils.DispatcherUtils;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.Utils;
@@ -30,7 +32,8 @@ public class WorkerServlet extends HttpServlet {
 	private String masterIP;
 	private int port;
 	private BlockingQueue<URL> newUrlQueue;
-	private Set<String> otherWorkerIPs;
+	private Map<Integer, String> otherWorkerIPs;
+	private int crawlerNumber;
 	
 
 	/**
@@ -78,7 +81,7 @@ public class WorkerServlet extends HttpServlet {
 		
 		this.newUrlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
 		
-		this.otherWorkerIPs = new TreeSet<String>();
+		this.otherWorkerIPs = new HashMap<Integer, String>();
 		
 		Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new PingMasterTask(), 0, DispatcherConstants.TIMER_TASK_FREQUENCY_MS);
@@ -131,7 +134,7 @@ public class WorkerServlet extends HttpServlet {
 				break;
 				
 			case DispatcherConstants.ADD_URLS_URL:	
-				addUrls(request);
+				addStartUrls(request);
 				break;
 			default:
 				response.sendError(404);
@@ -151,33 +154,59 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void startCrawler(HttpServletRequest request) throws MalformedURLException{
 		
-		String[] startingUrls = request.getParameter(DispatcherConstants.STARTING_URL_PARAM).split(";");
-		String crawlerNumString = request.getParameter(DispatcherConstants.CRAWLER_NUMBER_PARAM);
-		int crawlerNum = Integer.parseInt(crawlerNumString);
+		String crawlerNumString = request.getParameter(DispatcherConstants.CRAWLER_NAME_PARAM);
+		this.crawlerNumber = parseCrawlerNumber(crawlerNumString);
+		addOtherCrawlersInfo(request);
+		addStartUrls(request);	
 		
-		// TODO - parse out IP addresses of other crawlers
-		
-		for (String url : startingUrls){
-			this.newUrlQueue.add(new URL(url));
+	}
+	
+	
+	/**
+	 * Parse out this crawler's number
+	 * @param crawlerNumString
+	 */
+	private int parseCrawlerNumber(String crawlerNumString) throws DispatcherException {
+		String numString = crawlerNumString.substring(6);
+		if (numString.matches("\\d+")){
+			return Integer.parseInt(numString);
+		}
+		throw new DispatcherException("Invalid crawler num string: " + crawlerNumString);
+	}
+	
+	/**
+	 * Add other crawlers' info
+	 * @param request
+	 */
+	private void addOtherCrawlersInfo(HttpServletRequest request){
+		Set<String> keys = request.getParameterMap().keySet();
+		for (String key : keys){
+			if (key.matches("worker\\d+")){
+				int crawlerNum = parseCrawlerNumber(key);
+				logger.debug(CLASSNAME + ": Adding keys for other workers: " + key);
+				otherWorkerIPs.put(crawlerNum, request.getParameter(key));
+			}
 			
-			logger.info(CLASSNAME + " Added " + url + " for crawler number " + crawlerNum);
 		}
 	}
 	
 	/**
-	 * Adds urls to file
+	 * Adds urls to file to start
 	 * @param request
 	 * @throws MalformedURLException 
 	 */
-	private void addUrls(HttpServletRequest request) throws MalformedURLException{
-		String[] newUrls = request.getParameter(DispatcherConstants.NEW_URLS_PARAM).split(";");
+	private void addStartUrls(HttpServletRequest request) throws MalformedURLException {
+		String[] newUrls = request.getParameter(DispatcherConstants.STARTING_URLS_PARAM).split(";");
 		for (String url : newUrls){
-			this.newUrlQueue.add(new URL(url));
-			
-			logger.info(CLASSNAME + " Added " + url);
+			try {
+				this.newUrlQueue.add(new URL(url));					
+				logger.info(CLASSNAME + " Added " + url);
+			} catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": New URL queue is full, dropping " + url);				
+			}
 		}
 	}
-	
+
 	
 	/**
 	 * Private timer task class to ping the master
@@ -190,7 +219,7 @@ public class WorkerServlet extends HttpServlet {
 			StringBuilder str = new StringBuilder();
 			str.append("http://" + getMasterIP() + "/master/" + DispatcherConstants.WORKER_STATUS_URL + "?");
 			str.append(DispatcherConstants.PORT_PARAM + "=" + getPort() + "&");
-			str.append(DispatcherConstants.PAGES_CRAWLED_PARAM + "=" + getUrlsCrawled() + "&");
+			str.append(DispatcherConstants.PAGES_CRAWLED_PARAM + "=" + getUrlsCrawled());
 			
 			try {
 				URL url = new URL(str.toString());		

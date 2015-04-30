@@ -1,9 +1,13 @@
 package cis555.searchengine;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SearchEngine {
@@ -28,11 +32,13 @@ public class SearchEngine {
             return new LinkedList<String>();
         Iterator<QueryTerm> iter = queryTerms.iterator();
         Set<String> docIDSet = new HashSet<String>();
-        Set<DocHitEntity> docHitSet = db.getDocHit(iter.next().getWord());
+        QueryTerm queryTerm = iter.next();
+        Set<DocHitEntity> docHitSet = db.getDocHit(queryTerm.getWord());
         for (DocHitEntity docHit : docHitSet) {
             docIDSet.add(docHit.getDocID());
         }
-        for (QueryTerm queryTerm : queryTerms) {
+        while (iter.hasNext()) {
+            queryTerm = iter.next();
             docHitSet = db.getDocHit(queryTerm.getWord());
             Set<String> newDocIDSet = new HashSet<String>();
             for (DocHitEntity docHit : docHitSet) {
@@ -40,15 +46,20 @@ public class SearchEngine {
             }
             docIDSet.retainAll(newDocIDSet);
         }
-        List<String> results = new LinkedList<String>();
+        List<String> results = new ArrayList<String>();
         for (String docID : docIDSet) {
             results.add(db.getUrl(docID));
         }
         return results;
+        // List<String> newResults = new ArrayList<String>();
+        // for (int i = 0; i < Math.min(10, results.size()); i++) {
+        // newResults.add(results.get(i));
+        // }
+        // return newResults;
     }
 
     /*
-     * Search using Vector Model, just a protoType
+     * Search using Vector Model, just a protoType right now
      * 
      * @param: query, from user input
      * 
@@ -58,8 +69,41 @@ public class SearchEngine {
         Set<QueryTerm> queryTerms = SEHelper.parseQuery(query);
         if (queryTerms.size() == 0)
             return new LinkedList<WeightedDocID>();
-        List<WeightedDocID> results = new LinkedList<WeightedDocID>();
+        Iterator<QueryTerm> iter = queryTerms.iterator();
+        QueryTerm queryTerm = iter.next();
+        Map<String, WeightedDocID> weightedDocIDMap = new HashMap<String, WeightedDocID>();
+        Set<DocHitEntity> docHitSet = db.getDocHit(queryTerm.getWord());
+        for (DocHitEntity docHit : docHitSet) {
+            WeightedDocID weightedDocID = new WeightedDocID(docHit.getDocID());
+            // add idf value here
+            weightedDocID.setWeight(docHit.getTf() * queryTerm.getFreq());
+            weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
+        }
+        while (iter.hasNext()) {
+            queryTerm = iter.next();
+            docHitSet = db.getDocHit(queryTerm.getWord());
+            for (DocHitEntity docHit : docHitSet) {
+                WeightedDocID weightedDocID = weightedDocIDMap.get(docHit
+                        .getDocID());
+                if (weightedDocID == null) {
+                    weightedDocID = new WeightedDocID(docHit.getDocID());
+                    weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
+                }
+                // add idf value here
+                weightedDocID.setWeight(weightedDocID.getWeight()
+                        + docHit.getTf() * queryTerm.getFreq());
+            }
+        }
+
+        List<WeightedDocID> results = new ArrayList<WeightedDocID>(
+                weightedDocIDMap.values());
+        Collections.sort(results);
         return results;
+        // List<WeightedDocID> newResults = new ArrayList<WeightedDocID>();
+        // for (int i = 0; i < Math.min(10, results.size()); i++) {
+        // newResults.add(results.get(i));
+        // }
+        // return newResults;
     }
 
     public static void main(String... args) {
@@ -68,12 +112,14 @@ public class SearchEngine {
         db.start();
         // SearchEngine se = new SearchEngine(db);
         String[] queries = new String[] {
-                "Computer Science developer, hello a i world test wiki",
-                "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
-                "testing ", "WikiPedia", "Bank of America", "Apigee",
-                "University of Pennsylvania", "UCB", "....a" };
+                "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
+                // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
+                // "testing ", "WikiPedia", "Bank of America", "Apigee",
+                "University of Pennsylvania", "UCB" };
         for (String query : queries) {
+            System.out.println(query);
             System.out.println(SearchEngine.booleanSearch(query));
+            System.out.println(SearchEngine.vectorSearch(query));
         }
         db.shutdown();
     }

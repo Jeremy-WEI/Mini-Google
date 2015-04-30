@@ -77,6 +77,7 @@ public class SearchEngine {
             WeightedDocID weightedDocID = new WeightedDocID(docHit.getDocID());
             // add idf value here
             weightedDocID.setWeight(docHit.getTf() * queryTerm.getFreq());
+            weightedDocID.addDocHit(docHit);
             weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
         }
         while (iter.hasNext()) {
@@ -92,6 +93,7 @@ public class SearchEngine {
                 // add idf value here
                 weightedDocID.setWeight(weightedDocID.getWeight()
                         + docHit.getTf() * queryTerm.getFreq());
+                weightedDocID.addDocHit(docHit);
             }
         }
 
@@ -110,8 +112,7 @@ public class SearchEngine {
         DBWrapper db = new DBWrapper("database");
         SearchEngine.setDatabase(db);
         db.start();
-        String[] queries = new String[] {
-        // "UCB",
+        String[] queries = new String[] { "UCB",
         // "United_Christian_Broadcasters",
         // "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
         // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",

@@ -20,7 +20,7 @@ public class IndexerReducer extends Reducer<Text, Text, Text, Text> {
         Iterator<Text> iter = values.iterator();
         while (iter.hasNext()) {
             // Text text = iter.next();
-            DocHit docHit = new DocHit(iter.next().toString(), false);
+            DocHit docHit = new DocHit(iter.next().toString());
             if (map.containsKey(docHit.getDocID())) {
                 map.get(docHit.getDocID()).merge(docHit);
             } else

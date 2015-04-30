@@ -65,6 +65,7 @@ public class Indexer {
         STOP_LIST.add("www");
     }
 
+    protected int totalWord;
     protected String docID;
     protected String URL;
     protected String content;
@@ -138,14 +139,17 @@ public class Indexer {
                 }
                 DocHit hitLst = hits.get(docID);
                 if (hitLst == null) {
-                    hitLst = new DocHit(docID);
+                    hitLst = new DocHit(docID, Hit.getHitValue(hitType, index,
+                            Character.isUpperCase(word.charAt(0))));
                     hits.put(docID, hitLst);
-                }
-                hitLst.addHit(Hit.getHitValue(hitType, index,
-                        Character.isUpperCase(word.charAt(0))));
+                } else
+                    hitLst.addHit(Hit.getHitValue(hitType, index,
+                            Character.isUpperCase(word.charAt(0))));
             }
             index++;
         }
+        if (hitType == 0)
+            totalWord = index;
     }
 
     public Indexer(InputStream is, String URL, String docID) throws Exception {
@@ -153,6 +157,7 @@ public class Indexer {
         this.docID = docID;
         this.stemmer = new Stemmer();
         this.is = is;
+        this.totalWord = 0;
         this.map = new HashMap<String, Map<String, DocHit>>();
     }
 
@@ -174,6 +179,10 @@ public class Indexer {
         }
     }
 
+    public int getLength() {
+        return totalWord;
+    }
+
     protected String getStem(String word) {
         word = word.trim();
         stemmer.add(word.toCharArray(), word.length());
@@ -188,20 +197,11 @@ public class Indexer {
         return true;
     }
 
-    protected void calTFValue() {
-        int max = 0;
-        for (Entry<String, Map<String, DocHit>> e1 : map.entrySet()) {
-            for (Entry<String, DocHit> e2 : e1.getValue().entrySet()) {
+    protected void setTotalWord() {
+        for (Entry<String, Map<String, DocHit>> e1 : map.entrySet())
+            for (Entry<String, DocHit> e2 : e1.getValue().entrySet())
                 if (e2.getKey().equals(docID))
-                    max = Math.max(e2.getValue().getFreq(), max);
-            }
-        }
-        for (Entry<String, Map<String, DocHit>> e1 : map.entrySet()) {
-            for (Entry<String, DocHit> e2 : e1.getValue().entrySet()) {
-                if (e2.getKey().equals(docID))
-                    e2.getValue().calTFvalue(max);
-            }
-        }
+                    e2.getValue().setTotalWordNo(totalWord);
     }
 
     protected static String getDocID(String url) {
@@ -211,7 +211,7 @@ public class Indexer {
     public void parse() {
         parseElement(docID, 7, URL);
         parseElement(docID, 0, content);
-        calTFValue();
+        setTotalWord();
     }
 
     public String getWordByIndex(int index) {

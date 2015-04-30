@@ -13,6 +13,13 @@ import cis555.indexer.DocHit;
 import cis555.indexer.Indexer;
 import cis555.utils.Utils;
 
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
+
 /*
  * InputFormat: key --> filename(docID.html/txt/xml/pdf)
  *              value --> filecontent(read in as BytesWritable)
@@ -35,6 +42,7 @@ public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
 
         if (indexer == null)
             return;
+
         indexer.parse();
         Text word = new Text();
         Text val = new Text();
@@ -48,5 +56,12 @@ public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
                 context.write(word, val);
             }
         }
+        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
+                new InstanceProfileCredentialsProvider());
+        DynamoDB dynamoDB = new DynamoDB(client);
+        Table table = dynamoDB.getTable("DocumentWordCount");
+        Item item = new Item().withPrimaryKey("docID", docID).withNumber(
+                "length", indexer.getLength());
+        table.putItem(item);
     }
 }

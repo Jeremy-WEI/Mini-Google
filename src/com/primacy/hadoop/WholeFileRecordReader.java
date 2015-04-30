@@ -33,8 +33,7 @@ public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
         String fileName = this.split.getPath().getName();
         // this.key = new Text(fileName);
         int startIndex = fileName.indexOf('.') + 1;
-        type = fileName
-                .substring(startIndex, fileName.indexOf('.', startIndex));
+        type = fileName.substring(startIndex, fileName.lastIndexOf('.'));
         this.conf = context.getConfiguration();
     }
 
@@ -53,7 +52,7 @@ public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
             in = fs.open(split.getPath());
             IOUtils.readFully(in, result, 0, fileLength);
             byte[] content = Utils.unzip(result);
-            key = new Text(Utils.getURL(content) + '.' + type);
+            key = new Text(Utils.getURL(content) + "." + type);
             currValue.set(content, CrawlerConstants.MAX_URL_LENGTH * 2,
                     content.length - CrawlerConstants.MAX_URL_LENGTH * 2);
 

@@ -44,6 +44,6 @@ public class HTMLIndexer extends Indexer {
         }
         parseElement(docID, 0, content);
         // parseElement(docID, tagToHitType("p"), content);
-        calTFValue();
+        setTotalWord();
     }
 }

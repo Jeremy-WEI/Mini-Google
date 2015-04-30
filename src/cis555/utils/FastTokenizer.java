@@ -1,4 +1,4 @@
-package cis555.indexer;
+package cis555.utils;
 
 public class FastTokenizer {
 

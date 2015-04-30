@@ -1,15 +1,6 @@
 package cis555.utils;
 
 import java.io.File;
-import java.util.Map;
-
-import cis555.aws.utils.AWSClientAdapters;
-import cis555.aws.utils.AWSConstants;
-
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;

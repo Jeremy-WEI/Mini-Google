@@ -8,10 +8,10 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import cis555.aws.utils.DocumentMeta;
 import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.DBWrapper;
+import cis555.utils.DocumentMeta;
 import cis555.utils.Utils;
 
 import com.sleepycat.persist.EntityStore;

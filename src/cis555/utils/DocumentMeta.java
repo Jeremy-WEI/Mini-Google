@@ -1,4 +1,4 @@
-package cis555.aws.utils;
+package cis555.utils;
 
 import java.util.Date;
 

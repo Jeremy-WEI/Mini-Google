@@ -23,10 +23,9 @@ public class DispatcherConstants {
 	public static final String PORT_PARAM = "port";
 	public static final String PAGES_CRAWLED_PARAM = "pagesCrawled";
 
-	public static final String STARTING_URL_PARAM = "startingUrl";
 	public static final String CRAWLER_NAME_PARAM = "crawlerName";
 	
-	public static final String STARTING_URLS_PARAM = "startingUrls";
+	public static final String NEW_URLS_PARAM = "newUrls";
 
 	// Worker Web.xml
 	

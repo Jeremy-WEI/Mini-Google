@@ -7,9 +7,9 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import cis555.aws.utils.CrawledDocument;
-import cis555.aws.utils.DocumentMeta;
+import cis555.utils.CrawledDocument;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.DocumentMeta;
 
 import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;

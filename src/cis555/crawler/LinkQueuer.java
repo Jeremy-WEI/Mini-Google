@@ -3,6 +3,7 @@ package cis555.crawler;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -18,15 +19,15 @@ public class LinkQueuer implements Runnable {
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private BlockingQueue<URL> newUrlQueue;
 	private int crawlerID;
-	private List<String> otherCrawlerDetails;
+	private Map<Integer, String> otherWorkerIPs;
 	private List<String> excludedPatterns;
 	
 	public LinkQueuer(BlockingQueue<URL> preRedistributionNewURLQueue, BlockingQueue<URL> newUrlQueue,
-			int crawlerID, List<String> otherCrawlerDetails, List<String> excludedPatterns){
+			int crawlerID, Map<Integer, String> otherWorkerIPs, List<String> excludedPatterns){
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.newUrlQueue = newUrlQueue;
 		this.crawlerID = crawlerID;
-		this.otherCrawlerDetails = otherCrawlerDetails;
+		this.otherWorkerIPs = otherWorkerIPs;
 		this.excludedPatterns = excludedPatterns;
 	}
 

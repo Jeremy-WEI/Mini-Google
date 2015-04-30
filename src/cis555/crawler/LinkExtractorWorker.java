@@ -34,19 +34,17 @@ public class LinkExtractorWorker implements Runnable {
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private int id;
 	private CrawlerDao dao;
-	private DocIDGenerator counterGenerator;
 	private String storageDirectory;
 	private String urlStorageDirectory;
 	public static boolean active;
 	
 	public LinkExtractorWorker(BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
-			BlockingQueue<URL> preRedistributionNewURLQueue, int id, CrawlerDao dao, DocIDGenerator counterGenerator,
+			BlockingQueue<URL> preRedistributionNewURLQueue, int id, CrawlerDao dao,
 			String storageDirectory, String urlStorageDirectory) {
 		this.contentForLinkExtractor = contentForLinkExtractor;
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.id = id;
 		this.dao = dao;
-		this.counterGenerator = counterGenerator;
 		this.storageDirectory = storageDirectory;
 		this.urlStorageDirectory = urlStorageDirectory;
 		LinkExtractorWorker.active = true;

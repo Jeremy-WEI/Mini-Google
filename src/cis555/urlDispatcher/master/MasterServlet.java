@@ -103,8 +103,7 @@ public class MasterServlet extends HttpServlet {
 			
 			try {
 				URL url = new URL(urlString);
-				logger.debug(CLASSNAME + ": " + url);
-				DispatcherUtils.sendHttpRequest(url, content, DispatcherUtils.Method.POST, false);
+				DispatcherUtils.sendHttpRequest(url, content, DispatcherUtils.Method.POST, true);
 				
 				
 			} catch (MalformedURLException e) {
@@ -124,7 +123,7 @@ public class MasterServlet extends HttpServlet {
 	private String generateStartContents(int crawlerNumber){
 		StringBuilder str = new StringBuilder();
 		str.append(DispatcherConstants.CRAWLER_NAME_PARAM + "=worker" + crawlerNumber + "&");
-		str.append(DispatcherConstants.STARTING_URL_PARAM + "=" + generateStartingUrlString(crawlerNumber)+ "&");
+		str.append(DispatcherConstants.NEW_URLS_PARAM + "=" + generateStartingUrlString(crawlerNumber)+ "&");
 		
 		Collection<WorkerDetails> workerDetails = this.workerDetailMap.values();
 		
@@ -148,7 +147,7 @@ public class MasterServlet extends HttpServlet {
 	 */
 	private String generateStartingUrlString(int crawlerNumber){
 		// WILL NEED MODIFYING
-		return "https://www.yahoo.com;http://ga.berkeley.edu/wp-content/uploads/2015/02/pdf-sample.pdf;";
+		return "https://www.yahoo.com;http://ga.berkeley.edu/wp-content/uploads/2015/02/pdf-sample.pdf";
 	}
 	
 	/**

@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
+import cis555.crawler.Crawler;
 import cis555.urlDispatcher.utils.DispatcherConstants;
 import cis555.urlDispatcher.utils.DispatcherException;
 import cis555.urlDispatcher.utils.DispatcherUtils;
@@ -33,6 +34,7 @@ public class WorkerServlet extends HttpServlet {
 	private int port;
 	private BlockingQueue<URL> newUrlQueue;
 	private Map<Integer, String> otherWorkerIPs;
+	private Crawler crawler;
 	private int crawlerNumber;
 	
 
@@ -114,6 +116,10 @@ public class WorkerServlet extends HttpServlet {
 	}
 	
 	private void stopCrawler(){
+		if (null != this.crawler){
+			this.crawler.stopCrawler();
+		}
+		
 		logger.info(CLASSNAME + " STOP CRALWER!");
 	}
 	
@@ -134,7 +140,7 @@ public class WorkerServlet extends HttpServlet {
 				break;
 				
 			case DispatcherConstants.ADD_URLS_URL:	
-				addStartUrls(request);
+				addNewUrls(request);
 				break;
 			default:
 				response.sendError(404);
@@ -154,10 +160,16 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	private void startCrawler(HttpServletRequest request) throws MalformedURLException{
 		
+		// Populate the relevant details for the crawler
 		String crawlerNumString = request.getParameter(DispatcherConstants.CRAWLER_NAME_PARAM);
 		this.crawlerNumber = parseCrawlerNumber(crawlerNumString);
 		addOtherCrawlersInfo(request);
-		addStartUrls(request);	
+		addNewUrls(request);
+		
+		// And start crawling
+		
+		this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPs);
+		this.crawler.startCrawler();
 		
 	}
 	
@@ -195,8 +207,8 @@ public class WorkerServlet extends HttpServlet {
 	 * @param request
 	 * @throws MalformedURLException 
 	 */
-	private void addStartUrls(HttpServletRequest request) throws MalformedURLException {
-		String[] newUrls = request.getParameter(DispatcherConstants.STARTING_URLS_PARAM).split(";");
+	private void addNewUrls(HttpServletRequest request) throws MalformedURLException {
+		String[] newUrls = request.getParameter(DispatcherConstants.NEW_URLS_PARAM).split(";");
 		for (String url : newUrls){
 			try {
 				this.newUrlQueue.add(new URL(url));					
@@ -230,6 +242,11 @@ public class WorkerServlet extends HttpServlet {
 			}
 			
 		}
+	}
+	
+	@Override
+	public void destroy(){
+		stopCrawler();
 	}
 }
   

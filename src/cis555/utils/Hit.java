@@ -1,4 +1,4 @@
-package cis555.indexer;
+package cis555.utils;
 
 /*
  * For space efficiency, each hit is encoded as an integer (32 bit).

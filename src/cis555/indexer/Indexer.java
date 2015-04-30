@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import cis555.utils.FastTokenizer;
+import cis555.utils.Hit;
 import cis555.utils.Stemmer;
 import cis555.utils.Utils;
 

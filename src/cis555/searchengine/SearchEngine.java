@@ -110,15 +110,17 @@ public class SearchEngine {
         DBWrapper db = new DBWrapper("database");
         SearchEngine.setDatabase(db);
         db.start();
-        // SearchEngine se = new SearchEngine(db);
         String[] queries = new String[] {
-                "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
-                // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
-                // "testing ", "WikiPedia", "Bank of America", "Apigee",
-                "University of Pennsylvania", "UCB" };
+        // "UCB",
+        // "United_Christian_Broadcasters",
+        // "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
+        // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
+        // "testing ", "WikiPedia", "Bank of America", "Apigee",
+        // "University of Pennsylvania", "UCB"
+        };
         for (String query : queries) {
             System.out.println(query);
-            System.out.println(SearchEngine.booleanSearch(query));
+            // System.out.println(SearchEngine.booleanSearch(query));
             System.out.println(SearchEngine.vectorSearch(query));
         }
         db.shutdown();

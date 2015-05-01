@@ -27,6 +27,10 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
         this.weight = weight;
     }
 
+    public void updateWeight(double weight) {
+        this.weight += weight;
+    }
+
     public void addDocHit(DocHitEntity docHit) {
         docHits.add(docHit);
     }

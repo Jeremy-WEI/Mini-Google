@@ -61,7 +61,7 @@ public class HEADWorker implements Runnable {
 	
 	@Override
 	public void run() {
-		while (GETWorker.active){
+		while (Crawler.active){
 
 			URL url = null;
 			

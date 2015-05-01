@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServlet;
@@ -26,12 +28,35 @@ public class MasterServlet extends HttpServlet {
 	
 	private TreeMap<String, WorkerDetails> workerDetailMap;
 	private boolean isCrawling;
+	private List<URL> startingUrls; 
 	
 	public MasterServlet(){
 		this.workerDetailMap = new TreeMap<String, WorkerDetails>(); // NB TreeMap is sorted
-		this.isCrawling = false;	
+		this.isCrawling = false;
 	}
 	
+	@Override
+	public void init(){
+		String[] startingUrlArray = getInitParameter(DispatcherConstants.STARTING_URL_KEY_XML).split(";");
+		try {
+			populateStartingUrls(startingUrlArray);
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Populates the excluded patterns array
+	 * @param startingUrlArray
+	 * @throws MalformedURLException 
+	 */
+	private void populateStartingUrls(String[] startingUrlArray) throws MalformedURLException{
+		this.startingUrls = new ArrayList<URL>();
+		for (String urlString : startingUrlArray){
+			URL url = new URL(urlString);
+			this.startingUrls.add(url);
+		}
+	}
 	
 	/***
 	 * POST related methods
@@ -95,9 +120,9 @@ public class MasterServlet extends HttpServlet {
 	private void startCrawl() throws IOException{
 		validateStatus();
 		int crawlerNumber = 0;
-		for (String workerIPAddress : this.workerDetailMap.keySet()){
-			String ipAddress = this.workerDetailMap.get(workerIPAddress).getIP(); 
-			int port = this.workerDetailMap.get(workerIPAddress).getPort();
+		for (String workerIPAddressAndPort : this.workerDetailMap.keySet()){
+			String ipAddress = this.workerDetailMap.get(workerIPAddressAndPort).getIP(); 
+			int port = this.workerDetailMap.get(workerIPAddressAndPort).getPort();
 			String content = "";
 			String urlString = "http://" + ipAddress + ":" + port + "/worker/" + DispatcherConstants.START_URL + "?" + generateStartContents(crawlerNumber);
 			
@@ -130,9 +155,9 @@ public class MasterServlet extends HttpServlet {
 		int i = 0;
 		for (WorkerDetails workerDetail : workerDetails){
 			if (i == 0){
-				str.append("worker" + i + "=" + workerDetail.getIP());				
+				str.append("worker" + i + "=" + workerDetail.getIP() + ":" + workerDetail.getPort());				
 			} else {
-				str.append("&worker" + i + "=" + workerDetail.getIP());								
+				str.append("&worker" + i + "=" + workerDetail.getIP() + ":" + workerDetail.getPort());								
 			}
 			i++;
 		}
@@ -146,8 +171,19 @@ public class MasterServlet extends HttpServlet {
 	 * @return
 	 */
 	private String generateStartingUrlString(int crawlerNumber){
-		// WILL NEED MODIFYING
-		return "https://www.yahoo.com;http://ga.berkeley.edu/wp-content/uploads/2015/02/pdf-sample.pdf";
+		
+		StringBuilder str = new StringBuilder();
+		for (URL url : this.startingUrls){
+			int bucket = Utils.determineBucketForURL(url, this.workerDetailMap.size());
+			if (bucket == crawlerNumber){
+				str.append(url.toString() + ";");
+			}
+		}
+		String urls = str.toString();
+		if (urls.isEmpty()){
+			urls = "http://en.wikipedia.org/wiki/Main_Page";
+		}
+		return urls;
 	}
 	
 	/**
@@ -165,9 +201,9 @@ public class MasterServlet extends HttpServlet {
 	 */
 	private void stopCrawl() throws IOException{
 		validateStatus();
-		for (String workerIPAddress : this.workerDetailMap.keySet()){
-			String ipAddress = this.workerDetailMap.get(workerIPAddress).getIP(); 
-			int port = this.workerDetailMap.get(workerIPAddress).getPort();
+		for (String workerIPAddressAndPort : this.workerDetailMap.keySet()){
+			String ipAddress = this.workerDetailMap.get(workerIPAddressAndPort).getIP(); 
+			int port = this.workerDetailMap.get(workerIPAddressAndPort).getPort();
 			String urlString = "http://" + ipAddress + ":" + port + "/worker/" + DispatcherConstants.STOP_URL;
 			String content = "";
 			
@@ -180,8 +216,7 @@ public class MasterServlet extends HttpServlet {
 				e.printStackTrace();
 				throw new DispatcherException("Unable to convert into url: " + urlString);
 			}
-		}
-
+		}		
 	}
 	
 	
@@ -230,17 +265,10 @@ public class MasterServlet extends HttpServlet {
 	 * @param request
 	 */
 	private void populateWorkerDetails(HttpServletRequest request){
-		
 		WorkerDetails workerStatus = new WorkerDetails(request);
-		String ipAddress = workerStatus.getIP();
-		if (ipAddress.matches(DispatcherConstants.IP_FORMAT)){
-			this.workerDetailMap.put(ipAddress, workerStatus);
-			logger.debug(CLASSNAME + ": Received update from " + ipAddress);
-			
-		} else {
-			logger.debug(CLASSNAME + ": Invald key syntax" + ipAddress);
-			throw new DispatcherException("Invalid key syntax: " + ipAddress);
-		}
+		String ipAddressAndPort = workerStatus.getIP() + ":" + workerStatus.getPort();
+		this.workerDetailMap.put(ipAddressAndPort, workerStatus);
+		logger.debug(CLASSNAME + ": Received update from " + ipAddressAndPort);
 	}
 	
 	/**

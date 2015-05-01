@@ -191,7 +191,18 @@ public class Utils {
 		}
 	}
 	
-	
+	/**
+	 * Determines which 'bucket' a URL hashes to (based on its domain)
+	 * @param url
+	 * @param numberOfBuckets
+	 * @return
+	 */
+	public static int determineBucketForURL(URL url, int numberOfBuckets){
+		String host = url.getHost();
+		int hashCode = Math.abs(host.hashCode());
+		return hashCode % numberOfBuckets;
+	}
+		
 	/****
 	 * Other helper methods
 	 */
@@ -204,7 +215,7 @@ public class Utils {
 		if (!directory.exists()){
 			try {
 				directory.mkdirs();
-				logger.info(CLASSNAME + ": New directory created " + path);
+				logger.info(CLASSNAME + ": New directory created " + directory.getAbsolutePath());
 			} catch (SecurityException e){
 				throw new RuntimeException("Unable to create directory");
 			}

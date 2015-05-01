@@ -36,19 +36,21 @@ public class DispatcherUtils {
 		HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
 		httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 		httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
+		httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 		
 		if (method == Method.GET){
 			httpConnection.setRequestMethod("GET");
-			httpConnection.addRequestProperty("Content-type", "text/plain");
+			httpConnection.addRequestProperty("Content-Type", "text/plain");
 		} else {
 			httpConnection.setRequestMethod("POST");
-			httpConnection.addRequestProperty("Content-length", Integer.toString(content.length()));
+			httpConnection.addRequestProperty("Content-Length", Integer.toString(content.length()));
 			if (postParameters){
-				httpConnection.addRequestProperty("Content-type", "application/x-www-form-urlencoded");
+				httpConnection.addRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 			} else {
-				httpConnection.addRequestProperty("Content-type", "text/plain");
+				httpConnection.addRequestProperty("Content-Type", "text/plain");
 			}
-			
+			httpConnection.setDoOutput(true);
+			httpConnection.getOutputStream().write(content.getBytes(CrawlerConstants.CHARSET));
 		}
 		
 		httpConnection.connect();

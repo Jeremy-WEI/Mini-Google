@@ -25,7 +25,7 @@ import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.Utils;
 
-public class LinkExtractorWorker implements Runnable {
+public class LinkExtractorWorker extends Thread {
 
 	private static final Logger logger = Logger.getLogger(LinkExtractorWorker.class);
 	private static final String CLASSNAME = LinkExtractorWorker.class.getName();
@@ -36,7 +36,7 @@ public class LinkExtractorWorker implements Runnable {
 	private CrawlerDao dao;
 	private String storageDirectory;
 	private String urlStorageDirectory;
-	public static boolean active;
+	private int documentsCrawled;
 	
 	public LinkExtractorWorker(BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
 			BlockingQueue<URL> preRedistributionNewURLQueue, int id, CrawlerDao dao,
@@ -47,16 +47,18 @@ public class LinkExtractorWorker implements Runnable {
 		this.dao = dao;
 		this.storageDirectory = storageDirectory;
 		this.urlStorageDirectory = urlStorageDirectory;
-		LinkExtractorWorker.active = true;
+		this.documentsCrawled = 0;
 	}
 
+	
+	
 	/**
 	 * Cleans the document, adds meta data to database, and store file to permanent storage (if it's a newly crawled file)
 
 	 */
 	@Override
 	public void run() {
-		while (LinkExtractorWorker.active){
+		while (Crawler.active){
 			try {
 				RawCrawledItem content = contentForLinkExtractor.take();
 				
@@ -82,6 +84,7 @@ public class LinkExtractorWorker implements Runnable {
 						storePDF(rawContents, docID, url);
 					}
 					logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
+					this.documentsCrawled++;
 				}
 				
 				if (contentType == ContentType.HTML){				
@@ -119,16 +122,20 @@ public class LinkExtractorWorker implements Runnable {
 		List<URL> newUrls = new ArrayList<URL>();
 		
 		for (Element link : links){
-			String urlString = link.attr("href");
+			String urlString = link.attr("abs:href");
 			if (!urlString.isEmpty()){
 				if (!urlString.contains("mailto:")){ // We're ignoring urls with 'mailto's
 					URL newUrl = null;
 					try {
 						String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
-						newUrl = CrawlerUtils.convertToUrl(cleansedString, sourceUrl);	
-						this.preRedistributionNewURLQueue.add(newUrl);
-						this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
-						newUrls.add(newUrl);
+						newUrl = CrawlerUtils.filterURL(cleansedString, sourceUrl);	
+						if (null != newUrl){
+							if (!this.preRedistributionNewURLQueue.contains(newUrl)){
+								this.preRedistributionNewURLQueue.add(newUrl);
+								this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);								
+							}
+							newUrls.add(newUrl);							
+						}
 					} catch (IllegalStateException e){
 						logger.info(CLASSNAME + " New preRedistributionNewURLQueue is full, dropping " + newUrl);
 						
@@ -156,15 +163,17 @@ public class LinkExtractorWorker implements Runnable {
 		List<String> addedImgLinksForOnePage = new ArrayList<String>();
 		
 		for (Element link : links){
-			String urlString = link.attr("src");
+			String urlString = link.attr("abs:src");
 			if (!urlString.isEmpty()){
 				if (!addedImgLinksForOnePage.contains(urlString)){
 					URL newUrl = null;
 					try {
 						String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
-						newUrl = CrawlerUtils.convertToUrl(cleansedString, sourceUrl);		
-						this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
-						addedImgLinksForOnePage.add(urlString);
+						newUrl = CrawlerUtils.filterURL(cleansedString, sourceUrl);	
+						if (null != newUrl){
+							this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
+							addedImgLinksForOnePage.add(urlString);							
+						}
 					} catch (IllegalStateException e){
 						logger.info(CLASSNAME + " Queue is full, dropping " + newUrl);
 						
@@ -177,20 +186,20 @@ public class LinkExtractorWorker implements Runnable {
 	}
 	
 	/**
-	 * Get the docID from a url. If the url doesn't exist in the database, create a new ID
+	 * Hashes the url to generate a docID
 	 * @param url
 	 * @return
 	 */
 	private String getDocID(URL url){
-
-		if (this.dao.doesDocumentMetaExist(url.toString())){
-			// Previously crawled document
-			return this.dao.getDocIDFromURL(url.toString());
-		} else {
-			// New document, so generate a new ID
-			return Utils.hashUrlToHexStringArray(url.toString());
-		}
-
+		return Utils.hashUrlToHexStringArray(url.toString());
+//		if (this.dao.doesDocumentMetaExist(url.toString())){
+//			// Previously crawled document
+//			return this.dao.getDocIDFromURL(url.toString());
+//		} else {
+//			// New document, so generate a new ID
+//			return ;
+//		}
+//
 	}
 	
 	/**
@@ -283,5 +292,14 @@ public class LinkExtractorWorker implements Runnable {
 			}
 		}
 	}
+	
+	/**
+	 * Returns the number of documents crawled
+	 * @return
+	 */
+	public int getDocumentsCrawled(){
+		return this.documentsCrawled;
+	}
+
 	
 }

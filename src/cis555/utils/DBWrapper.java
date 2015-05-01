@@ -74,7 +74,7 @@ public class DBWrapper {
 		if (!directory.exists()){
 			try {
 				directory.mkdirs();
-				logger.info(CLASSNAME + ": New directory created " + envDirectory);
+				logger.info(CLASSNAME + ": New directory created " + directory.getAbsolutePath());
 			} catch (SecurityException e){
 				String error = "Unable to create directory";
 				logger.error(CLASSNAME + ": " + error);

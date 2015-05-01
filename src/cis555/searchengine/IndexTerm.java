@@ -38,4 +38,9 @@ public class IndexTerm {
         this.idfValue = 0;
     }
 
+    public IndexTerm(String word, double value) {
+        this.word = word;
+        this.idfValue = value;
+    }
+
 }

@@ -1,24 +1,13 @@
 package cis555.PageRank;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 
-//import cis555.indexer.DocHit;
-//import cis555.indexer.Indexer;
-//import cis555.utils.Utils;
 
 public class PageRankInitMapper extends Mapper<LongWritable, Text, Text, Text> {
 

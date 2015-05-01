@@ -1,6 +1,7 @@
 package cis555.searchengine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -86,7 +87,6 @@ public class QueryProcessor {
 
         List<WeightedDocID> results = new ArrayList<WeightedDocID>(
                 weightedDocIDMap.values());
-        // Collections.sort(results);
         return results;
     }
 
@@ -105,9 +105,46 @@ public class QueryProcessor {
         return null;
     }
 
+    /**
+     * filtering phase --> sort + top N (offset-based)
+     * 
+     * @param: weightDocIDList, the original list
+     * @param: startOffset
+     * @param: N, how many results you want
+     * @return filtered weightedDocIDList
+     */
     public static List<WeightedDocID> filterPhase(
-            List<WeightedDocID> weightedDocIDList, int startOffset, int number) {
-        return null;
+            List<WeightedDocID> weightedDocIDList, int startOffset, int N) {
+        Collections.sort(weightedDocIDList);
+        List<WeightedDocID> newList = new ArrayList<WeightedDocID>(N);
+        Iterator<WeightedDocID> iter = weightedDocIDList.iterator();
+        int startIndex = startOffset;
+        int endIndex = Math.min(N + startOffset - 1,
+                weightedDocIDList.size() - 1);
+        int index = 0;
+        while (iter.hasNext()) {
+            if (index < startIndex) {
+                iter.next();
+                index++;
+            } else if (index <= endIndex) {
+                newList.add(iter.next());
+                index++;
+            } else
+                break;
+        }
+        return newList;
+    }
+
+    /**
+     * @param: weightDocIDList
+     * @return URL List
+     */
+    public static List<String> getURLs(List<WeightedDocID> weightedDocIDList) {
+        List<String> results = new ArrayList<String>(weightedDocIDList.size());
+        for (WeightedDocID w : weightedDocIDList) {
+            results.add(UrlIndexDAO.getUrl(w.getDocID()));
+        }
+        return results;
     }
 
     public static void main(String... args) {
@@ -122,11 +159,12 @@ public class QueryProcessor {
         for (String query : queries) {
             System.out.println(query);
             // System.out.println();
-            for (WeightedDocID w : preparePhase(parseQuery(query))) {
-                if (w.getWeight() > 10)
-                    System.out.println(w.getWeight() + ": "
-                            + UrlIndexDAO.getUrl(w.getDocID()));
-
+            Set<QueryTerm> terms = parseQuery(query);
+            List<WeightedDocID> lst1 = preparePhase(terms);
+            List<WeightedDocID> lst2 = filterPhase(lst1, 0, 10);
+            List<String> URLs = getURLs(lst2);
+            for (String URL : URLs) {
+                System.out.println(URL);
             }
         }
     }

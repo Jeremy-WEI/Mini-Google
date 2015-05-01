@@ -24,31 +24,29 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
  */
 public class FetchAndPopulateScript {
 
-	private static int docNumber;
-	private static double avgWord;
+    private static int docNumber;
+    private static double avgWord;
 
+    /**
+     * @param args
+     * @throws IOException
+     */
+    public static void main(String[] args) throws IOException {
+        IndexTermDAO.setup("database");
+        UrlIndexDAO.setup("database");
 
-	/**
-	 * @param args
-	 * @throws IOException 
-	 */
-	public static void main(String[] args) throws IOException {
-		IndexTermDAO.setup("database");
-		UrlIndexDAO.setup("database");
-		
-		fetchData();
-		
-		populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
-		populateIndexTerm("S3DATA/indexer-output");
-		
-		
-	}
-	
+        fetchData();
+
+        populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
+        populateIndexTerm("S3DATA/indexer-output");
+
+    }
+
     public static void populateDocIDUrl(String fileName) throws IOException {
         System.out.println("Start Building DocID-URL Database...");
         BufferedReader br = new BufferedReader(new FileReader(fileName));
         String line = null;
-        
+
         while ((line = br.readLine()) != null) {
             String[] tokens = line.split("\\s+");
             if (tokens.length < 2)
@@ -59,13 +57,13 @@ public class FetchAndPopulateScript {
                 continue;
             UrlIndexDAO.putUrlInfo(tokens[0], tokens[1]);
         }
-        
+
         br.close();
         System.out.println("Finish Building DocID-URL Database...");
     }
 
     public static void populateIndexTerm(String dirName) throws IOException {
-        
+
         System.out.println("Start Building Index-Term Database...");
         getFileNumberAndAvgWord();
         File dir = new File(dirName);
@@ -80,9 +78,12 @@ public class FetchAndPopulateScript {
                 if (lastWord == null) {
                     IndexTermDAO.putIndexTerm(tokens[0]);
                 } else if (!tokens[0].equals(lastWord)) {
-                	 IndexTermDAO.putIndexTerm(lastWord,
-                            Math.log((docNumber - freq + 0.5) / (freq + 0.5)));
-                	 IndexTermDAO.putIndexTerm(tokens[0]);
+                    IndexTermDAO.putIndexTerm(
+                            lastWord,
+                            Math.max(
+                                    0,
+                                    Math.log((docNumber - freq + 0.5)
+                                            / (freq + 0.5))));
                     freq = 0;
                 }
                 lastWord = tokens[0];
@@ -96,15 +97,15 @@ public class FetchAndPopulateScript {
             System.out.println("Finish Processing " + f.getName() + "...");
         }
     }
-    
+
     private static void getFileNumberAndAvgWord() {
-//        String ACCESS_KEY = null;
-//        String SECRET_KEY = null;
-//        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
-//                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
-        
+        // String ACCESS_KEY = null;
+        // String SECRET_KEY = null;
+        // AmazonDynamoDBClient client = new AmazonDynamoDBClient(
+        // new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
+
         AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
-        
+
         System.out.println("Connecting to DynamoDB...");
         ScanResult result = null;
         long sum = 0;
@@ -130,12 +131,11 @@ public class FetchAndPopulateScript {
         System.out.println("Done Calculating docNumber...");
         System.out.println("docNumber: " + docNumber + ", avgWord: " + avgWord);
     }
-        
-        
+
     public static void fetchData() {
-    	S3Adapter s3 = new S3Adapter();
-    	s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
-    	s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
+        S3Adapter s3 = new S3Adapter();
+        s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
+        s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
 
     }
 

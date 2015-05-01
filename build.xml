@@ -1,181 +1,52 @@
-<?xml version="1.0"?>
+<project name="server" default="all" basedir="./">
 
-<project name="555_project" default="build" basedir=".">
-	<property name="ant.build.javac.source" value="1.7"/>
-	<property name="ant.build.javac.target" value="1.7"/>
-    <property name="shared.root" location="${basedir}"/>
-    <property name="file.separator" location="/"/>
-    <property name="project.root" location="${basedir}"/>
-    <property name="build.dir" location="${project.root}"/>
-    <property name="build.target.dir" location="${project.root}${file.separator}target"/>
+  <path id="aws.java.sdk.classpath">
+    <fileset dir="${basedir}/lib" includes="**/*.jar"/>
+  </path>
 
-	<property name="master_dispatcher.dir" location="${build.target.dir}${file.separator}master"/>
-    <property name="master_web-inf.dir" location="${master_dispatcher.dir}${file.separator}WEB-INF"/>
-    <property name="master_web-inf.classes.dir" location="${master_web-inf.dir}${file.separator}classes"/>
-    <property name="master_web-inf.lib.dir" location="${master_web-inf.dir}${file.separator}lib"/>
-
-    <property name="worker_dispatcher.dir" location="${build.target.dir}${file.separator}worker"/>
-    <property name="worker_web-inf.dir" location="${worker_dispatcher.dir}${file.separator}WEB-INF"/>
-    <property name="worker_web-inf.classes.dir" location="${worker_web-inf.dir}${file.separator}classes"/>
-    <property name="worker_web-inf.lib.dir" location="${worker_web-inf.dir}${file.separator}lib"/>
-	
-    <property name="classes.dir"     location="${basedir}${file.separator}classes"/>
-    <property name="src.main.dir"  location="${build.dir}${file.separator}src${file.separator}"/>
-    <property name="inputlib.dir"  location="${shared.root}${file.separator}lib"/>
-    <property name="conf.dir"      location="${build.dir}${file.separator}conf"/>
-	<property name="non-crawler-libs" value="pdfbox-app-1.8.9.jar,servlet-api.jar,junit-4.12.jar"/>
-	<property name="crawler-libs" value="je-6.2.31.jar,log4j-1.2.9.jar,jsoup-1.8.2.jar,guava-18.0.jar"/>
-    
-	
-    <target name="clean" description="Deletes all the compiled files">
-        <delete dir="${build.target.dir}"/>
-    	<delete dir="${classes.dir}"/>
-    	<delete file="transferer.jar"/>
-    	<delete file="master.war"/>
-    	<delete file="worker.war"/>
-    </target>
-	
-    <target name="compile-database" description="Compiles the local database">
-        <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                	<exclude name="${non-crawler-libs}"/>
-                </fileset>
-            </classpath>
-        	 <compilerarg value="-Xlint:-options" />
-        </javac>
-    </target>
-    
-    <target name="compile-transferer" depends="compile-database" description="Compiles the EC2 - S3 and Dynamo transferer">
-        <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        	 <compilerarg value="-Xlint:-options" />
-        </javac>
-    </target>
-	
-    <target name="compile-crawler" depends="compile-database" description="Compiles the crawler">
-        <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
-    </target>
-	
-    <target name="compile-dispatcherMaster" description="Compiles the dispatcherMaster">
-    	<mkdir dir="${master_web-inf.classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="**/utils/*.java,**/urlDispatcher/utils/*.java,**/urlDispatcher/master/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        	 <compilerarg value="-Xlint:-options" />
-        </javac>
-        <copy file="${conf.dir}${file.separator}log4jMaster.properties" tofile="${master_web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
-    </target>
-
-    <target name="compile-dispatcherWorker" depends="compile-database,compile-crawler" description="Compiles the dispatcherworker">
-    	<mkdir dir="${worker_web-inf.classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${worker_web-inf.classes.dir}" includes="utils/*.java,**/crawler/*.java,**/database/*.java,**/urlDispatcher/utils/*.java,**/urlDispatcher/worker/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
-            <classpath>
-                <fileset dir="${inputlib.dir}">
-                    <include name="*.jar"/>
-                </fileset>
-            </classpath>
-        	 <compilerarg value="-Xlint:-options" />
-        </javac>
-        <copy file="${conf.dir}${file.separator}log4jWorker.properties" tofile="${worker_web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
-    </target>
+  <target name="init">
+    <mkdir dir="target/WEB-INF/classes"/>
+  </target>
 
 
+  <target name="compile-utils" depends="init">
+    <javac srcdir="src/cis555/utils" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+      <classpath refid="aws.java.sdk.classpath"/>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+
+  <target name="compile-searchengine" depends="compile-utils">
+    <javac srcdir="src/cis555/searchengine" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+      <classpath refid="aws.java.sdk.classpath"/>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+  <target name="compile-searchEngine" depends="compile-searchengine">
+    <javac srcdir="src/cis555/searchEngine" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+      <classpath refid="aws.java.sdk.classpath"/>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+  <target name="all" depends="compile-searchengine, compile-searchEngine, war"/>
   
-	
-    <target name="compile-dispatcherMaster-war" depends="compile-dispatcherMaster" description="Makes the WAR file for the dispatcherMaster">
-        <delete file="master.war"/>
-        <copy file="${conf.dir}${file.separator}masterWeb.xml" tofile="${master_web-inf.dir}${file.separator}web.xml" overwrite="true" />
-        <copy file="${conf.dir}${file.separator}log4jMaster.properties" tofile="${master_web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
-        <copy todir="${master_web-inf.lib.dir}" overwrite="true">
-            <fileset dir="${inputlib.dir}">
-                <include name="servlet-api.jar" />
-            	<include name="log4j-1.2.9.jar"/>
-            </fileset>
-        </copy>
-        <jar destfile="master.war" update="true">
-            <fileset dir="target/master/">
-                <include name="**/*.class"/>
-                <include name="**/*.jar"/>
-                <include name="WEB-INF/web.xml"/>
-                <include name="WEB-INF/classes/log4j.properties"/>
-            </fileset>
-        </jar>
-    </target>
-	
-	
-    <target name="compile-dispatcherWorker-war" depends="compile-dispatcherWorker" description="Makes the WAR file for the dispatcherWorker">
-        <delete file="worker.war"/>
-        <copy file="${conf.dir}${file.separator}workerWeb.xml" tofile="${worker_web-inf.dir}${file.separator}web.xml" overwrite="true" />
-        <copy file="${conf.dir}${file.separator}log4jWorker.properties" tofile="${worker_web-inf.classes.dir}${file.separator}log4j.properties" overwrite="true" />
-        <copy todir="${worker_web-inf.lib.dir}" overwrite="true">
-            <fileset dir="${inputlib.dir}" includes="${crawler-libs}">
-                <include name="servlet-api.jar" />
-            	<include name="log4j-1.2.9.jar"/>
-            </fileset>
-        </copy>
-        <jar destfile="worker.war" update="true">
-            <fileset dir="target/worker/">
-                <include name="**/*.class"/>
-                <include name="**/*.jar"/>
-                <include name="WEB-INF/web.xml"/>
-                <include name="WEB-INF/classes/log4j.properties"/>
-            </fileset>
-        </jar>
-    </target>
-
-    <target name="transferer-jar" depends="compile-transferer" description="Makes the JAR file for the crawler">
-        <delete file="transferer.jar"/>
-        <jar destfile="transferer.jar" update="true">
-        	<zipgroupfileset dir="${inputlib.dir}" excludes="${non-crawler-libs}"/>
-            <fileset dir="${classes.dir}">
-                <include name="**/*.class"/>
-            </fileset>
-        	<fileset dir="src">
-        		<include name="log4j.properties"/>
-        	</fileset>
-        	<fileset dir="${basedir}" includes="log/**">
-        		<include name="*.log"/>
-        	</fileset>
-        	<fileset dir="${basedir}" includes="properties/**">
-        		<include name="settings.properties"/>
-        	</fileset>
-        	<manifest>
-        		<attribute name="DependencyFinder" value="main"/>
-        		<attribute name="Main-Class" value="cis555.contentTransferer.ContentTransferer"/>
-        	</manifest>
-        </jar>
-    </target>
-
-	
-    <target name="build" depends="clean,compile-dispatcherMaster-war, compile-dispatcherWorker-war,transferer-jar,pack">
-    </target>
-	
-	
-	<target name="servlets" depends="clean,compile-dispatcherMaster-war, compile-dispatcherWorker-war">
-	</target>
-	
-    <target name="pack" description="Create Crawler Pack">
-      <zip destfile="for_ec2.zip">
-        <zipfileset dir="${build.dir}" includes="log/,properties/,master.war, worker.war, transferer.jar" excludes="log/*.log"/>
-      </zip>
-    </target>
-
+  <target name="war" depends="compile-searchEngine, compile-searchengine">
+    <jar destfile="server.war">
+      <fileset dir="target/" includes="WEB-INF/classes/**/*.class"/>
+      <fileset dir="target/" includes="WEB-INF/lib/**/*.jar"/>
+      <fileset dir="target/" includes="WEB-INF/*.xml"/>
+    </jar>
+  </target>
+  
+  <target name="clean">
+    <delete dir="target/WEB-INF/classes"/>
+    <delete dir="classes"/>
+    <delete file="server.war"/>
+  </target>
 </project>

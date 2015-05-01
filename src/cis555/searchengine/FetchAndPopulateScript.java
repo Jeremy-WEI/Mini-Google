@@ -33,7 +33,7 @@ public class FetchAndPopulateScript {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		DocHitEntityIndexTermDBDAO.setup("database");
+		IndexTermDAO.setup("database");
 		UrlIndexDAO.setup("database");
 		
 		fetchData();
@@ -65,30 +65,6 @@ public class FetchAndPopulateScript {
     }
 
     public static void populateIndexTerm(String dirName) throws IOException {
-        System.out.println("Start Building Index-Term Database...");
-        File dir = new File(dirName);
-        
-        for (File f : dir.listFiles()) {
-            System.out.println("Start Processing " + f.getName() + "...");
-            BufferedReader br = new BufferedReader(new FileReader(f));
-            String line = null;
-            String lastWord = null;
-            
-            while ((line = br.readLine()) != null) {
-                String[] tokens = line.split("\\s+", 2);
-                if (lastWord == null || !tokens[0].equals(lastWord)) {
-                	DocHitEntityIndexTermDBDAO.putIndexTerm(tokens[0]);
-                }
-                lastWord = tokens[0];
-                DocHitEntityIndexTermDBDAO.putDocHitEntity(tokens[0], tokens[1]);
-            }
-            
-            br.close();
-            System.out.println("Finish Processing " + f.getName() + "...");
-        }
-        System.out.println("Finish Building Index-Term Database...");
-        
-        
         
         System.out.println("Start Building Index-Term Database...");
         getFileNumberAndAvgWord();
@@ -102,22 +78,23 @@ public class FetchAndPopulateScript {
             while ((line = br.readLine()) != null) {
                 String[] tokens = line.split("\\s+", 2);
                 if (lastWord == null) {
-                    saveIndexTerm(tokens[0]);
+                    IndexTermDAO.putIndexTerm(tokens[0]);
                 } else if (!tokens[0].equals(lastWord)) {
-                    saveIndexTerm(lastWord,
+                	 IndexTermDAO.putIndexTerm(lastWord,
                             Math.log((docNumber - freq + 0.5) / (freq + 0.5)));
-                    saveIndexTerm(tokens[0]);
+                	 IndexTermDAO.putIndexTerm(tokens[0]);
                     freq = 0;
                 }
                 lastWord = tokens[0];
                 DocHitEntity docHitEntity = new DocHitEntity(tokens[0],
                         tokens[1], avgWord);
-                saveDocHit(docHitEntity);
+                IndexTermDAO.putDocHitEntity(docHitEntity);
                 if (docHitEntity.getWordCount() > 0)
                     freq++;
             }
             br.close();
             System.out.println("Finish Processing " + f.getName() + "...");
+        }
     }
     
     private static void getFileNumberAndAvgWord() {

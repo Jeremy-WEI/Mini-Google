@@ -17,7 +17,7 @@ import com.sleepycat.persist.PrimaryIndex;
 import com.sleepycat.persist.SecondaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
-public class DocHitEntityIndexTermDBDAO {
+public class IndexTermDAO {
     private static EntityStore store;
     private static PrimaryIndex<Long, DocHitEntity> docHitEntityById;
     private static SecondaryIndex<String, Long, DocHitEntity> docHitEntityByWord;
@@ -89,7 +89,8 @@ public class DocHitEntityIndexTermDBDAO {
     /**
      * Given a word return a Set<DocHit>; This function would automatically do a
      * checking: if the URL of docId is not saved in database, then it will not
-     * be returned.
+     * be returned
+     * /IndexTermDAO.java
      * 
      * TODO: query word process should be done explicitly outside this function.
      */
@@ -149,6 +150,16 @@ public class DocHitEntityIndexTermDBDAO {
      */
     public static void putIndexTerm(String word) {
         termIndex.put(new IndexTerm(word));
+    }
+
+    /**
+     * Store the given word and value as an indexTerm in the database.
+     * 
+     * @param word
+     * @param value
+     */
+    public static void putIndexTerm(String word, double value) {
+        termIndex.put(new IndexTerm(word, value));
     }
 
     /**

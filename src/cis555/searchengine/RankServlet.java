@@ -33,7 +33,7 @@ public class RankServlet extends HttpServlet {
         List<String> urlList = new ArrayList<String>();
 
         for (int i = 0; i < words.length; i++) {
-            docHitList.addAll(DocHitEntityIndexTermDBDAO
+            docHitList.addAll(IndexTermDAO
                     .getDocHitEntities(words[i]));
         }
 
@@ -45,8 +45,8 @@ public class RankServlet extends HttpServlet {
         // Set<DocHitEntity> lst3 = db.getDocHit("donor");
 
         for (DocHitEntity docHit : docHitList) {
-            urlList.add(DocHitEntityIndexTermDBDAO.getUrl(docHit.getDocID()));
-            System.out.println(DocHitEntityIndexTermDBDAO.getUrl(docHit
+            urlList.add(IndexTermDAO.getUrl(docHit.getDocID()));
+            System.out.println(IndexTermDAO.getUrl(docHit
                     .getDocID()));
         }
         // lst1.retainAll(lst2);

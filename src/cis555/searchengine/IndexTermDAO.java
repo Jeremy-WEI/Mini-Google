@@ -17,7 +17,7 @@ import com.sleepycat.persist.PrimaryIndex;
 import com.sleepycat.persist.SecondaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
-public class DocHitEntityIndexTermDBDAO {
+public class IndexTermDAO {
 	private static EntityStore store;
 	private static PrimaryIndex<Long, DocHitEntity> docHitEntityById;
 	private static SecondaryIndex<String, Long, DocHitEntity> docHitEntityByWord;
@@ -68,6 +68,8 @@ public class DocHitEntityIndexTermDBDAO {
 	public static void putDocHitEntity(String word, String line, double avgWord) {
 		docHitEntityById.put(new DocHitEntity(word, line, avgWord));
     }
+	
+	
 	  
 	/**
 	 * Retrieve a DocHitEntity from the database given its key.
@@ -144,6 +146,15 @@ public class DocHitEntityIndexTermDBDAO {
 	 */
 	public static void putIndexTerm(String word) {
         termIndex.put(new IndexTerm(word));
+    }
+	
+	/**
+	 * Store the given word and value as an indexTerm in the database.
+	 * @param word 
+	 * @param value
+	 */
+	public static void putIndexTerm(String word, double value) {
+        termIndex.put(new IndexTerm(word, value));
     }
 	  
 	/**

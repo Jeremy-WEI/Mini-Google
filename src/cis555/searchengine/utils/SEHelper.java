@@ -91,8 +91,8 @@ public class SEHelper {
         }
         return new HashSet<QueryTerm>(map.values());
     }
-
-    public static void main(String... args) {
-        System.out.println(parseQuery("123 123 213,123"));
-    }
+    //
+    // public static void main(String... args) {
+    // System.out.println(parseQuery("123 123 213,123"));
+    // }
 }

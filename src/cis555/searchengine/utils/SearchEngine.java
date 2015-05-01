@@ -108,23 +108,23 @@ public class SearchEngine {
     }
 
     public static void main(String... args) {
-        DBWrapper db = new DBWrapper("database");
-        SearchEngine.setDatabase(db);
-        db.start();
-        String[] queries = new String[] {
-                "United_Christian_Broadcasters",
-                "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
-                // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
-                // "testing ", "WikiPedia", "Bank of America", "Apigee",
-                "University of Pennsylvania", };
-        for (String query : queries) {
-            System.out.println(query);
-            // System.out.println(SearchEngine.booleanSearch(query));
-            // for (WeightedDocID w : SearchEngine.vectorSearch(query)) {
-            // System.out.println(db.getUrl(w.getDocID()));
-            // }
-            System.out.println(SearchEngine.vectorSearch(query));
-        }
+        // DBWrapper db = new DBWrapper("database");
+        // SearchEngine.setDatabase(db);
+        // db.start();
+        // String[] queries = new String[] {
+        // "United_Christian_Broadcasters",
+        // "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
+        // // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
+        // // "testing ", "WikiPedia", "Bank of America", "Apigee",
+        // "University of Pennsylvania", };
+        // for (String query : queries) {
+        // System.out.println(query);
+        // // System.out.println(SearchEngine.booleanSearch(query));
+        // // for (WeightedDocID w : SearchEngine.vectorSearch(query)) {
+        // // System.out.println(db.getUrl(w.getDocID()));
+        // // }
+        // System.out.println(SearchEngine.vectorSearch(query));
+        // }
         db.shutdown();
     }
 }

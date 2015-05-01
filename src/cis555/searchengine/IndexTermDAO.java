@@ -89,8 +89,7 @@ public class IndexTermDAO {
     /**
      * Given a word return a Set<DocHit>; This function would automatically do a
      * checking: if the URL of docId is not saved in database, then it will not
-     * be returned
-     * /IndexTermDAO.java
+     * be returned /IndexTermDAO.java
      * 
      * TODO: query word process should be done explicitly outside this function.
      */
@@ -163,34 +162,37 @@ public class IndexTermDAO {
     }
 
     /**
-     * Retrieve a indexTerm from the database given its docID.
+     * Retrieve the idf-value from the database given the word.
      * 
-     * @param docID
+     * @param word
      *            The primary key for the indexTerm.
-     * @return The indexTerm instance.
+     * @return The idf-value.
      */
-    public static IndexTerm getIndexTerm(String docID) {
-        return termIndex.get(docID);
+    public static double getIdfValue(String word) {
+        IndexTerm indexTerm = termIndex.get(word);
+        if (indexTerm == null)
+            return 0;
+        return termIndex.get(word).getIdfValue();
     }
 
     /**
      * Returns cursor that iterates through the indexTerm.
      * 
-     * @return A indexTerm cursor.
+     * @return An indexTerm cursor.
      */
-    public static EntityCursor<String> getUrlInfoCursor() {
+    public static EntityCursor<String> getIndexTermCursor() {
         CursorConfig cursorConfig = new CursorConfig();
         cursorConfig.setReadUncommitted(true);
         return termIndex.keys(null, cursorConfig);
     }
 
     /**
-     * Removes the indexTerm instance with the docID.
+     * Removes the indexTerm instance with the word.
      * 
-     * @param docID
+     * @param word
      */
-    public static void deleteUrlInfo(String docID) {
-        termIndex.delete(docID);
+    public static void deleteIndexTerm(String word) {
+        termIndex.delete(word);
     }
 
 }

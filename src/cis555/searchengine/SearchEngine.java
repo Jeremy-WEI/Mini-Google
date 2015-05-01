@@ -120,6 +120,7 @@ public class SearchEngine {
         // "University of Pennsylvania", "UCB"
         };
         for (String query : queries) {
+        	
             System.out.println(query);
             // System.out.println(SearchEngine.booleanSearch(query));
             System.out.println(SearchEngine.vectorSearch(query));

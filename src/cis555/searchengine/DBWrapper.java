@@ -177,14 +177,14 @@ public class DBWrapper {
     public static void main(String... args) throws IOException {
         DBWrapper db = new DBWrapper("database");
         db.start();
-        // db.populateDocIDUrl("document_meta.txt");
-        // db.populateIndexTerm("indexer");
+         db.populateDocIDUrl("document_meta.txt");
+         db.populateIndexTerm("indexer");
         Set<DocHitEntity> lst1 = db.getDocHit("comput");
         Set<DocHitEntity> lst2 = db.getDocHit("scienc");
         // Set<DocHitEntity> lst3 = db.getDocHit("donor");
-        // for (DocHitEntity docHit : lst2) {
-        // System.out.println(db.getUrl(docHit.getDocID()));
-        // }
+         for (DocHitEntity docHit : lst2) {
+         System.out.println(db.getUrl(docHit.getDocID()));
+         }
         lst1.retainAll(lst2);
         // System.out.println(lst1);
         for (DocHitEntity docHit : lst1) {

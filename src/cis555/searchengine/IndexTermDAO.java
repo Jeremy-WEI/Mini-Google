@@ -31,10 +31,10 @@ public class IndexTermDAO {
      */
     public static void setup(String dbPath) {
         // Create the directory in which this store will live.
-        System.out.println("Setting up DocHitEntityIndexTermDB.");
-        File dir = new File(dbPath, "DocHitEntityIndexTermDB");
+        System.out.println("Setting up IndexTermDB.");
+        File dir = new File(dbPath, "IndexTermDB");
         if (dir.mkdirs()) {
-            System.out.println("Created DocHitEntityIndexTermDB directory.");
+            System.out.println("Created IndexTermDB directory.");
         }
 
         EnvironmentConfig envConfig = new EnvironmentConfig();
@@ -43,7 +43,7 @@ public class IndexTermDAO {
         storeConfig.setAllowCreate(true);
 
         Environment env = new Environment(dir, envConfig);
-        store = new EntityStore(env, "DocHitEntityStore", storeConfig);
+        store = new EntityStore(env, "IndexTermStore", storeConfig);
 
         termIndex = store.getPrimaryIndex(String.class, IndexTerm.class);
         docHitEntityById = store

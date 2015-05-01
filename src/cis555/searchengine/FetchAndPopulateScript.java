@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 
+import cis555.aws.utils.AWSClientAdapters;
 import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 
@@ -24,7 +25,7 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
  */
 public class FetchAndPopulateScript {
 
-	private static Integer docNumber;
+	private static int docNumber;
 	private static double avgWord;
 
 
@@ -98,11 +99,13 @@ public class FetchAndPopulateScript {
     }
     
     private static void getFileNumberAndAvgWord() {
-        String ACCESS_KEY = null;
-        String SECRET_KEY = null;
-        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
-                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
-        // DynamoDB dynamoDB = new DynamoDB(client);
+//        String ACCESS_KEY = null;
+//        String SECRET_KEY = null;
+//        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
+//                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
+        
+        AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
+        
         System.out.println("Connecting to DynamoDB...");
         ScanResult result = null;
         long sum = 0;

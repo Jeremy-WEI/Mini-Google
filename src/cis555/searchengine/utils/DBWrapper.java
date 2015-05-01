@@ -1,4 +1,4 @@
-package cis555.searchengine;
+package cis555.searchengine.utils;
 
 import java.io.BufferedReader;
 import java.io.File;

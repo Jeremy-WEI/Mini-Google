@@ -1,8 +1,8 @@
-package cis555.searchEngine;
+package cis555.searchengine;
 
 import java.io.File;
 
-import cis555.searchengine.DocHitEntity;
+import cis555.searchengine.utils.DocHitEntity;
 import cis555.utils.DocIdUrlInfo;
 
 import com.sleepycat.je.CursorConfig;

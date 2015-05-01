@@ -1,11 +1,11 @@
-package cis555.searchEngine;
+package cis555.searchengine;
 
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
-import cis555.searchengine.DocHitEntity;
-import cis555.searchengine.IndexTerm;
+import cis555.searchengine.utils.DocHitEntity;
+import cis555.searchengine.utils.IndexTerm;
 import cis555.utils.DocIdUrlInfo;
 
 import com.sleepycat.je.CursorConfig;

@@ -1,4 +1,4 @@
-package cis555.searchengine;
+package cis555.searchengine.utils;
 
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;

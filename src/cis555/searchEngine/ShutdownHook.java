@@ -1,7 +1,7 @@
 /**
  * 
  */
-package cis555.searchEngine;
+package cis555.searchengine;
 
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;

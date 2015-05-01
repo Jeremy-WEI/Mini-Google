@@ -1,7 +1,7 @@
 /**
  * 
  */
-package cis555.searchEngine;
+package cis555.searchengine;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,17 +10,13 @@ import java.io.IOException;
 import java.util.Map;
 
 import cis555.aws.utils.S3Adapter;
-import cis555.searchengine.DocHitEntity;
+import cis555.searchengine.utils.DocHitEntity;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 /**
  * @author cis455

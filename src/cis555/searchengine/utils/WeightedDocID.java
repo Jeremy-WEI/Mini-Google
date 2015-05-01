@@ -1,4 +1,4 @@
-package cis555.searchengine;
+package cis555.searchengine.utils;
 
 import java.util.LinkedList;
 import java.util.List;

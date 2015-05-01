@@ -9,10 +9,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 
-import cis555.aws.utils.AWSClientAdapters;
-import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
@@ -35,10 +34,10 @@ public class FetchAndPopulateScript {
         IndexTermDAO.setup("database");
         UrlIndexDAO.setup("database");
 
-        fetchData();
+        // fetchData();
 
-        populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
-        populateIndexTerm("S3DATA/indexer-output");
+        populateDocIDUrl("document_meta.txt");
+        populateIndexTerm("indexer");
 
     }
 
@@ -84,6 +83,7 @@ public class FetchAndPopulateScript {
                                     0,
                                     Math.log((docNumber - freq + 0.5)
                                             / (freq + 0.5))));
+                    IndexTermDAO.putIndexTerm(tokens[0]);
                     freq = 0;
                 }
                 lastWord = tokens[0];
@@ -93,18 +93,22 @@ public class FetchAndPopulateScript {
                 if (docHitEntity.getWordCount() > 0)
                     freq++;
             }
+            IndexTermDAO.putIndexTerm(
+                    lastWord,
+                    Math.max(0,
+                            Math.log((docNumber - freq + 0.5) / (freq + 0.5))));
             br.close();
             System.out.println("Finish Processing " + f.getName() + "...");
         }
     }
 
     private static void getFileNumberAndAvgWord() {
-        // String ACCESS_KEY = null;
-        // String SECRET_KEY = null;
-        // AmazonDynamoDBClient client = new AmazonDynamoDBClient(
-        // new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
+        String ACCESS_KEY = "AKIAIHWLNGX7VTENATXQ";
+        String SECRET_KEY = "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";
+        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
+                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
 
-        AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
+        // AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
 
         System.out.println("Connecting to DynamoDB...");
         ScanResult result = null;
@@ -133,9 +137,9 @@ public class FetchAndPopulateScript {
     }
 
     public static void fetchData() {
-        S3Adapter s3 = new S3Adapter();
-        s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
-        s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
+        // S3Adapter s3 = new S3Adapter();
+        // s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
+        // s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
 
     }
 

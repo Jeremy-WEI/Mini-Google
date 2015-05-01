@@ -13,7 +13,6 @@ import cis555.aws.utils.AWSClientAdapters;
 import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;

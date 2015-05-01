@@ -3,9 +3,12 @@ package cis555.urlDispatcher.utils;
 public class DispatcherConstants {
 	
 	public static final String IP_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
-	public static final int TIMER_TASK_FREQUENCY_MS = 10000;
+	public static final int PING_MASTER_FREQUENCY_MS = 10000;
+	public static final int REDISTRIBUTE_URLS_FREQUENCY_MS = 20000;
 	public static final int HTTP_TIMEOUT = 1000;
+	public static final int READ_TIMEOUT = 60000;
 
+	public static final int URLS_TO_SEND = 1000;
 	
 	// GET / PUT URL paths
 	
@@ -31,5 +34,11 @@ public class DispatcherConstants {
 	
 	public static final String MASTER_KEY_XML = "master";
 	public static final String PORT_KEY_XML = "port";
+	public static final String STORAGE_DIRECTORY_KEY_XML = "dir";
+	public static final String EXCLUDED_PATTERNS_KEY_XML = "excludedPatterns";
+	public static final String MAX_SIZE_KEY_XML = "maxDocSize";
 	
+	// Master Web.xml
+	public static final String STARTING_URL_KEY_XML = "startingUrls";
+
 }

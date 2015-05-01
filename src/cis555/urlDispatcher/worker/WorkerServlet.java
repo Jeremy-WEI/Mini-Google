@@ -3,7 +3,9 @@ package cis555.urlDispatcher.worker;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -33,10 +35,11 @@ public class WorkerServlet extends HttpServlet {
 	private String masterIP;
 	private int port;
 	private BlockingQueue<URL> newUrlQueue;
-	private Map<Integer, String> otherWorkerIPs;
+	private Map<Integer, String> otherWorkerIPPort;
 	private Crawler crawler;
 	private int crawlerNumber;
-	
+	private List<String> excludedPatterns;
+	private int maxDocSize;
 
 	/**
 	 * Get the address that the master is on
@@ -59,15 +62,11 @@ public class WorkerServlet extends HttpServlet {
 	 * @return
 	 */
 	protected int getUrlsCrawled(){
-//		if (this.status == Status.idle){	
-//			return 0;
-//		} else if (this.status == Status.mapping || this.status == Status.waiting){
-//			return this.runMapHandler.getUrlsCrawled();
-//		} else {
-//			// Reducing
-//			return this.runReduceHandler.getUrlsCrawled();
-//		}		
-		return 1;
+		if (null == this.crawler){
+			return 0;
+		} else {
+			return this.crawler.getNumCrawledDocuments();
+		}
 	}
 	
 	public WorkerServlet(){}
@@ -76,19 +75,37 @@ public class WorkerServlet extends HttpServlet {
 	public void init(){
 		
 		this.masterIP = getInitParameter(DispatcherConstants.MASTER_KEY_XML);
-		String portString = getInitParameter(DispatcherConstants.PORT_KEY_XML);
 		
-				
+		String databaseDirectory = getInitParameter(DispatcherConstants.STORAGE_DIRECTORY_KEY_XML);		
+		CrawlerConstants.DB_DIRECTORY = databaseDirectory;
+		
+		String portString = getInitParameter(DispatcherConstants.PORT_KEY_XML);
 		this.port = Integer.parseInt(portString); 
 		
 		this.newUrlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
+
+		String[] excludedPatternsArray = getInitParameter(DispatcherConstants.EXCLUDED_PATTERNS_KEY_XML).split(";");
+		populateExcludedPatterns(excludedPatternsArray);
 		
-		this.otherWorkerIPs = new HashMap<Integer, String>();
+		this.maxDocSize = Integer.parseInt(getInitParameter(DispatcherConstants.MAX_SIZE_KEY_XML));
+		
+		this.otherWorkerIPPort = new HashMap<Integer, String>();
 		
 		Timer timer = new Timer();
-		timer.scheduleAtFixedRate(new PingMasterTask(), 0, DispatcherConstants.TIMER_TASK_FREQUENCY_MS);
+		timer.scheduleAtFixedRate(new PingMasterTask(), 0, DispatcherConstants.PING_MASTER_FREQUENCY_MS);
 	}
 	
+	
+	/**
+	 * Populates the excluded patterns array
+	 * @param excludedPatternsArray
+	 */
+	private void populateExcludedPatterns(String[] excludedPatternsArray){
+		this.excludedPatterns = new ArrayList<String>();
+		for (String pattern : excludedPatternsArray){
+			this.excludedPatterns.add(pattern);
+		}
+	}
 	
 	/***
 	 * GET related methods
@@ -118,9 +135,8 @@ public class WorkerServlet extends HttpServlet {
 	private void stopCrawler(){
 		if (null != this.crawler){
 			this.crawler.stopCrawler();
+			this.crawler = null;
 		}
-		
-		logger.info(CLASSNAME + " STOP CRALWER!");
 	}
 	
 	
@@ -168,7 +184,7 @@ public class WorkerServlet extends HttpServlet {
 		
 		// And start crawling
 		
-		this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPs);
+		this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort, this.excludedPatterns, this.maxDocSize);
 		this.crawler.startCrawler();
 		
 	}
@@ -187,7 +203,7 @@ public class WorkerServlet extends HttpServlet {
 	}
 	
 	/**
-	 * Add other crawlers' info
+	 * Add other crawlers' info. Looks for worker<n> in the request URI, and stores the value for the parameter (IP:port combination)
 	 * @param request
 	 */
 	private void addOtherCrawlersInfo(HttpServletRequest request){
@@ -195,30 +211,41 @@ public class WorkerServlet extends HttpServlet {
 		for (String key : keys){
 			if (key.matches("worker\\d+")){
 				int crawlerNum = parseCrawlerNumber(key);
-				logger.debug(CLASSNAME + ": Adding keys for other workers: " + key);
-				otherWorkerIPs.put(crawlerNum, request.getParameter(key));
+				otherWorkerIPPort.put(crawlerNum, request.getParameter(key));
 			}
 			
 		}
 	}
 	
 	/**
-	 * Adds urls to file to start
+	 * Adds urls to the queue
 	 * @param request
 	 * @throws MalformedURLException 
 	 */
-	private void addNewUrls(HttpServletRequest request) throws MalformedURLException {
+	private void addNewUrls(HttpServletRequest request) {
+		String newUrlString = request.getParameter(DispatcherConstants.NEW_URLS_PARAM);
+		if (null == newUrlString){
+			logger.error(CLASSNAME + " Null urls received");
+			return;
+		}
 		String[] newUrls = request.getParameter(DispatcherConstants.NEW_URLS_PARAM).split(";");
+		
+		
 		for (String url : newUrls){
 			try {
-				this.newUrlQueue.add(new URL(url));					
-				logger.info(CLASSNAME + " Added " + url);
+				this.newUrlQueue.add(new URL(url));
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": New URL queue is full, dropping " + url);				
+			} catch (MalformedURLException e){
+				logger.info(CLASSNAME + ": "+ url + " is invalid, skipping");								
 			}
 		}
 	}
 
+	@Override
+	public void destroy(){
+		stopCrawler();
+	}
 	
 	/**
 	 * Private timer task class to ping the master
@@ -243,10 +270,6 @@ public class WorkerServlet extends HttpServlet {
 			
 		}
 	}
-	
-	@Override
-	public void destroy(){
-		stopCrawler();
-	}
+
 }
   

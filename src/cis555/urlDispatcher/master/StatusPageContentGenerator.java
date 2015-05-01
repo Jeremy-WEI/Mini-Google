@@ -24,7 +24,7 @@ public class StatusPageContentGenerator {
 			WorkerDetails workerDetails = details.get(workerIP);
 			
 			str.append("<tr>");
-			str.append("<td>" + workerDetails.getIP() + "</td>");
+			str.append("<td>" + workerDetails.getIP() + ":" + workerDetails.getPort() + "</td>");
 			str.append("<td>" + workerDetails.getPagesCrawled() + "</td>");
 			str.append("<td>" + workerDetails.getLastUpdate() + "</td>");
 			str.append("</tr>");

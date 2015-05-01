@@ -9,6 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import org.apache.log4j.Logger;
 
 import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 	
 public class LinkQueuer implements Runnable {
 	
@@ -19,25 +20,32 @@ public class LinkQueuer implements Runnable {
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private BlockingQueue<URL> newUrlQueue;
 	private int crawlerID;
-	private Map<Integer, String> otherWorkerIPs;
+	private int numberOfCrawlers;
 	private List<String> excludedPatterns;
+	private Map<Integer, BlockingQueue<URL>> urlsForOtherCrawlers;
 	
 	public LinkQueuer(BlockingQueue<URL> preRedistributionNewURLQueue, BlockingQueue<URL> newUrlQueue,
-			int crawlerID, Map<Integer, String> otherWorkerIPs, List<String> excludedPatterns){
+			int crawlerID, int numberOfCrawlers, List<String> excludedPatterns, 
+			Map<Integer, BlockingQueue<URL>> urlsForOtherCrawlers){
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.newUrlQueue = newUrlQueue;
 		this.crawlerID = crawlerID;
-		this.otherWorkerIPs = otherWorkerIPs;
+		this.numberOfCrawlers = numberOfCrawlers;
 		this.excludedPatterns = excludedPatterns;
+		this.urlsForOtherCrawlers = urlsForOtherCrawlers;
 	}
 
 	@Override
 	public void run() {
-		while(GETWorker.active){
+		while(Crawler.active){
 			try {
 				URL url = preRedistributionNewURLQueue.take();
 				URL filteredURL = filter(url);
 				if (null == filteredURL){
+					continue;
+				}
+				URL redistributedURL = redistributeURL(filteredURL);
+				if (null == redistributedURL){
 					continue;
 				}
 				
@@ -49,10 +57,9 @@ public class LinkQueuer implements Runnable {
 					logger.info(CLASSNAME + " New url queue is full, dropping " + filteredURL);					
 				}
 				
-			} catch (InterruptedException | MalformedURLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			} catch (Exception e) {
+				Utils.logStackTrace(e);
+			} 
 		}
 	}
 	
@@ -89,5 +96,34 @@ public class LinkQueuer implements Runnable {
 			}
 		}
 		return url;
+	}
+	
+	/**
+	 * Redistribute URLs to other crawlers based on the hashcode of the url
+	 * @param url
+	 * @return
+	 */
+	private URL redistributeURL(URL url){
+		int bucket = Utils.determineBucketForURL(url, numberOfCrawlers);
+		
+		if (bucket == this.crawlerID){
+			
+			// URL is for this crawler
+			
+			return url;
+		} else {
+			try {
+				
+				// Send URL to other crawlers
+				if (!this.urlsForOtherCrawlers.get(bucket).contains(url)){					
+					this.urlsForOtherCrawlers.get(bucket).add(url);
+				}
+				return null;
+				
+			} catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": Redistribution queue for crawler " + bucket + " is full, dropping " + url);
+				return null;
+			}
+		}
 	}
 }

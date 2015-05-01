@@ -26,7 +26,6 @@ public class GETWorker implements Runnable {
 	private BlockingQueue<URL> newUrlQueue;
 	private int id;
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
-	protected static boolean active = true;
 	
 	public GETWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> crawlQueue, 
 			BlockingQueue<URL> newUrlQueue, int id, BlockingQueue<RawCrawledItem> contentForLinkExtractor){
@@ -40,7 +39,7 @@ public class GETWorker implements Runnable {
 	
 	@Override
 	public void run() {
-		while (GETWorker.active){
+		while (Crawler.active){
 
 			URL url = null;
 			

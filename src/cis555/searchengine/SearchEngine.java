@@ -19,8 +19,8 @@ public class SearchEngine {
     }
 
     /*
-     * Search using Boolean Model, binary decision, no tf-idf value is used for
-     * testing...
+     * Search using Boolean Model, binary decision, no tf-idf value is used. For
+     * Testing...
      * 
      * @param: query, from user input
      * 
@@ -52,9 +52,8 @@ public class SearchEngine {
         }
         return results;
         // List<String> newResults = new ArrayList<String>();
-        // for (int i = 0; i < Math.min(10, results.size()); i++) {
+        // for (int i = 0; i < Math.min(3, results.size()); i++)
         // newResults.add(results.get(i));
-        // }
         // return newResults;
     }
 
@@ -75,8 +74,8 @@ public class SearchEngine {
         Set<DocHitEntity> docHitSet = db.getDocHit(queryTerm.getWord());
         for (DocHitEntity docHit : docHitSet) {
             WeightedDocID weightedDocID = new WeightedDocID(docHit.getDocID());
-            // add idf value here
-            weightedDocID.setWeight(docHit.getTf() * queryTerm.getFreq());
+            weightedDocID.setWeight(docHit.getTf() * queryTerm.getFreq()
+                    * db.getIdfValue(queryTerm.getWord()));
             weightedDocID.addDocHit(docHit);
             weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
         }
@@ -90,9 +89,9 @@ public class SearchEngine {
                     weightedDocID = new WeightedDocID(docHit.getDocID());
                     weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
                 }
-                // add idf value here
                 weightedDocID.setWeight(weightedDocID.getWeight()
-                        + docHit.getTf() * queryTerm.getFreq());
+                        + docHit.getTf() * queryTerm.getFreq()
+                        * db.getIdfValue(queryTerm.getWord()));
                 weightedDocID.addDocHit(docHit);
             }
         }
@@ -102,7 +101,7 @@ public class SearchEngine {
         Collections.sort(results);
         return results;
         // List<WeightedDocID> newResults = new ArrayList<WeightedDocID>();
-        // for (int i = 0; i < Math.min(10, results.size()); i++) {
+        // for (int i = 0; i < Math.min(20, results.size()); i++) {
         // newResults.add(results.get(i));
         // }
         // return newResults;
@@ -113,16 +112,17 @@ public class SearchEngine {
         SearchEngine.setDatabase(db);
         db.start();
         String[] queries = new String[] {
-                "UCB",
                 "United_Christian_Broadcasters",
                 "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
-                "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
-                "testing ", "WikiPedia", "Bank of America", "Apigee",
-                "University of Pennsylvania", "UCB" };
+                // "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
+                // "testing ", "WikiPedia", "Bank of America", "Apigee",
+                "University of Pennsylvania", };
         for (String query : queries) {
-        	
             System.out.println(query);
             // System.out.println(SearchEngine.booleanSearch(query));
+            // for (WeightedDocID w : SearchEngine.vectorSearch(query)) {
+            // System.out.println(db.getUrl(w.getDocID()));
+            // }
             System.out.println(SearchEngine.vectorSearch(query));
         }
         db.shutdown();

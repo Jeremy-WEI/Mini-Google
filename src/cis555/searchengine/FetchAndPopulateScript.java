@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import cis555.aws.utils.AWSClientAdapters;
+import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -37,8 +38,9 @@ public class FetchAndPopulateScript {
 
         // fetchData();
 
-        populateDocIDUrl("document_meta");
-        populateIndexTerm("indexer");
+        populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
+        populateIndexTerm("S3DATA/indexer-output");
+        populatePagerank("S3DATA/pagerank");
 
     }
 
@@ -119,7 +121,32 @@ public class FetchAndPopulateScript {
             System.out.println("Finish Processing " + f.getName() + "...");
         }
     }
+    
+    public static void populatePagerank(String dirName) throws IOException {
 
+        System.out.println("Start Building Pagerank Database...");
+        File dir = new File(dirName);
+        
+        for (File f : dir.listFiles()) {
+            System.out.println("Start Processing " + f.getName() + "...");
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            String line = null;
+            
+            while ((line = br.readLine()) != null) {
+                String[] tokens = line.split("\\s+");
+                if (tokens.length < 2)
+                    continue;
+                if (tokens[0].length() != 32)
+                    continue;
+                PagerankDAO.putPagerank(tokens[0], Double.parseDouble(tokens[1]));
+            }
+            
+            br.close();
+            System.out.println("Finish Processing " + f.getName() + "...");
+        }
+    }
+    
+    
     private static void getFileNumberAndAvgWord() {
 
 
@@ -150,11 +177,14 @@ public class FetchAndPopulateScript {
         System.out.println("Done Calculating docNumber...");
         System.out.println("docNumber: " + docNumber + ", avgWord: " + avgWord);
     }
+    
+    
 
     public static void fetchData() {
-        // S3Adapter s3 = new S3Adapter();
-        // s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
-        // s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
+         S3Adapter s3 = new S3Adapter();
+         s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
+         s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
+         s3.downloadAllFilesInBucket("pagerank", "S3DATA");
 
     }
 

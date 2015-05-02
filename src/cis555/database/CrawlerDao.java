@@ -8,55 +8,43 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import cis555.utils.CrawledDocument;
-import cis555.utils.CrawlerConstants;
 import cis555.utils.DocumentMeta;
+import cis555.utils.FromToUrls;
 
 import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
 
 public class CrawlerDao {
-
+	
 	private static final Logger logger = Logger.getLogger(CrawlerDao.class);
 	private static final String CLASSNAME = CrawlerDao.class.getName();
 
 	private PrimaryIndex<String, CrawledDocument> crawledDocumentDao;
 	private PrimaryIndex<String, DocumentMeta> documentMetaDao;
-	private PrimaryIndex<String, CounterObject> counterDao;
+	private PrimaryIndex<String, FromToUrls> fromToUrlDao;
 	
 	public CrawlerDao(EntityStore store){
 		crawledDocumentDao = store.getPrimaryIndex(String.class, CrawledDocument.class);
 		documentMetaDao = store.getPrimaryIndex(String.class, DocumentMeta.class);
-		counterDao = store.getPrimaryIndex(String.class, CounterObject.class);
-	}
-	
-	/********
-	 * Counter method (solely for recording the latest docID number)
-	 * ********
-	 */
-	
-	/**
-	 * Write the latest value of the counter to database
-	 * @param counterValue
-	 */
-	public void writeCounterValue(long counterValue){
-		this.counterDao.putNoReturn(new CounterObject(counterValue));
-	}
-	
-	/**
-	 * Get the latest value of the counter
-	 * @return
-	 */
-	public long getLatestCounterValue(){
-		if (this.counterDao.contains(CrawlerConstants.DB_COUNTER_KEY)){
-			return this.counterDao.get(CrawlerConstants.DB_COUNTER_KEY).getDocID();
-		} else {
-			
-			// should not get here
-			return -1;
-		}
+		fromToUrlDao = store.getPrimaryIndex(String.class, FromToUrls.class);
 	}
 
+	
+	
+	/********
+	 * FromToUrls methods
+	 * ********
+	 */
+
+	/**
+	 * 	Add a new from-to url object
+	 * @param fromURL
+	 * @param toUrls
+	 */
+	public void addNewFromToUrls(String fromURL, List<String> toUrls){
+		fromToUrlDao.putNoReturn(new FromToUrls(fromURL, toUrls));
+	}
 	
 	
 	/********
@@ -186,6 +174,21 @@ public class CrawlerDao {
 	 * Batch methods
 	 * ******
 	 */
+	
+	/**
+	 * Retrieve a list of all from-to urls in the database
+	 * @return
+	 */
+	public List<FromToUrls> getAllFromToDocuments(){
+		List<FromToUrls> fromToUrl = new ArrayList<FromToUrls>();
+		EntityCursor<FromToUrls> fromToUrlsCursors = this.fromToUrlDao.entities();
+		for (FromToUrls document = fromToUrlsCursors.first(); null != document; document = fromToUrlsCursors.next()){
+			fromToUrl.add(document);
+		}
+		fromToUrlsCursors.close();
+		return fromToUrl;
+	}
+	
 	
 	/**
 	 * Retrieve a list of all crawled documents in the database

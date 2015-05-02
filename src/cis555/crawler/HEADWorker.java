@@ -67,14 +67,20 @@ public class HEADWorker implements Runnable {
 			
 			try {
 				url = headCrawlQueue.take();
+				
+				URL filteredURL = CrawlerUtils.filterURL(url.toString());
+				
+				if (null == filteredURL){
+					continue;
+				}
 								
-				String domain = url.getHost();
+				String domain = filteredURL.getHost();
 				
 				if (!siteInfoMap.containsKey(domain)){
 					// Missing Site info ... return to the new URL queue
 					
 					logger.warn(CLASSNAME + ": Missing site info map for " + domain);
-					this.newUrlQueue.add(url);
+					this.newUrlQueue.add(filteredURL);
 					continue;
 				}
 				
@@ -82,20 +88,26 @@ public class HEADWorker implements Runnable {
 				String agentName = CrawlerUtils.extractAgent(info);
 				
 				if (info.canCrawl(agentName)){
-					crawl(info, domain, url);
+					crawl(info, domain, filteredURL);
 				} else {
 					// Returning to the queue
-					headCrawlQueue.add(url);
+
+					headCrawlQueue.add(filteredURL);
 				}
 				
 			} catch (CrawlerException e){
 				logger.debug(CLASSNAME + ": URL rejected because " + e.getMessage());
 				
-			}	catch (InterruptedException e) {
+			}	catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": New url queue is full, dropping " + url);
+			} catch (InterruptedException e) {
 				logger.error(CLASSNAME + ": Unabble to get URL");
 				logger.error(CLASSNAME + e.getMessage());
 			} catch (IOException e){
 				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of " + e.getMessage() + ", skipping");
+			}  catch (Exception e){
+				logger.debug(CLASSNAME + " THROWING EXCEPTION");
+				Utils.logStackTrace(e);
 			}
 
 		}
@@ -123,6 +135,12 @@ public class HEADWorker implements Runnable {
 			response = CrawlerUtils.retrieveHttpResource(url, CrawlerUtils.Method.HEAD, ifModifiedSinceString);
 		}
 		
+		if (null == response){
+			logger.debug(CLASSNAME + " Non-2xx or 3xx response received from " + url + ", skipping");
+			// returns null if the result is non-2xx or 3xx
+			return;
+		}
+		
 		updateSiteInfo(info, domain);
 		// Now deal with response
 		
@@ -136,6 +154,7 @@ public class HEADWorker implements Runnable {
 				if (!this.newUrlQueue.contains(redirectedURL)){
 					this.newUrlQueue.add(redirectedURL);									
 				}
+				
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": New url queue is full, dropping " + redirectedURL);
 			}
@@ -148,25 +167,29 @@ public class HEADWorker implements Runnable {
 			if (!contents.isEmpty()){ // This means that it's an HTML document
 				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents.getBytes(CrawlerConstants.CHARSET), ContentType.HTML, false);
 				this.contentForLinkExtractor.add(forLinkExtractor);
-			}
+			} 
 		} else if (isTooBig(response.getContentLength())){
 			logger.info("File exceeds maximum file length " + response.getContentLength() + ", skipping");
 		} else if (!isValidResponseType(response)){
 			logger.debug(CLASSNAME + ": URL " + url + " ignored as is neither HTML nor XML");
-		} else if (!response.getContentLanguage().equals("en") && !response.getContentLanguage().equals("NONE")){
+		} else if (!response.getContentLanguage().contains("en") && !response.getContentLanguage().equals("NONE")){
 			logger.debug(CLASSNAME + ": URL " + url + " ignored as it's not in English but is in " + response.getContentLanguage());		
 		} else {
 			
 			try {
-				this.getCrawlQueue.add(url);
 				
-				// Also add to list of all sites crawled in this session to prevent crawling the same site multiple times
-				
-				if (this.sitesCrawledThisSession.size() > CrawlerConstants.QUEUE_CAPACITY){
-					this.sitesCrawledThisSession.removeAllElements();
-				}
-				
-				this.sitesCrawledThisSession.add(url);
+				if (!this.getCrawlQueue.contains(url)){
+					this.getCrawlQueue.add(url);
+					
+					// Also add to list of all sites crawled in this session to prevent crawling the same site multiple times
+					
+					if (this.sitesCrawledThisSession.size() > CrawlerConstants.QUEUE_CAPACITY){
+						this.sitesCrawledThisSession.removeAllElements();
+					}
+					
+					this.sitesCrawledThisSession.add(url);
+					
+				}				
 				
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": Get queue is full, dropping " + url);				

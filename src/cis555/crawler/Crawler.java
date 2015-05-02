@@ -1,17 +1,11 @@
 package cis555.crawler;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -87,8 +81,12 @@ public class Crawler {
 	 * Start the crawler
 	 */
 	public void startCrawler(){
-		logger.info(CLASSNAME + ": Starting crawler");
-		initialise();
+		try {
+			logger.info(CLASSNAME + ": Starting crawler");
+			initialise();			
+		} catch (Exception e){
+			Utils.logStackTrace(e);
+		}
 	}
 	
 	/**
@@ -276,11 +274,13 @@ public class Crawler {
 	 * @return
 	 */
 	public int getNumCrawledDocuments(){
-		int count = 0;
-		for (LinkExtractorWorker worker : linkExtractorPool){
-			count = count + worker.getDocumentsCrawled();
+		try {
+			File storageDirectory = new File(CrawlerConstants.DB_DIRECTORY + CrawlerConstants.STORAGE_DIRECTORY);
+			return storageDirectory.list().length;			
+		} catch (Exception e){
+			Utils.logStackTrace(e);
+			return -1;
 		}
-		return count;
 	}
 
 	

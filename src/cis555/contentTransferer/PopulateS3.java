@@ -22,7 +22,8 @@ public class PopulateS3 {
 		S3Adapter adapter = new S3Adapter();
 		
 		// Upload crawled documents
-		File storageDirectory = new File(CrawlerConstants.STORAGE_DIRECTORY);
+		String storeDir = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.STORAGE_DIRECTORY;
+		File storageDirectory = new File(storeDir);
 		logger.info(CLASSNAME + " About to upload " + storageDirectory.list().length + " crawled documents to S3 "  + AWSConstants.DOCUMENT_BUCKET);
 
 		adapter.uploadDirectory(storageDirectory, AWSConstants.DOCUMENT_BUCKET);
@@ -31,7 +32,8 @@ public class PopulateS3 {
 		
 		// Upload links
 
-		File urlStorageDirectory = new File(CrawlerConstants.URL_STORAGE_DIRECTORY);
+		String urlStorageDir = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.URL_STORAGE_DIRECTORY;
+		File urlStorageDirectory = new File(urlStorageDir);
 		
 		logger.info(CLASSNAME + " About to upload " + storageDirectory.list().length + " url file to S3 " + AWSConstants.URL_BUCKET);
 		
@@ -41,7 +43,8 @@ public class PopulateS3 {
 		
 		// Upload document meta
 		
-		File documentMetaDirectory = new File(CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY);
+		String documentMetaDir = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY;
+		File documentMetaDirectory = new File(documentMetaDir);
 		
 		logger.info(CLASSNAME + " About to upload " + documentMetaDirectory.list().length + " document meta files to S3 bucket " + AWSConstants.DOCUMENT_META_BUCKET);
 		

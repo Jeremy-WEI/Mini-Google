@@ -98,15 +98,26 @@ public class Response {
 	 * @return
 	 * @throws IOException
 	 */
-	public static Response parseResponse(HttpURLConnection connection, Method method) throws IOException{
+	public static Response parseResponse(HttpURLConnection connection, Method method) throws IOException {
+		
+		int status = connection.getResponseCode();
+		
+		if (status > 350){
+			logger.info(CLASSNAME + ": non 2 or 300 result");
+			return null;
+		}
+		
 		Response response = new Response();
 		int contentLength = connection.getContentLength();
 		response.parseContentType(connection.getContentType());
 		response.setResponseCode(Integer.toString(connection.getResponseCode()));
-		
+				
 		String locationString = connection.getHeaderField("Location");
 		if (null != locationString && !locationString.isEmpty()){
-			response.setLocation(new URL(locationString));
+			URL url = CrawlerUtils.filterURL(locationString);
+			if (null != url){
+				response.setLocation(new URL(locationString));				
+			}
 		}
 		
 		String language = connection.getHeaderField("Content-Language");

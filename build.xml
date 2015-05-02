@@ -174,7 +174,7 @@
   
     <target name="pack" description="Create Crawler Pack">
       <zip destfile="for_ec2.zip">
-        <zipfileset dir="${build.dir}" includes="log/,properties/,master.war, worker.war, transferer.jar" excludes="log/*.log"/>
+        <zipfileset dir="${build.dir}" includes="log/,properties/,master.war, worker.war,ec2_setup_scripts/" excludes="log/*.log"/>
       </zip>
     </target>
 

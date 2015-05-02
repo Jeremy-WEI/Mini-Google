@@ -51,7 +51,8 @@ public class LinkQueuer implements Runnable {
 				
 				try {
 					if (!this.newUrlQueue.contains(filteredURL)){
-						this.newUrlQueue.add(filteredURL);						
+						this.newUrlQueue.add(filteredURL);	
+//						logger.debug(CLASSNAME + " Added " + filteredURL + " to the new url queue");					
 					}
 				} catch (IllegalStateException e){
 					logger.info(CLASSNAME + " New url queue is full, dropping " + filteredURL);					
@@ -69,11 +70,11 @@ public class LinkQueuer implements Runnable {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	private URL filter(URL url) throws MalformedURLException{
+	private URL filter(URL url) throws MalformedURLException {
 		String urlString = url.toString();
 		if (urlString.length() > CrawlerConstants.MAX_URL_LENGTH){
 			return null;
-		}else if (urlString.contains("#")){
+		} else if (urlString.contains("#")){
 			String newUrlString = urlString.substring(0, urlString.indexOf("#"));
 			return new URL(newUrlString);
 		}  else {

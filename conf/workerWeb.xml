@@ -20,11 +20,11 @@
          </init-param>
          <init-param>
            <param-name>excludedPatterns</param-name>
-           <param-value>yahoo.uservoice.com;login.;games.yahoo.com;javascript:;/forms;/cgi-bin/;my.yahoo.com;lists.wikimedia.org;search.yahoo.com;twitter.com</param-value>
+           <param-value>login?;gravatar.com;yahoo.uservoice.com;login.;games.yahoo.com;javascript:;/forms;/cgi-bin/;my.yahoo.com;lists.wikimedia.org;search.yahoo.com;twitter.com</param-value>
          </init-param>
          <init-param>
            <param-name>master</param-name>
-           <param-value>52.4.113.228:8080</param-value>
+           <param-value>52.6.166.43:8080</param-value>
          </init-param>
          <load-on-startup>1</load-on-startup>
      </servlet>

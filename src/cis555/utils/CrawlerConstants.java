@@ -7,10 +7,10 @@ public class CrawlerConstants {
 	public static final String CHARSET = "utf-8";
 	public static final int QUEUE_CAPACITY = 250000;
 	public static final int SMALL_QUEUE_CAPACITY = 10000;
-	public static final int NUM_HEAD_GET_THREADS = 7;
-	public static final int NUM_EXTRACTOR_THREADS = 8;
-	public static final int NUM_MATCHER_THREADS = 7;
-	public static final int NUM_QUEUER_THREADS = 8;
+	public static final int NUM_HEAD_GET_THREADS = 10;
+	public static final int NUM_EXTRACTOR_THREADS = 17;
+	public static final int NUM_MATCHER_THREADS = 5;
+	public static final int NUM_QUEUER_THREADS = 4;
 	
 	public static final int THREAD_JOIN_WAIT_TIME = 500;
 	public static final int THREAD_SLEEP_TIME = 1000;
@@ -39,10 +39,11 @@ public class CrawlerConstants {
 	public static final String STORAGE_DIRECTORY = "/crawled_files";
 	public static final String URL_STORAGE_DIRECTORY = "/crawled_urls";
 	public static final String URL_STORAGE_FILENAME = "urls.txt";
-	public static final String DOCUMENT_META_STORAGE_DIRECTORY = DB_DIRECTORY + "/document_meta";
+	public static final String DOCUMENT_META_STORAGE_DIRECTORY = "/document_meta";
 	public static final String DOCUMENT_META_STORAGE_FILENAME = "document_meta.txt";
 
 	// URL filter
 	public static final int MAX_URL_LENGTH = 200;
+	public static final int MIN_URL_LENGTH = 10;
 	
 }

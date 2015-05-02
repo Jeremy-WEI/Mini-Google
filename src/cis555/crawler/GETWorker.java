@@ -4,17 +4,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
 
 import cis555.crawler.Response.ContentType;
-import cis555.database.CrawlerDao;
+import cis555.utils.Utils;
 
 public class GETWorker implements Runnable {
 	
@@ -47,11 +43,17 @@ public class GETWorker implements Runnable {
 				
 				url = crawlQueue.take();
 				
-				String domain = url.getHost();
+				URL filteredURL = CrawlerUtils.filterURL(url.toString());
+
+				if (null == filteredURL){
+					continue;
+				}
+				
+				String domain = filteredURL.getHost();
 				
 				if (!siteInfoMap.containsKey(domain)){
 					// Missing Site info ... return to the new URL queue
-					this.newUrlQueue.add(url);
+					this.newUrlQueue.add(filteredURL);
 					continue;
 				}
 				
@@ -59,18 +61,23 @@ public class GETWorker implements Runnable {
 				String agentName = CrawlerUtils.extractAgent(info);
 				
 				if (info.canCrawl(agentName)){
-					crawl(info, domain, url);
+					crawl(info, domain, filteredURL);
 				} else {
-					// Need to wait 
-					this.crawlQueue.add(url);
-				}
-
+					// Need to wait 	
+					this.crawlQueue.add(filteredURL);	
 				
+				}
+				
+			} catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": Crawl queue is full, dropping " + url);				
 			} catch (InterruptedException e) {
 				logger.error(CLASSNAME + ": Unabble to get URL");
 				logger.error(CLASSNAME + e.getMessage());
 			} catch (IOException e){
 				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of " + e.getMessage() + ", skipping");
+			} catch (Exception e){
+				logger.debug(CLASSNAME + " THROWING EXCEPTION");
+				Utils.logStackTrace(e);
 			}
 
 		}
@@ -85,18 +92,26 @@ public class GETWorker implements Runnable {
 	 * @throws IOException 
 	 * @throws MalformedURLException 
 	 */
-	private void crawl(SiteInfo info, String domain, URL url) throws MalformedURLException, IOException{
-		
+	private void crawl(SiteInfo info, String domain, URL url) throws MalformedURLException, IOException {
 		
 		try {
 			Response response = new Response();
 			String ifModifiedSinceString = ""; // Not relevant for GET requests
+			
+			logger.debug(CLASSNAME + ": About to crawl " + url);				
 			
 			if (url.toString().startsWith("https")){
 				response = CrawlerUtils.retrieveHttpsResource(url, CrawlerUtils.Method.GET, ifModifiedSinceString);
 			} else {
 				response = CrawlerUtils.retrieveHttpResource(url, CrawlerUtils.Method.GET, ifModifiedSinceString);
 			} 
+			
+			if (null == response){
+				logger.debug(CLASSNAME + " Non-2xx or 3xx response received from " + url + ", skipping");
+				// returns null if the result is non-2xx or 3xx
+				return;
+			}
+
 			
 			updateSiteInfo(info, domain);
 			
@@ -116,11 +131,18 @@ public class GETWorker implements Runnable {
 			}
 			
 			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
-			this.contentForLinkExtractor.add(forLinkExtractor);
+			try {
+				this.contentForLinkExtractor.add(forLinkExtractor);
+			} catch (IllegalStateException e){
+				logger.info(CLASSNAME + ": Link Extractor queue is full, dropping " + url);				
+			}
 				
 		} catch (CrawlerException e){
-//			System.out.println("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );
-		} 
+			logger.debug("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );
+		} catch (Exception e){
+			logger.debug(CLASSNAME + " THROWING EXCEPTION");
+			Utils.logStackTrace(e);
+		}
 	}
 	
 	/**

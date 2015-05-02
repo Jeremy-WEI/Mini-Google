@@ -4,10 +4,10 @@ public class DispatcherConstants {
 	
 	public static final String IP_FORMAT = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
 	public static final int PING_MASTER_FREQUENCY_MS = 10000;
-	public static final int REDISTRIBUTE_URLS_FREQUENCY_MS = 20000;
+	public static final int REDISTRIBUTE_URLS_FREQUENCY_MS = 360000;
 	public static final int HTTP_TIMEOUT = 1000;
-	public static final int READ_TIMEOUT = 60000;
-
+	public static final int READ_TIMEOUT = 5000;
+	
 	public static final int URLS_TO_SEND = 1000;
 	
 	// GET / PUT URL paths

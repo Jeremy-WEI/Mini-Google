@@ -40,6 +40,7 @@ public class WorkerServlet extends HttpServlet {
 	private int crawlerNumber;
 	private List<String> excludedPatterns;
 	private int maxDocSize;
+	private boolean isCrawling;
 
 	/**
 	 * Get the address that the master is on
@@ -91,6 +92,8 @@ public class WorkerServlet extends HttpServlet {
 		
 		this.otherWorkerIPPort = new HashMap<Integer, String>();
 		
+		this.isCrawling = false;
+		
 		Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new PingMasterTask(), 0, DispatcherConstants.PING_MASTER_FREQUENCY_MS);
 	}
@@ -136,6 +139,7 @@ public class WorkerServlet extends HttpServlet {
 		if (null != this.crawler){
 			this.crawler.stopCrawler();
 			this.crawler = null;
+			this.isCrawling = false;
 		}
 	}
 	
@@ -145,8 +149,10 @@ public class WorkerServlet extends HttpServlet {
 	 */
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		logger.debug(CLASSNAME + " Received request from " + request.getRequestURI());
 
 		String extension = DispatcherUtils.extractExtension(request);
+		
 		
 		try {
 			switch (extension){
@@ -175,17 +181,19 @@ public class WorkerServlet extends HttpServlet {
 	 * @throws MalformedURLException 
 	 */
 	private void startCrawler(HttpServletRequest request) throws MalformedURLException{
-		
-		// Populate the relevant details for the crawler
-		String crawlerNumString = request.getParameter(DispatcherConstants.CRAWLER_NAME_PARAM);
-		this.crawlerNumber = parseCrawlerNumber(crawlerNumString);
-		addOtherCrawlersInfo(request);
-		addNewUrls(request);
-		
-		// And start crawling
-		
-		this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort, this.excludedPatterns, this.maxDocSize);
-		this.crawler.startCrawler();
+		if (!this.isCrawling){
+			// Populate the relevant details for the crawler
+			String crawlerNumString = request.getParameter(DispatcherConstants.CRAWLER_NAME_PARAM);
+			this.crawlerNumber = parseCrawlerNumber(crawlerNumString);
+			addOtherCrawlersInfo(request);
+			addNewUrls(request);
+			
+			// And start crawling
+			
+			this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort, this.excludedPatterns, this.maxDocSize);
+			this.crawler.startCrawler();
+			this.isCrawling = true;
+		}
 		
 	}
 	
@@ -230,16 +238,18 @@ public class WorkerServlet extends HttpServlet {
 		}
 		String[] newUrls = request.getParameter(DispatcherConstants.NEW_URLS_PARAM).split(";");
 		
-		
 		for (String url : newUrls){
-			try {
-				this.newUrlQueue.add(new URL(url));
-			} catch (IllegalStateException e){
-				logger.info(CLASSNAME + ": New URL queue is full, dropping " + url);				
-			} catch (MalformedURLException e){
-				logger.info(CLASSNAME + ": "+ url + " is invalid, skipping");								
+			if (url.startsWith("http")){
+				try {
+					this.newUrlQueue.add(new URL(url));
+				} catch (IllegalStateException e){
+					logger.info(CLASSNAME + ": New URL queue is full, dropping " + url);				
+				} catch (MalformedURLException e){
+					logger.info(CLASSNAME + ": "+ url + " is invalid, skipping");								
+				}				
 			}
 		}
+		logger.debug(CLASSNAME + " added " + newUrls.length + " urls");
 	}
 
 	@Override
@@ -255,12 +265,15 @@ public class WorkerServlet extends HttpServlet {
 	class PingMasterTask extends TimerTask {
 		@Override
 		public void run(){
-			StringBuilder str = new StringBuilder();
-			str.append("http://" + getMasterIP() + "/master/" + DispatcherConstants.WORKER_STATUS_URL + "?");
-			str.append(DispatcherConstants.PORT_PARAM + "=" + getPort() + "&");
-			str.append(DispatcherConstants.PAGES_CRAWLED_PARAM + "=" + getUrlsCrawled());
 			
+			logger.info("PINGING MASTER");
 			try {
+			
+				StringBuilder str = new StringBuilder();
+				str.append("http://" + getMasterIP() + "/master/" + DispatcherConstants.WORKER_STATUS_URL + "?");
+				str.append(DispatcherConstants.PORT_PARAM + "=" + getPort() + "&");
+				str.append(DispatcherConstants.PAGES_CRAWLED_PARAM + "=" + getUrlsCrawled());
+			
 				URL url = new URL(str.toString());		
 				String content = "";
 				DispatcherUtils.sendHttpRequest(url, content, DispatcherUtils.Method.GET, false);

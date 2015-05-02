@@ -3,14 +3,23 @@ package cis555.crawler;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.log4j.Logger;
 
+import cis555.urlDispatcher.utils.DispatcherConstants;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
 public class CrawlerUtils {
 	
@@ -29,10 +38,9 @@ public class CrawlerUtils {
 	 * @param ifModifiedDateString
 	 * @return
 	 */
-	public static Response retrieveHttpResource(URL absoluteURL, Method method, String ifModifiedDateString){
-		HttpURLConnection httpConnection = null;
+	public static Response retrieveHttpResource(final URL absoluteURL, final Method method, String ifModifiedDateString){
 		try {
-			httpConnection = (HttpURLConnection) absoluteURL.openConnection();
+			final HttpURLConnection httpConnection = (HttpURLConnection) absoluteURL.openConnection();
 			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 			if (method == Method.HEAD){
 				httpConnection.setRequestMethod("HEAD");
@@ -41,26 +49,89 @@ public class CrawlerUtils {
 			if (!ifModifiedDateString.isEmpty()){
 				httpConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
 			}
-			
+			httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
+			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
+
 			httpConnection.connect();
 			
-			Response response = Response.parseResponse(httpConnection, method);
-			httpConnection.disconnect();
+			// THIS STUFF IS NEW
 
+			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+			final Future<Response> handler = executor.submit(new Callable<Response>() {
+			  public Response call() throws Exception {
+			    try {
+					Response response = Response.parseResponse(httpConnection, method);
+					logger.info(CLASSNAME + ": sending request to " + absoluteURL + " with response code " + httpConnection.getResponseCode());	
+					return response;
+			    } catch (Exception e) {
+			      e.printStackTrace();
+			    }
+			    return null;
+			  }
+			});
 			
-			return response;
-
+			executor.schedule(new Runnable() {
+				  public void run() {
+					  httpConnection.disconnect();
+				    handler.cancel(true);
+				    executor.shutdownNow(); 
+				  }
+				}, DispatcherConstants.HTTP_TIMEOUT, TimeUnit.MILLISECONDS);
+				Response response = handler.get();
+				executor.shutdownNow();
+				return response;
+				// THIS STUFF IS NEW
 			
-		} catch (IOException | IllegalArgumentException e) {
-			String error = "Unable to open connection to " + absoluteURL + ", skipping";
-			logger.debug(CLASSNAME + ": " + error);
-			throw new CrawlerException(error);
-		} finally {
-			if (null != httpConnection){
-				httpConnection.disconnect();
-			}
-		}
+			
+		} catch (CancellationException e){
+			logger.debug(CLASSNAME + " request timed out after 5 seconds");
+			return null;
+			
+		} catch (SocketTimeoutException e){
+			logger.debug(CLASSNAME + " timed out when sending request to " + absoluteURL);
+			return null;
+		} catch (IOException e){
+			logger.debug(CLASSNAME + " was unable to send request to " + absoluteURL);			
+			return null;
+		} catch (Exception e) {
+			Utils.logStackTrace(e);
+			logger.debug(CLASSNAME + " Unable to open connection to " + absoluteURL + ", skipping");
+			return null;
+		} 
 	}
+
+		
+//		
+//		HttpURLConnection httpConnection = null;
+//		try {
+//			httpConnection = (HttpURLConnection) absoluteURL.openConnection();
+//			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
+//			if (method == Method.HEAD){
+//				httpConnection.setRequestMethod("HEAD");
+//			}
+//
+//			if (!ifModifiedDateString.isEmpty()){
+//				httpConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
+//			}
+//			httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
+//			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
+//
+//			httpConnection.connect();
+//			
+//			Response response = Response.parseResponse(httpConnection, method);
+//			
+//			return response;
+//
+//			
+//		} catch (Exception e) {
+//			Utils.logStackTrace(e);
+//			String error = "Unable to open connection to " + absoluteURL + ", skipping";
+//			throw new CrawlerException(error);
+//		} finally {
+//			if (null != httpConnection){
+//				httpConnection.disconnect();
+//			}
+//		}
 	
 
 	
@@ -71,12 +142,12 @@ public class CrawlerUtils {
 	 * @throws MalformedURLException
 	 * @throws IOException
 	 */
-	public static Response retrieveHttpsResource(URL absoluteURL, Method method, String ifModifiedDateString) throws MalformedURLException, IOException{
+	public static Response retrieveHttpsResource(final URL absoluteURL, final Method method, String ifModifiedDateString) throws MalformedURLException, IOException{
 		
-		HttpsURLConnection httpsConnection = null;
+		final HttpsURLConnection httpsConnection = (HttpsURLConnection)absoluteURL.openConnection();
 		
 		try {
-			httpsConnection = (HttpsURLConnection)absoluteURL.openConnection();
+
 			httpsConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 			if (method == Method.HEAD){
 				httpsConnection.setRequestMethod("HEAD");
@@ -85,33 +156,110 @@ public class CrawlerUtils {
 			if (!ifModifiedDateString.isEmpty()){
 				httpsConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
 			}
+			httpsConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
+			httpsConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 			
-			Response response = Response.parseResponse(httpsConnection, method);
-			httpsConnection.disconnect();
-			return response;
+			// THIS STUFF IS NEW
 
-		} catch (IOException e) {
-			String error = "Unable to open connection to " + absoluteURL + ", skipping";
-			logger.debug(CLASSNAME + ": " + error);
-//			e.printStackTrace();
-			throw new CrawlerException(error);
+			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+			final Future<Response> handler = executor.submit(new Callable<Response>() {
+			  public Response call() throws Exception {
+			    try {
+					Response response = Response.parseResponse(httpsConnection, method);
+					logger.info(CLASSNAME + ": sending request to " + absoluteURL + " with response code " + httpsConnection.getResponseCode());	
+					return response;
+			    } catch (Exception e) {
+			      e.printStackTrace();
+			    }
+			    return null;
+			  }
+			});
+			
+			executor.schedule(new Runnable() {
+				  public void run() {
+					  httpsConnection.disconnect();
+				    handler.cancel(true);
+				    executor.shutdownNow(); 
+				  }
+				}, 5000, TimeUnit.MILLISECONDS);
+				Response response = handler.get();
+				executor.shutdownNow();
+				return response;
+				// THIS STUFF IS NEW
+			
+
+		} catch (CancellationException e){
+			logger.debug(CLASSNAME + " request timed out after 5 seconds");
+			return null;
+			
+		} catch (IOException e){
+			logger.debug(CLASSNAME + " was unable to send request to " + absoluteURL);	
+			return null;
+		} catch (Exception e) {
+			Utils.logStackTrace(e);
+			logger.debug(CLASSNAME + " was unable to send request to " + absoluteURL);	
+			return null;
 		}  finally {
 			if (null != httpsConnection){
 				httpsConnection.disconnect();
 			}
 		}
+//
+//		HttpsURLConnection httpsConnection = null;
+//		
+//		try {
+//			httpsConnection = (HttpsURLConnection)absoluteURL.openConnection();
+//			httpsConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
+//			if (method == Method.HEAD){
+//				httpsConnection.setRequestMethod("HEAD");
+//			}
+//			httpsConnection.setInstanceFollowRedirects(false);
+//			if (!ifModifiedDateString.isEmpty()){
+//				httpsConnection.addRequestProperty("If-Modified-Since", ifModifiedDateString);
+//			}
+//			httpsConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
+//			httpsConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
+//						
+//			Response response = Response.parseResponse(httpsConnection, method);
+//			return response;
+//
+//		} catch (Exception e) {
+//			Utils.logStackTrace(e);
+//			String error = "Unable to open connection to " + absoluteURL + ", skipping";
+//			throw new CrawlerException(error);
+//		}  finally {
+//			if (null != httpsConnection){
+//				httpsConnection.disconnect();
+//			}
+//		}
+
+	
+	
 	}
 
 	/**
 	 * 
 	 * @param rawUrl
-	 * @param domain
 	 * @return
 	 * @throws MalformedURLException 
 	 */
-	public static URL filterURL(String rawUrl, URL originalUrl) throws MalformedURLException {
+	public static URL filterURL(String rawUrl) throws MalformedURLException {
+		if (rawUrl.isEmpty()){
+			return null;
+		}
+		
+		rawUrl = rawUrl.trim();
+		
+		if (!rawUrl.startsWith("http")){
+			return null;
+		}
+		if (!rawUrl.contains(".")){
+			return null;
+		}
 		
 		if (rawUrl.length() > CrawlerConstants.MAX_URL_LENGTH){
+			return null;
+		} if (rawUrl.length() < CrawlerConstants.MIN_URL_LENGTH){
 			return null;
 		} else if (rawUrl.contains("#")){
 			String newUrlString = rawUrl.substring(0, rawUrl.indexOf("#"));
@@ -125,7 +273,6 @@ public class CrawlerUtils {
 		
 	}
 	
-
 	/**
 	 * Determines the right agent name for disallow, allow and waits
 	 * @param info

@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -68,23 +69,34 @@ public class LinkExtractorWorker extends Thread {
 					
 				Document cleansedDoc = null;
 				
+				boolean isSaved = true;
+				
 				if (content.isNew()){
 					String docID = getDocID(url);
-					this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
 					if (contentType != ContentType.PDF){
 						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
-						if (contentType == ContentType.TEXT){
-							storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
+						if (contentsIsEnglish(stringContents)){
+							if (contentType == ContentType.TEXT){
+								storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
+							} else {
+								cleansedDoc = Jsoup.parse(stringContents);
+								storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
+							}							
+							this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
+							logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
+							this.documentsCrawled++;
 						} else {
-							cleansedDoc = Jsoup.parse(stringContents);
-							storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
-							
+							// otherwise, don't store
+							logger.debug(CLASSNAME + " content doesn't pass English test, rejecting " + url);
+							isSaved = false;
 						}
+						
 					} else {
 						storePDF(rawContents, docID, url);
+						this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
+						logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
+						this.documentsCrawled++;
 					}
-					logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
-					this.documentsCrawled++;
 				}
 				
 				if (contentType == ContentType.HTML){				
@@ -93,18 +105,24 @@ public class LinkExtractorWorker extends Thread {
 						cleansedDoc = Jsoup.parse(stringContents);						
 					}
 					
-					addAHrefLinks(cleansedDoc, content.isNew(), url);
-					addImgSrcLinks(cleansedDoc, url);
-				}					
-
+					if (isSaved){
+						addAHrefLinks(cleansedDoc, content.isNew(), url);
+						addImgSrcLinks(cleansedDoc, url);						
+					} else {
+						addAHrefLinks(cleansedDoc, false, url);
+						addImgSrcLinks(cleansedDoc, url);												
+					}
+				} 
 				
-			} catch (InterruptedException | MalformedURLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			} catch (UnsupportedEncodingException | IllegalStateException | IllegalArgumentException e1) {
 				logger.info(CLASSNAME + " Unable to decode, skipping " + e1.getMessage());
+			} catch (Exception e){
+				logger.debug(CLASSNAME + " THROWING EXCEPTION");
+				Utils.logStackTrace(e);
 			}
 		}
+		logger.info(CLASSNAME + ": LinkExtractorWorker " + this.id + " has shut down");
+
 	}
 	
 	/**
@@ -115,11 +133,12 @@ public class LinkExtractorWorker extends Thread {
 	 * @param sourceUrl
 	 * @throws UnsupportedEncodingException
 	 * @throws MalformedURLException
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private void addAHrefLinks(Document cleansedDoc, boolean isNew, URL sourceUrl) throws IllegalArgumentException, UnsupportedEncodingException, MalformedURLException{
+	private void addAHrefLinks(Document cleansedDoc, boolean isNew, URL sourceUrl) throws IllegalArgumentException, UnsupportedEncodingException, MalformedURLException, NoSuchAlgorithmException{
 		Elements links = cleansedDoc.select("a[href]");
 		
-		List<URL> newUrls = new ArrayList<URL>();
+		List<String> newUrls = new ArrayList<String>();
 		
 		for (Element link : links){
 			String urlString = link.attr("abs:href");
@@ -128,24 +147,28 @@ public class LinkExtractorWorker extends Thread {
 					URL newUrl = null;
 					try {
 						String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
-						newUrl = CrawlerUtils.filterURL(cleansedString, sourceUrl);	
+						newUrl = CrawlerUtils.filterURL(cleansedString);	
 						if (null != newUrl){
 							if (!this.preRedistributionNewURLQueue.contains(newUrl)){
 								this.preRedistributionNewURLQueue.add(newUrl);
 								this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);								
 							}
-							newUrls.add(newUrl);							
+							
+							newUrls.add(Utils.hashUrlToHexStringArray(newUrl.toString()));							
 						}
 					} catch (IllegalStateException e){
 						logger.info(CLASSNAME + " New preRedistributionNewURLQueue is full, dropping " + newUrl);
 						
-					} 
+					} catch (Exception e){
+						logger.debug(CLASSNAME + " THROWING EXCEPTION");
+						Utils.logStackTrace(e);
+					}
 				}
 			}
 		} 
 		
 		if (isNew){
-			storeUrlsToFile(newUrls, sourceUrl);						
+			this.dao.addNewFromToUrls(Utils.hashUrlToHexStringArray(sourceUrl.toString()), newUrls);						
 		}		
 	}
 	
@@ -169,7 +192,7 @@ public class LinkExtractorWorker extends Thread {
 					URL newUrl = null;
 					try {
 						String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
-						newUrl = CrawlerUtils.filterURL(cleansedString, sourceUrl);	
+						newUrl = CrawlerUtils.filterURL(cleansedString);	
 						if (null != newUrl){
 							this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
 							addedImgLinksForOnePage.add(urlString);							
@@ -179,7 +202,10 @@ public class LinkExtractorWorker extends Thread {
 						
 					} catch (IllegalArgumentException e){
 						logger.info(CLASSNAME + " " + e.getMessage() + ", dropping");
-					}					
+					} catch (Exception e){
+						logger.debug(CLASSNAME + " THROWING EXCEPTION");
+						Utils.logStackTrace(e);
+					}
 				}
 			}
 		}
@@ -189,8 +215,10 @@ public class LinkExtractorWorker extends Thread {
 	 * Hashes the url to generate a docID
 	 * @param url
 	 * @return
+	 * @throws UnsupportedEncodingException 
+	 * @throws NoSuchAlgorithmException  
 	 */
-	private String getDocID(URL url){
+	private String getDocID(URL url) throws UnsupportedEncodingException, NoSuchAlgorithmException {
 		return Utils.hashUrlToHexStringArray(url.toString());
 //		if (this.dao.doesDocumentMetaExist(url.toString())){
 //			// Previously crawled document
@@ -258,42 +286,6 @@ public class LinkExtractorWorker extends Thread {
 	}
 	
 	/**
-	 * Appends the new urls to a flat file
-	 * @param newUrls
-	 * @param sourceUrl
-	 */
-	private void storeUrlsToFile(List<URL> newUrls, URL sourceUrl){
-		String fileName = CrawlerConstants.URL_STORAGE_FILENAME;
-		File urlStorageFile = new File(this.urlStorageDirectory + "/" + fileName);
-		BufferedWriter writer = null;
-		try {
-			if (!urlStorageFile.exists()){
-				urlStorageFile.createNewFile();
-			}
-			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
-			if (newUrls.size() > 0){
-				writer.write(Utils.hashUrlToHexStringArray(sourceUrl.toString()) + "\t");
-				for (URL newUrl : newUrls){
-					writer.write(Utils.hashUrlToHexStringArray(newUrl.toString()) + ";");
-				}				
-			}
-			writer.write("\n");
-			
-		} catch (IOException e){
-			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		} finally {
-			if (null != writer){
-				try {
-					writer.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	
-	/**
 	 * Returns the number of documents crawled
 	 * @return
 	 */
@@ -301,5 +293,43 @@ public class LinkExtractorWorker extends Thread {
 		return this.documentsCrawled;
 	}
 
+	
+	/**
+	 * Determines if the contents is english by checking if the document contains a number of common english words
+	 * @param contents
+	 * @return
+	 */
+	private boolean contentsIsEnglish(String contents){
+		int count = 0;
+		if (contents.contains(" the ")){
+			count++;
+		}
+		
+		if (contents.contains(" and ")){
+			count++;
+		}
+		
+		if (contents.contains(" that ")){
+			count++;
+		}
+
+		if (contents.contains(" not ")){
+			count++;
+		}
+
+		if (contents.contains(" with ")){
+			count++;
+		}
+
+		if (contents.contains(" this ")){
+			count++;
+		}
+		
+		if (count > 2){
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 }

@@ -13,7 +13,7 @@
 
 export JAVA_HOME=/usr
 
-/home/cis455/workspace/MRExample/hadoop-2.6.0/bin/hadoop jar /home/cis455/workspace/prstuff/pagerank.jar cis555.PageRank.PageRankDriver /home/cis455/workspace/prstuff/prdata/input /home/cis455/workspace/prstuff/prdata/intermediate /home/cis455/workspace/prstuff/prdata/output
+/home/cis455/workspace/MRExample/hadoop-2.6.0/bin/hadoop jar /home/cis455/workspace/prstuff/pagerank.jar cis555.PageRank.PageRankDriver /home/cis455/workspace/prstuff/prdata/hoginput /home/cis455/workspace/prstuff/prdata/hogint /home/cis455/workspace/prstuff/prdata/hogout
 
 
 # IF DOING ON AWS

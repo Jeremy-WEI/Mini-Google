@@ -19,14 +19,19 @@ public class PageRankInitMapper extends Mapper<LongWritable, Text, Text, Text> {
             throws IOException, InterruptedException {
 	
 	    String line = value.toString();
-	    System.out.println(line);
-	    Pattern urlFromTo = Pattern.compile("^([^\t]+)\t(.*)");
+	    // System.out.println(line);
+	    // below assumes good input
+	    // Pattern urlFromTo = Pattern.compile("^([^\t]+)\t(.*)");
+	    Pattern urlFromTo = Pattern.compile("^([A-F0-9]{32})\t(.*)");
 	    Matcher urlMatcher = urlFromTo.matcher(line);
 	    if (urlMatcher.matches()) {
-		System.out.println("urlMatcher.group(1): " + urlMatcher.group(1));
+		// System.out.println("urlMatcher.group(1): " + urlMatcher.group(1));
 		// System.out.println("urlMatcher.group(2): " + urlMatcher.group(2));
 		url.set(urlMatcher.group(1));
 		linksStr = urlMatcher.group(2);
+	    }
+	    else {
+		System.out.println("\n\n\nno good: " + line + "\n\n\n");
 	    }
 	    
 	    int numLinks = 0;

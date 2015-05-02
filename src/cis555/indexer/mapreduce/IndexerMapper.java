@@ -37,7 +37,7 @@ public class IndexerMapper extends
         // String type = fileName.substring(index + 1);
         String url = key.url;
         String type = key.type;
-        System.out.println("type" + type + "url: " + url);
+        // System.out.println("type" + type + "url: " + url);
         String docID = Utils.hashUrlToHexStringArray(url);
         Indexer indexer = Indexer.getInstance(
                 new ByteArrayInputStream(value.getBytes()), url, docID,

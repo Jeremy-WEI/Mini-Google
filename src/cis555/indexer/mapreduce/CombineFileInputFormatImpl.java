@@ -12,12 +12,13 @@ import org.apache.hadoop.mapreduce.lib.input.CombineFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReader;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 
+
 public class CombineFileInputFormatImpl extends
         CombineFileInputFormat<URLTypeWritable, BytesWritable> {
     public CombineFileInputFormatImpl() {
         super();
-        setMaxSplitSize(10 * 1024 * 1024); // 10 MB, default block size on
-                                           // hadoop
+        setMaxSplitSize(20 * 1024 * 1024); // 20 MB, smaller than default Hadoop
+                                           // block size
     }
 
     public RecordReader<URLTypeWritable, BytesWritable> createRecordReader(

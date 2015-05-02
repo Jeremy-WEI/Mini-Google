@@ -46,9 +46,15 @@ public class FetchAndPopulateScript {
 
         File dir = new File(dirName);
         for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
+            System.out.println("Start Processing " + f.getName() + "...");
             BufferedReader br = new BufferedReader(new FileReader(f));
             String line = null;
             while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0)
+                    continue;
                 String[] tokens = line.split("\\s+");
                 if (tokens.length < 2)
                     continue;
@@ -59,6 +65,7 @@ public class FetchAndPopulateScript {
                 UrlIndexDAO.putUrlInfo(tokens[0], tokens[1]);
             }
             br.close();
+            System.out.println("Finish Processing " + f.getName() + "...");
         }
         System.out.println("Finish Building DocID-URL Database...");
     }
@@ -69,12 +76,17 @@ public class FetchAndPopulateScript {
         getFileNumberAndAvgWord();
         File dir = new File(dirName);
         for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
             System.out.println("Start Processing " + f.getName() + "...");
             BufferedReader br = new BufferedReader(new FileReader(f));
             String line = null;
             String lastWord = null;
             int freq = 0;
             while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0)
+                    continue;
                 String[] tokens = line.split("\\s+", 2);
                 if (lastWord == null) {
                     IndexTermDAO.putIndexTerm(tokens[0]);
@@ -95,16 +107,20 @@ public class FetchAndPopulateScript {
                 if (docHitEntity.getWordCount() > 0)
                     freq++;
             }
-            IndexTermDAO.putIndexTerm(
-                    lastWord,
-                    Math.max(0,
-                            Math.log((docNumber - freq + 0.5) / (freq + 0.5))));
+            if (lastWord != null)
+                IndexTermDAO.putIndexTerm(
+                        lastWord,
+                        Math.max(
+                                0,
+                                Math.log((docNumber - freq + 0.5)
+                                        / (freq + 0.5))));
             br.close();
             System.out.println("Finish Processing " + f.getName() + "...");
         }
     }
 
     private static void getFileNumberAndAvgWord() {
+
 
          AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
 

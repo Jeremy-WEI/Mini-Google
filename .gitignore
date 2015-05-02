@@ -15,5 +15,8 @@ hs_err_pid*
 
 /indexer_test/*
 /test/*
+/indexer/*
+/database/*
+/document_meta/*
 
 .DS_Store

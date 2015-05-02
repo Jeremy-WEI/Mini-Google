@@ -13,6 +13,7 @@ import cis555.searchengine.utils.DocHitEntity;
 import cis555.searchengine.utils.QueryTerm;
 import cis555.searchengine.utils.SEHelper;
 import cis555.searchengine.utils.WeightedDocID;
+import cis555.searchengine.utils.WordWithPosition;
 
 /**
  * Streamlined version of QueryProcessor
@@ -98,11 +99,17 @@ public class QueryProcessor {
 
     public static List<WeightedDocID> posCheckPhase(
             List<WeightedDocID> weightedDocIDList, Set<QueryTerm> queryTerms) {
-        Map<String, Integer> bag = new HashMap<String, Integer>();
-        for (QueryTerm term : queryTerms) {
-            bag.put(term.getWord(), term.getFreq());
+        for (WeightedDocID w : weightedDocIDList) {
+            Map<String, Integer> remainingWordCount = new HashMap<String, Integer>();
+            for (QueryTerm term : queryTerms) {
+                remainingWordCount.put(term.getWord(), term.getFreq());
+            }
+            List<WordWithPosition> wordStateMachine = new LinkedList<WordWithPosition>();
+            
+            // TODO: adjust the weight???
+            w.updateWeight(0);
         }
-        return null;
+        return weightedDocIDList;
     }
 
     public static List<WeightedDocID> fancyCheckPhase(
@@ -155,23 +162,25 @@ public class QueryProcessor {
     public static void main(String... args) {
         setup("database");
         String[] queries = new String[] {
+                "Kevin",
+                "kevin",
                 "United_Christian_Broadcasters",
                 "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
                 "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
                 "testing ", "WikiPedia", "Bank of America", "Apigee",
                 "University of Pennsylvania", "yahoo" };
-
+        System.out.println("-------- I am the line separator --------");
         for (String query : queries) {
-            System.out.println(query);
+            System.out.println("Query: " + query);
             // System.out.println();
             Set<QueryTerm> terms = parseQuery(query);
             List<WeightedDocID> lst1 = preparePhase(terms);
-            List<WeightedDocID> lst2 = filterPhase(lst1, 0, 10);
+            List<WeightedDocID> lst2 = filterPhase(lst1, 0, 3);
             List<String> URLs = getURLs(lst2);
             for (String URL : URLs) {
                 System.out.println(URL);
             }
+            System.out.println("-------- I am the line separator --------");
         }
     }
-
 }

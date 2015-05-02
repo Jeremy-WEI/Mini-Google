@@ -1,4 +1,4 @@
-package com.primacy.hadoop;
+package cis555.indexer.mapreduce;
 
 import java.io.DataInput;
 import java.io.DataOutput;

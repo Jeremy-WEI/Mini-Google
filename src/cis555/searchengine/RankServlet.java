@@ -1,8 +1,13 @@
 package cis555.searchengine;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -13,6 +18,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import cis555.searchengine.utils.DocHitEntity;
+import cis555.searchengine.utils.QueryTerm;
+import cis555.searchengine.utils.SEHelper;
+import cis555.searchengine.utils.WeightedDocID;
 
 /**
  * @author cis455
@@ -28,34 +36,14 @@ public class RankServlet extends HttpServlet {
             throws java.io.IOException {
         ServletContext context = getServletContext();
 
-        String[] words = request.getParameter("query").split("\\s*");
-        Set<DocHitEntity> docHitList = new HashSet<DocHitEntity>();
-        List<String> urlList = new ArrayList<String>();
+        Set<QueryTerm> querySet = QueryProcessor.parseQuery(request.getParameter("query"));
+        List<WeightedDocID> weightedDocIdList = QueryProcessor.preparePhase(querySet);
+        List<WeightedDocID> filteredList = QueryProcessor.filterPhase(weightedDocIdList, 0, 100);
+        List<String> outputURL = QueryProcessor.getURLs(filteredList);
+        
 
-        for (int i = 0; i < words.length; i++) {
-            docHitList.addAll(IndexTermDAO
-                    .getDocHitEntities(words[i]));
-        }
 
-        // for (DocHitEntity docHit : docHitList) {
-        // System.out.println(db.getUrl(docHit.getDocID()));
-        // }
-        // Set<DocHitEntity> lst1 = db.getDocHit("comput");
-        // Set<DocHitEntity> lst2 = db.getDocHit("scienc");
-        // Set<DocHitEntity> lst3 = db.getDocHit("donor");
-
-        for (DocHitEntity docHit : docHitList) {
-            urlList.add(IndexTermDAO.getUrl(docHit.getDocID()));
-            System.out.println(IndexTermDAO.getUrl(docHit
-                    .getDocID()));
-        }
-        // lst1.retainAll(lst2);
-        // System.out.println(lst1);
-        // for (DocHitEntity docHit : lst1) {
-        // System.out.println(db.getUrl(docHit.getDocID()));
-        // }
-
-        context.setAttribute("searchResult", urlList);
+        context.setAttribute("searchResult", outputURL);
         response.sendRedirect(request.getContextPath());
 
     }
@@ -125,4 +113,7 @@ public class RankServlet extends HttpServlet {
         // return null;
         // }
     }
+    
+
+    
 }

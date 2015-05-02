@@ -16,8 +16,9 @@ public class MyServletContextListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent contextEvent) {
         ServletContext context = contextEvent.getServletContext();
 
-        IndexTermDAO.setup("database");
-        UrlIndexDAO.setup("database");
+        IndexTermDAO.setup("../../inputdata/database");
+        UrlIndexDAO.setup("../../inputdata/database");
+        PagerankDAO.setup("../../inputdata/database");
 
     }
 

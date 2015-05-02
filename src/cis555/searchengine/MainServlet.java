@@ -30,7 +30,7 @@ public class MainServlet extends HttpServlet {
                 .append("<input type=\"text\" name=\"query\">")
                 .append("</form> ").append("<br>");
 
-        load_result(sb);
+        loadResult(sb);
 
         sb.append("</div></body></html>");
         response.setContentType("text/html;charset=UTF-8");
@@ -40,7 +40,7 @@ public class MainServlet extends HttpServlet {
 
     }
 
-    void load_result(StringBuilder sb) {
+    void loadResult(StringBuilder sb) {
         ServletContext context = getServletContext();
 
         @SuppressWarnings("unchecked")
@@ -48,12 +48,15 @@ public class MainServlet extends HttpServlet {
                 .getAttribute("searchResult");
 
         if (docList != null) {
-            sb.append("<p><b><font size =\"5\">Search Result</font></b></p>");
-            for (String docID : docList) {
-                System.out.println("docID" + docID);
-                sb.append(String.format("<p>%s</p>", docID));
-            }
+            sb.append("<p><b><font size =\"5\">Search Result</font></b></p>")
+            .append("<ul style=\"list-style-type:disc\">");
 
+            for (String url : docList) {
+                sb.append(String.format("<li><a href=\"%s\">%s</a></li>", url, url))
+                .append("<br />");
+            }
+            
+            sb.append("</ul>");
             context.setAttribute("searchResult", null);
         }
 

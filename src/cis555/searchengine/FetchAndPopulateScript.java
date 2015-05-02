@@ -33,6 +33,7 @@ public class FetchAndPopulateScript {
     public static void main(String[] args) throws IOException {
         IndexTermDAO.setup("database");
         UrlIndexDAO.setup("database");
+        PagerankDAO.setup("database");
 
         // fetchData();
 

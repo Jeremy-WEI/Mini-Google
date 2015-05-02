@@ -1,0 +1,52 @@
+<project name="searchengine" default="all" basedir="./">
+
+  <path id="aws.java.sdk.classpath">
+    <fileset dir="${basedir}/lib" includes="**/*.jar"/>
+  </path>
+
+  <target name="init">
+    <mkdir dir="target/WEB-INF/classes"/>
+  </target>
+
+  <target name="compile-awsutils" depends="init">
+    <javac srcdir="src/cis555/aws/utils" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+      <classpath refid="aws.java.sdk.classpath"/>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+
+  <target name="compile-utils" depends="compile-awsutils">
+    <javac srcdir="src/cis555/utils" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+      <classpath refid="aws.java.sdk.classpath"/>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+
+  <target name="compile-searchEngine" depends="init">
+    <javac srcdir="src/cis555/searchengine" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+      <classpath refid="aws.java.sdk.classpath"/>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+  <target name="all" depends="compile-awsutils, compile-utils, compile-searchEngine, war"/>
+  
+  <target name="war" depends="compile-searchEngine">
+    <jar destfile="searchengine.war">
+      <fileset dir="target/" includes="WEB-INF/classes/**/*.class"/>
+      <fileset dir="target/" includes="WEB-INF/lib/**/*.jar" excludes="WEB-INF/lib/pdfbox-app-1.8.9.jar"/>
+      <fileset dir="target/" includes="WEB-INF/*.xml"/>
+    </jar>
+  </target>
+  
+  <target name="clean">
+    <delete dir="target/WEB-INF/classes"/>
+    <delete dir="classes"/>
+    <delete file="searchengine.war"/>
+  </target>
+</project>

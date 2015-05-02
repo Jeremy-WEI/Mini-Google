@@ -1,8 +1,6 @@
 package cis555.searchengine.utils;
 
-
-//public class WordWithPosition implements Comparable<WordWithPosition> {
-public class WordWithPosition {
+public class WordWithPosition implements Comparable<WordWithPosition> {
 
     private int pos;
     private String word;
@@ -19,10 +17,15 @@ public class WordWithPosition {
     public String getWord() {
         return word;
     }
-    //
-    // @Override
-    // public int compareTo(WordWithPosition o) {
-    // return pos - o.pos;
-    // }
+
+    @Override
+    public int compareTo(WordWithPosition o) {
+        return pos - o.pos;
+    }
+
+    @Override
+    public String toString() {
+        return "Pos: " + pos + " Word: " + word;
+    }
 
 }

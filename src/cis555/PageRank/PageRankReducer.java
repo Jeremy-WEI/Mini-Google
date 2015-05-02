@@ -38,6 +38,7 @@ public class PageRankReducer extends Reducer<Text, Text, Text, Text> {
 	    }
 	}
 	if (crawled) {
+	    newRank = 0.85*newRank + 0.15;
 	    context.write(key, new Text(newRank + ";" + links));
 	}
     }

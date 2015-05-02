@@ -23,7 +23,7 @@ import cis555.searchengine.utils.WeightedDocID;
  * 
  * 3. PageRank Phase (combined with PageRank value)
  * 
- * 4. Position Check Phase (kinda solve the cons of bag model)
+ * 4. Position Check Phase (solve the cons of bag model)
  * 
  * 5. Fancy Check Phase (add weight by Fancy Hit)
  * 
@@ -52,6 +52,7 @@ public class QueryProcessor {
      * 
      * @param Set
      *            of queryTerms
+     * 
      * @return List of WeightedDocID
      */
     public static List<WeightedDocID> preparePhase(Set<QueryTerm> queryTerms) {
@@ -97,6 +98,10 @@ public class QueryProcessor {
 
     public static List<WeightedDocID> posCheckPhase(
             List<WeightedDocID> weightedDocIDList, Set<QueryTerm> queryTerms) {
+        Map<String, Integer> bag = new HashMap<String, Integer>();
+        for (QueryTerm term : queryTerms) {
+            bag.put(term.getWord(), term.getFreq());
+        }
         return null;
     }
 
@@ -136,7 +141,7 @@ public class QueryProcessor {
     }
 
     /**
-     * @param: weightDocIDList
+     * @param weightDocIDList
      * @return URL List
      */
     public static List<String> getURLs(List<WeightedDocID> weightedDocIDList) {
@@ -154,7 +159,7 @@ public class QueryProcessor {
                 "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
                 "abd asd;wqekl .qwnlcasd.asd;", "computer Science.",
                 "testing ", "WikiPedia", "Bank of America", "Apigee",
-                "University of Pennsylvania", };
+                "University of Pennsylvania", "yahoo" };
 
         for (String query : queries) {
             System.out.println(query);

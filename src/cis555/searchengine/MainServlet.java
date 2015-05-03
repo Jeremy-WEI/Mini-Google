@@ -22,14 +22,9 @@ public class MainServlet extends HttpServlet {
             throws java.io.IOException {
         PrintWriter pw = response.getWriter();
 
-        pw.write("<!DOCTYPE html><html>");
-        pw.write("<head>");
-        pw.write("<title>" + "CIS555 Search Engine" + "</title>");
-        pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
-                + request.getContextPath() + "/stylesheet/bootstrap.min.css\">");
-        pw.write("</head>");
+        ServletHelper.prepareWrite(pw, request.getContextPath(),
+                "CIS555 Search Engine");
 
-        pw.write("<body>");
         pw.write("<div class=\"container\">");
 
         pw.write("<div style=\"margin: 100px;\">");
@@ -48,25 +43,8 @@ public class MainServlet extends HttpServlet {
         pw.write("</div>");
 
         pw.write("</div>");
-        pw.write("</body>");
-        pw.write("</html>");
-        // StringBuilder sb = new StringBuilder();
-        // sb.append("<!DOCTYPE html>").append("<html>")
-        //
-        // .append("<head>").append("<div>");
-        //
-        // sb.append("<form action=\"search\" method=\"get\">")
-        // .append("<input type=\"text\" name=\"query\">")
-        // .append("</form> ").append("<br>");
-        //
-        // loadResult(sb);
-        //
-        // sb.append("</div></body></html>");
-        // response.setContentType("text/html;charset=UTF-8");
-        //
-        // PrintWriter out = response.getWriter();
-        // out.println(sb);
 
+        ServletHelper.finishWrite(pw);
     }
 
     void loadResult(StringBuilder sb) {

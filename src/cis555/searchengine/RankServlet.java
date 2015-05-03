@@ -1,26 +1,24 @@
 package cis555.searchengine;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.amazonaws.util.json.JSONObject;
-
 import cis555.searchengine.utils.QueryTerm;
 import cis555.searchengine.utils.WeightedDocID;
+
+import com.amazonaws.util.json.JSONObject;
 
 /**
  * @author cis455
@@ -29,8 +27,8 @@ import cis555.searchengine.utils.WeightedDocID;
 @SuppressWarnings("serial")
 public class RankServlet extends HttpServlet {
 
-    public void init() throws ServletException {
-    }
+    private static final String[] PANEL_CLASSES = new String[] {
+            "panel-success", "panel-info", "panel-warning", "panel-danger" };
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws java.io.IOException {
@@ -38,24 +36,19 @@ public class RankServlet extends HttpServlet {
 
         String query = request.getParameter("query");
         Set<QueryTerm> terms = QueryProcessor.parseQuery(query);
-        List<WeightedDocID> lst1 = QueryProcessor.preparePhase(terms);
-        List<WeightedDocID> lst2 = QueryProcessor.posCheckPhase(lst1, terms);
-        // List<WeightedDocID> lst2 = lst1;
-        // List<WeightedDocID> lst3 = pageRankPhase(lst2);
-        List<WeightedDocID> lst3 = lst2;
-        List<WeightedDocID> lst4 = QueryProcessor.filterPhase(lst3, 0, 15);
+        List<WeightedDocID> lst = new ArrayList<WeightedDocID>();
+        QueryProcessor.preparePhase(terms, lst);
+        QueryProcessor.posCheckPhase(terms, lst);
+        QueryProcessor.pageRankPhase(lst);
+        List<WeightedDocID> filteredLst = QueryProcessor
+                .filterPhase(lst, 0, 15);
         // List<String> URLs = QueryProcessor.getURLs(lst4);
 
         PrintWriter pw = response.getWriter();
 
-        pw.write("<!DOCTYPE html><html>");
-        pw.write("<head>");
-        pw.write("<title>" + "CIS555 Search Engine" + "</title>");
-        pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
-                + request.getContextPath() + "/stylesheet/bootstrap.min.css\">");
-        pw.write("</head>");
+        ServletHelper.prepareWrite(pw, request.getContextPath(),
+                "CIS555 Search Engine");
 
-        pw.write("<body>");
         pw.write("<div class=\"container\">");
 
         pw.write("<div style=\"margin:20px 100px 20px 100px;\">");
@@ -76,66 +69,40 @@ public class RankServlet extends HttpServlet {
 
         pw.write("<div class=\"row\" style=\"height:500px;\">");
 
-        pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:500px\">");
-        pw.write("<div class=\"row\">");
-        pw.write("<div class=\"col-md-12\">");
-        pw.write("<div class=\"panel panel-default\" style=\"\">");
-        pw.write("<div class=\"panel-heading\">Result From Wikipedia" + query
-                + "</div>");
-        pw.write("<div class=\"panel-body\" style=\"height:100px;overflow:scroll;\">");
-        pw.write(extractInfoFromWiki(query));
-        pw.write("</div>");
-        pw.write("</div>");
-        pw.write("</div>");
-        pw.write("</div>");
-        pw.write("<div class=\"row\">");
-        pw.write("<div class=\"col-md-12\" style=\"height:400px;\">");
-        pw.write("<table class=\"table table-striped table-hover table-bordered\">");
-        pw.write("<thead>");
-        pw.write("<tr>");
-        pw.write("<td align=\"center\">Weight</th>");
-        pw.write("<td align=\"center\">URL</th>");
-        pw.write("</tr>");
-        pw.write("</thead>");
-        pw.write("<tbody>");
-        // for (String URL : URLs) {
-        for (WeightedDocID w : lst4) {
-            pw.write("<tr>");
-            pw.write("<td align=\"center\">"
-                    + String.format("%.3f", w.getWeight()) + "</td>");
-            String URL = UrlIndexDAO.getUrl(w.getDocID());
-            pw.write("<td align=\"center\"><a href=\"" + URL
-                    + "\" target=\"iFrame\">" + URL + "</a></td>");
-            pw.write("</tr>");
+        pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:600px\">");
+        ServletHelper.writePanel(pw, "From Wikipedia: " + query,
+                extractInfoFromWiki(query), "panel-primary");
+        for (int i = 0; i < filteredLst.size(); i++) {
+            WeightedDocID w = filteredLst.get(i);
+            ServletHelper.writePanel(
+                    pw,
+                    "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
+                            + "\" target=\"iFrame\">"
+                            + UrlIndexDAO.getUrl(w.getDocID()) + "</a>",
+                    "StartIndex: " + w.getPreviewStartPos() + ", EndIndex: "
+                            + w.getPreviewEndPos(),
+                    "Weight: " + String.format("%.3f", w.getWeight()),
+                    PANEL_CLASSES[i % 4]);
         }
-        pw.write("</tbody>");
-        pw.write("</table>");
-        pw.write("</div>");
-        pw.write("</div>");
+
         pw.write("</div>");
 
-        pw.write("<div class=\"col-md-6\" style=\"height:500px;\">");
-        pw.write("<div class=\"row\">");
-        pw.write("<div class=\"col-md-12\" style=\"height:500px;\">");
-        // pw.write("<iframe src=\"" + URLs.get(0) + "\"></iframe>");
+        pw.write("<div class=\"col-md-6\" style=\"height:600px;\">");
         pw.write("<iframe name=\"iFrame\""
-                + (lst4.size() > 0 ? "src=\""
-                        + UrlIndexDAO.getUrl(lst4.get(0).getDocID()) + "\""
-                        : "")
-                + " style=\"overflow:hidden;overflow-x:hidden;overflow-y:hidden;height:500px;width:100%;position:absolute;top:0px;left:0px;right:0px;bottom:0px\"></iframe>\"");
+                + (filteredLst.size() > 0 ? "src=\""
+                        + UrlIndexDAO.getUrl(filteredLst.get(0).getDocID())
+                        + "\"" : "")
+                + " style=\"overflow:hidden;overflow-x:hidden;overflow-y:hidden;height:600px;width:100%;position:absolute;top:0px;left:0px;right:0px;bottom:0px\"></iframe>\"");
         pw.write("</div>");
         pw.write("</div>");
         pw.write("</div>");
 
-        pw.write("</div>");
-
-        pw.write("</div>");
-        pw.write("</body>");
-        pw.write("</html>");
+        ServletHelper.finishWrite(pw);
 
     }
 
     private static String extractInfoFromWiki(String query) {
+        @SuppressWarnings("deprecation")
         String url = "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles="
                 + URLEncoder.encode(query) + "&format=json&exintro=1";
         System.out.println(url);
@@ -151,6 +118,7 @@ public class RankServlet extends HttpServlet {
             in.close();
             JSONObject json = (JSONObject) ((JSONObject) new JSONObject(
                     sb.toString()).get("query")).get("pages");
+            @SuppressWarnings("unchecked")
             Iterator<String> iter = json.keys();
             String key = null;
             while (iter.hasNext()) {

@@ -8,11 +8,15 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
     private String docID;
     private double weight;
     private List<DocHitEntity> docHits;
+    private int previewStartPos;
+    private int previewEndPos;
 
     public WeightedDocID(String docID) {
         this.docID = docID;
         this.weight = 0;
-        docHits = new LinkedList<DocHitEntity>();
+        this.docHits = new LinkedList<DocHitEntity>();
+        this.previewStartPos = -1;
+        this.previewEndPos = -1;
     }
 
     public String getDocID() {
@@ -21,6 +25,22 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
 
     public double getWeight() {
         return weight;
+    }
+
+    public int getPreviewStartPos() {
+        return previewStartPos;
+    }
+
+    public void setPreviewStartPos(int previewStartPos) {
+        this.previewStartPos = previewStartPos;
+    }
+
+    public int getPreviewEndPos() {
+        return previewEndPos;
+    }
+
+    public void setPreviewEndPos(int previewEndPos) {
+        this.previewEndPos = previewEndPos;
     }
 
     public void setWeight(double weight) {

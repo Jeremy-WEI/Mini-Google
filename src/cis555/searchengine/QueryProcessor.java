@@ -34,11 +34,11 @@ import cis555.utils.Hit;
  */
 public class QueryProcessor {
 
-    public static void setup(String dbPath) {
-        IndexTermDAO.setup(dbPath);
-        UrlIndexDAO.setup(dbPath);
-        PagerankDAO.setup(dbPath);
-    }
+    // public static void setup(String dbPath) {
+    // IndexTermDAO.setup(dbPath);
+    // UrlIndexDAO.setup(dbPath);
+    // PagerankDAO.setup(dbPath);
+    // }
 
     public static Set<QueryTerm> parseQuery(String query) {
         return SEHelper.parseQuery(query);
@@ -57,12 +57,13 @@ public class QueryProcessor {
      * 
      * @param Set
      *            of queryTerms
-     * 
-     * @return List of WeightedDocID
+     * @param List
+     *            <WeightedDocID>
      */
-    public static List<WeightedDocID> preparePhase(Set<QueryTerm> queryTerms) {
+    public static void preparePhase(Set<QueryTerm> queryTerms,
+            List<WeightedDocID> weightedDocIDList) {
         if (queryTerms.size() == 0)
-            return new ArrayList<WeightedDocID>();
+            return;
         Iterator<QueryTerm> iter = queryTerms.iterator();
         QueryTerm queryTerm = iter.next();
         Map<String, WeightedDocID> weightedDocIDMap = new HashMap<String, WeightedDocID>();
@@ -90,17 +91,24 @@ public class QueryProcessor {
                 weightedDocID.addDocHit(docHit);
             }
         }
-        List<WeightedDocID> results = new ArrayList<WeightedDocID>(
-                weightedDocIDMap.values());
-        Collections.sort(results);
-        for (int i = results.size() - 1; i >= 50; i--) {
-            results.remove(i);
+        weightedDocIDList.addAll(weightedDocIDMap.values());
+        Collections.sort(weightedDocIDList);
+        for (int i = weightedDocIDList.size() - 1; i >= 50; i--) {
+            weightedDocIDList.remove(i);
         }
-        return results;
     }
 
-    public static List<WeightedDocID> posCheckPhase(
-            List<WeightedDocID> weightedDocIDList, Set<QueryTerm> queryTerms) {
+    /**
+     * position checking phase for the query processor
+     * 
+     * will modify the pass-in list
+     * 
+     * @param List
+     *            <WeightedDocID>
+     * 
+     */
+    public static void posCheckPhase(Set<QueryTerm> queryTerms,
+            List<WeightedDocID> weightedDocIDList) {
         Map<String, Integer> initialWordCount = new HashMap<String, Integer>();
         int tolerance = 0;
         int noOfWords = 0;
@@ -145,6 +153,12 @@ public class QueryProcessor {
                 for (int x : remainingWordCount.values()) {
                     remainingHit += Math.max(0, x);
                 }
+                if (noOfWords - remainingHit > hitNumber) {
+                    w.setPreviewStartPos(Math.max(0, wordStateMachine.get(0)
+                            .getPos() - 8));
+                    w.setPreviewEndPos(Math.min(w.getDocHits().get(0)
+                            .getWordCount(), position + 8));
+                }
                 hitNumber = Math.max(noOfWords - remainingHit, hitNumber);
             }
             // System.out.println("-------- I am the line separator --------");
@@ -152,21 +166,36 @@ public class QueryProcessor {
             // TODO: mutiple hit??
             w.mutiplyWeight(hitNumber / (double) noOfWords);
         }
-        return weightedDocIDList;
     }
 
-    public static List<WeightedDocID> pageRankPhase(
-            List<WeightedDocID> weightedDocIDList) {
+    /**
+     * pagerank phase for the query processor
+     * 
+     * will modify the pass-in list
+     * 
+     * @param List
+     *            <WeightedDocID>
+     * 
+     */
+    public static void pageRankPhase(List<WeightedDocID> weightedDocIDList) {
         for (WeightedDocID w : weightedDocIDList) {
             double value = PagerankDAO.getPagerankValue(w.getDocID()) + 1;
             w.mutiplyWeight(value);
         }
-        return weightedDocIDList;
     }
 
-    public static List<WeightedDocID> fancyCheckPhase(
-            List<WeightedDocID> weightedDocIDList) {
-        return null;
+    /**
+     * fancy hit checking phase for the query processor
+     * 
+     * add weight based on fancy hit
+     * 
+     * will modify the pass-in list
+     * 
+     * @param List
+     *            <WeightedDocID>
+     * 
+     */
+    public static void fancyCheckPhase(List<WeightedDocID> weightedDocIDList) {
     }
 
     /**
@@ -218,46 +247,4 @@ public class QueryProcessor {
         }
     }
 
-    public static void main(String... args) {
-        setup("database");
-        String[] queries = new String[] {
-
-        // "United_Christian_Broadcasters",
-        //
-        // "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
-        //
-        // "Hello World",
-        //
-        // "WikiPedia",
-
-        "File:Nasikabatrachus sahyadrensis.jpg",
-        //
-        // "Bank of America",
-        //
-        // "Apigee",
-        //
-        // "University of Pennsylvania",
-        //
-        // "Yunchen Wei"
-
-        };
-        System.out.println("-------- I am the line separator --------");
-        for (String query : queries) {
-            System.out.println("Query: " + query);
-            // System.out.println();
-            Set<QueryTerm> terms = parseQuery(query);
-            List<WeightedDocID> lst1 = preparePhase(terms);
-            List<WeightedDocID> lst2 = posCheckPhase(lst1, terms);
-            // List<WeightedDocID> lst2 = lst1;
-            // List<WeightedDocID> lst3 = pageRankPhase(lst2);
-            List<WeightedDocID> lst3 = lst2;
-            List<WeightedDocID> lst4 = filterPhase(lst3, 0, 5);
-            // List<String> URLs = getURLs(lst4);
-            // for (String URL : URLs) {
-            // System.out.println(URL);
-            // }
-            printInfo(lst4);
-            System.out.println("-------- I am the line separator --------");
-        }
-    }
 }

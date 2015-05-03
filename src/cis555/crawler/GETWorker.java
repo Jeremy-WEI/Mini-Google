@@ -1,15 +1,25 @@
 package cis555.crawler;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.log4j.Logger;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import cis555.crawler.Response.ContentType;
+import cis555.database.CrawlerDao;
+import cis555.utils.CrawlerConstants;
 import cis555.utils.Utils;
 
 public class GETWorker implements Runnable {
@@ -22,14 +32,23 @@ public class GETWorker implements Runnable {
 	private BlockingQueue<URL> newUrlQueue;
 	private int id;
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
+	private String storageDirectory;
+	private MessageDigest digest;
+	private CrawlerDao dao;
+
 	
 	public GETWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> crawlQueue, 
-			BlockingQueue<URL> newUrlQueue, int id, BlockingQueue<RawCrawledItem> contentForLinkExtractor){
+			BlockingQueue<URL> newUrlQueue, int id, BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
+			CrawlerDao dao, String storageDirectory) throws NoSuchAlgorithmException{
 		this.siteInfoMap = siteInfoMap;
 		this.crawlQueue = crawlQueue;
 		this.newUrlQueue = newUrlQueue;
 		this.id = id;
 		this.contentForLinkExtractor = contentForLinkExtractor;
+		this.storageDirectory = storageDirectory;
+		this.dao = dao;
+		this.digest = MessageDigest.getInstance("MD5");
+
 	}
 	
 	
@@ -58,15 +77,21 @@ public class GETWorker implements Runnable {
 					
 					continue;
 				}
+
 				
-				SiteInfo info = siteInfoMap.get(domain);		
+				SiteInfo info = siteInfoMap.get(domain);
+				
 				String agentName = CrawlerUtils.extractAgent(info);
 				
 				if (info.canCrawl(agentName)){
 					crawl(info, domain, filteredURL);
 				} else {
-					// Need to wait 	
-					this.crawlQueue.put(filteredURL);	
+					// Need to wait 
+					
+					if (this.crawlQueue.remainingCapacity() > 10){						
+						this.crawlQueue.put(filteredURL);	
+					} // otherwise drop
+					
 
 				}
 				
@@ -100,7 +125,7 @@ public class GETWorker implements Runnable {
 			Response response = new Response();
 			String ifModifiedSinceString = ""; // Not relevant for GET requests
 			
-			logger.debug(CLASSNAME +  ": Crawler" +  this.id + " is about to crawl " + url);				
+			logger.debug(CLASSNAME +  ": GETWorker" +  this.id + " is about to crawl " + url);				
 			
 			Date beforeCrawl = new Date();
 			
@@ -120,7 +145,7 @@ public class GETWorker implements Runnable {
 			
 			updateSiteInfo(info, domain);
 
-			logger.debug(CLASSNAME + ": Crawler" +  this.id + " Crawled " + url + ", about to parse response");
+			logger.debug(CLASSNAME + ": GETWorker" +  this.id + " Crawled " + url + ", about to parse response");
 			
 			byte[] rawContents = response.getResponseBody();
 			
@@ -129,7 +154,7 @@ public class GETWorker implements Runnable {
 				return;
 			}
 			
-			logger.debug(CLASSNAME + ": Crawler" +  this.id + " Crawled " + url + ", taking " + (afterCrawl.getTime() - beforeCrawl.getTime()) + " ms");				
+			logger.debug(CLASSNAME + ": GETWorker" +  this.id + " crawled " + url + ", taking " + (afterCrawl.getTime() - beforeCrawl.getTime()) + " ms");				
 			ContentType contentType = response.getContentType();
 			
 			if (contentType == Response.ContentType.OTHERS){
@@ -137,16 +162,24 @@ public class GETWorker implements Runnable {
 				return;
 			}
 			
-			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
-			try {
-				this.contentForLinkExtractor.put(forLinkExtractor);
-				
-				logger.info(CLASSNAME + " Content for link extractor size: "+ this.contentForLinkExtractor.size());
+			Date beforeSave = new Date();
 
-			} catch (IllegalStateException e){
-				logger.info(CLASSNAME + ": Link Extractor queue is full, dropping " + url);				
-			}
+			saveDocumentToDisk(url, rawContents, contentType);
+			
+			Date afterSave = new Date();
+			
+			logger.info(CLASSNAME + ": GETWorker" +  this.id + " took: "+ (afterSave.getTime() - beforeSave.getTime()) + "ms to save " + url);
+
+			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
+			
+			if (this.contentForLinkExtractor.remainingCapacity() > 10){						
+				this.contentForLinkExtractor.put(forLinkExtractor);	
+			} // otherwise drop
+			
+			logger.info(CLASSNAME + " Content for link extractor size: "+ this.contentForLinkExtractor.size());
 				
+		} catch (IllegalStateException e){
+			logger.info(CLASSNAME + ": Link Extractor queue is full, dropping " + url);				
 		} catch (CrawlerException e){
 			logger.debug("Unable to crawl " + url + " because of " + e.getMessage() + ", skipping." );
 		} catch (Exception e){
@@ -164,6 +197,178 @@ public class GETWorker implements Runnable {
 	private void updateSiteInfo(SiteInfo info, String domain){
 		info.setLastCrawledDate(new Date());
 		this.siteInfoMap.put(domain, info);
+	}
+	
+	
+	private void saveDocumentToDisk(URL url, byte[] rawContents, ContentType contentType) throws UnsupportedEncodingException{
+		Date saveDocumentTime = new Date();
+		
+		String docID = getDocID(url);
+		Document cleansedDoc;
+		if (contentType != ContentType.PDF){
+			String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
+			if (contentsIsEnglish(stringContents)){
+				if (contentType == ContentType.TEXT){
+					storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
+				} else {
+					cleansedDoc = Jsoup.parse(stringContents);
+					storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
+				}							
+				this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
+				
+				Date finishProcessTime = new Date();
+				logger.debug(CLASSNAME + " GETWorker " + this.id + " stored " + url.toString() + " to file system using "
+						+ (finishProcessTime.getTime() - saveDocumentTime.getTime()) + "ms");
+			} else {
+				// otherwise, don't store
+				logger.debug(CLASSNAME + " content doesn't pass English test, rejecting " + url);
+			}
+			
+		} else {
+			storePDF(rawContents, docID, url);
+			this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
+			Date finishProcess = new Date();
+			logger.debug(CLASSNAME + " GETWorker " + this.id + " stored " + url.toString() + " to file system using "
+					+ (finishProcess.getTime() - saveDocumentTime.getTime()) + "ms");
+		}
+
+	}
+	
+	
+	/**
+	 * Store the crawled document in a file
+	 * @param contents
+	 * @param docID
+	 * @param url
+	 */
+	private void storeCrawledContentsFile(String contents, String docID, ContentType contentType, URL url){
+		String fileName = generateFileName(docID, contentType);
+		File storageFile = new File(this.storageDirectory + "/" + fileName);
+		try {
+			byte[] urlPlusContents = Utils.appendURL(url, contents.getBytes(CrawlerConstants.CHARSET));
+			Utils.zip(urlPlusContents, storageFile.toString());
+		} catch (IOException e){
+			e.printStackTrace();
+			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
+		} 
+	}
+	
+	/**
+	 * Generates the file name with the appropriate extension
+	 * @param docID
+	 * @param contentType
+	 * @return
+	 */
+	private String generateFileName(String docID, ContentType contentType){
+		switch (contentType){
+		case HTML:
+			return docID + ".html.gzip";
+		case XML:
+			return docID + ".xml.gzip";
+		case TEXT:
+			return docID + ".txt.gzip";
+		default:
+			throw new CrawlerException("Invalid content type: " + contentType.name());
+		}
+	}
+	
+	/**
+	 * Store a PDF file
+	 * @param contents
+	 * @param docID
+	 * @param url
+	 */
+	private void storePDF(byte[] contents, String docID, URL url){
+		String fileName = docID + ".pdf.gzip";
+		File storageFile = new File(this.storageDirectory + "/" + fileName);
+		try {
+			byte[] urlPlusContents = Utils.appendURL(url, contents);
+			Utils.zip(urlPlusContents, storageFile.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
+		}
+	}
+	
+	/**
+	 * Hashes the url to generate a docID
+	 * @param url
+	 * @return
+	 */
+	private String getDocID(URL url) {
+		return hashUrlToHexStringArray(url.toString());
+	}
+	
+    /**
+     * Hashes a url using MD5, and returns a Hex-string representation of the
+     * hash
+     * 
+     * @param url
+     * @return
+     * @throws UnsupportedEncodingException 
+     * @throws NoSuchAlgorithmException 
+     */
+    public String hashUrlToHexStringArray(String urlString) {
+        byte[] hash = hashUrlToByteArray(urlString);
+        return DatatypeConverter.printHexBinary(hash);
+    }
+
+    /**
+     * Hashes a url using MD5, returns a byte array
+     * 
+     * @param url
+     * @return
+     * @throws UnsupportedEncodingException 
+     * @throws NoSuchAlgorithmException 
+     */
+    public byte[] hashUrlToByteArray(String urlString) {
+    	try {
+        	
+            digest.reset();
+            digest.update(urlString.getBytes(CrawlerConstants.CHARSET));
+            return digest.digest();    		
+    	} catch (UnsupportedEncodingException e){
+    		Utils.logStackTrace(e);
+    		throw new RuntimeException(e);
+    	}
+    }
+    
+	/**
+	 * Determines if the contents is english by checking if the document contains a number of common english words
+	 * @param contents
+	 * @return
+	 */
+	private boolean contentsIsEnglish(String contents){
+		int count = 0;
+		if (contents.contains(" the ")){
+			count++;
+		}
+		
+		if (contents.contains(" and ")){
+			count++;
+		}
+		
+		if (contents.contains(" that ")){
+			count++;
+		}
+
+		if (contents.contains(" not ")){
+			count++;
+		}
+
+		if (contents.contains(" with ")){
+			count++;
+		}
+
+		if (contents.contains(" this ")){
+			count++;
+		}
+		
+		if (count > 2){
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 }

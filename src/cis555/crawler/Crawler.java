@@ -5,8 +5,10 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -51,7 +53,7 @@ public class Crawler {
 	private ConcurrentHashMap<String, SiteInfo> siteInfoMap;
 	private BlockingQueue<URL> headCrawlQueue;
 	private BlockingQueue<URL> getCrawlQueue;
-	private Vector<URL> sitesCrawledThisSession; // A list of sites crawled in this session, to prevent repeated crawl
+	private Set<String> sitesCrawledThisSession; // A list of sites crawled in this session, to prevent repeated crawl
 	private List<String> excludedPatterns;
 	
 	/* Link Extractor related */
@@ -117,11 +119,11 @@ public class Crawler {
 		this.getCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
 		
 		this.contentForLinkExtractor = new ArrayBlockingQueue<RawCrawledItem>(CrawlerConstants.QUEUE_CAPACITY);
-		this.preRedistributionNewURLQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
+		this.preRedistributionNewURLQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.NEW_URL_QUEUE_CAPACITY);
 		
 		this.siteInfoMap = new ConcurrentHashMap<String, SiteInfo>();
-		this.sitesCrawledThisSession = new Vector<URL>();
-		
+		this.sitesCrawledThisSession = new HashSet<String>();
+
 		this.urlsForOtherCrawlers = new ConcurrentHashMap<Integer, BlockingQueue<URL>>();
 		for (int i = 0; i < this.otherWorkerIPPort.size(); i++){
 			this.urlsForOtherCrawlers.put(i, new ArrayBlockingQueue<URL>(CrawlerConstants.SMALL_QUEUE_CAPACITY));
@@ -152,7 +154,7 @@ public class Crawler {
 	private void initialiseMatcherPool(){
 		this.matcherThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_MATCHER_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_MATCHER_THREADS; i++){
-			RobotsMatcher matcher = new RobotsMatcher(siteInfoMap, newUrlQueue, headCrawlQueue);
+			RobotsMatcher matcher = new RobotsMatcher(siteInfoMap, newUrlQueue, headCrawlQueue, sitesCrawledThisSession);
 			Thread robotsMatcherThread = new Thread(matcher);
 			robotsMatcherThread.start();
 			this.matcherThreadPool.add(robotsMatcherThread);
@@ -169,7 +171,7 @@ public class Crawler {
 		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
 			HEADWorker crawler = new HEADWorker(this.siteInfoMap, this.headCrawlQueue, 
 					this.dao, this.getCrawlQueue, i, this.maxDocSize, this.newUrlQueue, 
-					this.contentForLinkExtractor, this.sitesCrawledThisSession, this.storageDirectory);
+					this.contentForLinkExtractor, this.storageDirectory);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
 			headThreadPool.add(workerThread);
@@ -180,11 +182,13 @@ public class Crawler {
 	 * Start up a pool of threads for GET workers
 	 * 
 	 * @return
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private void initialiseGetThreadPool() {
+	private void initialiseGetThreadPool() throws NoSuchAlgorithmException {
 		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_GET_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
-			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, i, this.contentForLinkExtractor);
+			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, 
+					i, this.contentForLinkExtractor, this.dao, this.storageDirectory);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
 			getThreadPool.add(workerThread);
@@ -202,7 +206,7 @@ public class Crawler {
 		for (int i = 0; i < CrawlerConstants.NUM_EXTRACTOR_THREADS; i++) {
 			LinkExtractorWorker extractor = new LinkExtractorWorker(this.contentForLinkExtractor, 
 					this.preRedistributionNewURLQueue, 
-					i, this.dao, this.storageDirectory, this.urlStorageDirectory);
+					i, this.dao, this.sitesCrawledThisSession);
 			extractor.start();
 			linkExtractorPool.add(extractor);
 		}

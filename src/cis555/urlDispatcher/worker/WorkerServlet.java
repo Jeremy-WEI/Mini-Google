@@ -83,7 +83,7 @@ public class WorkerServlet extends HttpServlet {
 		String portString = getInitParameter(DispatcherConstants.PORT_KEY_XML);
 		this.port = Integer.parseInt(portString); 
 		
-		this.newUrlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
+		this.newUrlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.NEW_URL_QUEUE_CAPACITY);
 
 		String[] excludedPatternsArray = getInitParameter(DispatcherConstants.EXCLUDED_PATTERNS_KEY_XML).split(";");
 		populateExcludedPatterns(excludedPatternsArray);
@@ -137,9 +137,11 @@ public class WorkerServlet extends HttpServlet {
 	
 	private void stopCrawler(){
 		if (null != this.crawler){
+			logger.info(CLASSNAME + " Stopping crawler");
 			this.crawler.stopCrawler();
 			this.crawler = null;
 			this.isCrawling = false;
+			logger.info(CLASSNAME + " Crawler stopped");
 		}
 	}
 	
@@ -265,7 +267,7 @@ public class WorkerServlet extends HttpServlet {
 	class PingMasterTask extends TimerTask {
 		@Override
 		public void run(){
-			
+
 			logger.info("PINGING MASTER");
 			try {
 			

@@ -65,18 +65,16 @@ public class ContentTransferer {
 		String fileName = CrawlerConstants.DOCUMENT_META_STORAGE_FILENAME;
 		String directoryName = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY;
 		Utils.createDirectory(directoryName);
-		File urlStorageFile = new File(directoryName + "/" + new Date() + "_" + fileName);
+		File urlStorageFile = new File(directoryName + "/" + new Date().getTime() + "_" + fileName);
 		BufferedWriter writer = null;
 		try {
 			if (!urlStorageFile.exists()){
 				urlStorageFile.createNewFile();
 			}
 			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
-			if (documentMeta.size() > 0){
-				for (DocumentMeta document : documentMeta){
-					writer.write(document.getDocID() + '\t' + document.getUrl() + '\t' + document.isCrawled() + "\t" + document.getLastCrawledDate());
-					writer.write("\n");
-				}
+			for (DocumentMeta document : documentMeta){
+				writer.write(document.getDocID() + '\t' + document.getUrl() + '\t' + document.isCrawled() + "\t" + document.getLastCrawledDate());
+				writer.write("\n");
 			}
 			
 		} catch (IOException e){
@@ -105,7 +103,7 @@ public class ContentTransferer {
 		String fileName = CrawlerConstants.URL_STORAGE_FILENAME;
 		String directoryName = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.URL_STORAGE_DIRECTORY;
 		Utils.createDirectory(directoryName);
-		File urlStorageFile = new File(directoryName + "/" + new Date() + "_" + fileName);
+		File urlStorageFile = new File(directoryName + "/" + new Date().getTime() + "_" + fileName);
 		BufferedWriter writer = null;
 		try {
 			if (!urlStorageFile.exists()){

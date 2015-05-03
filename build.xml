@@ -31,6 +31,7 @@
         <delete dir="${build.target.dir}"/>
       <delete dir="${classes.dir}"/>
       <delete file="transferer.jar"/>
+        <delete file="alexa.jar"/>
       <delete file="master.war"/>
       <delete file="worker.war"/>
     </target>
@@ -63,6 +64,17 @@
     <target name="compile-crawler" depends="compile-database" description="Compiles the crawler">
         <mkdir dir="${classes.dir}"/>
         <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+            <classpath>
+                <fileset dir="${inputlib.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
+	
+    <target name="compile-alexa" depends="compile-crawler,compile-database" description="Compiles the Alexa ranking generator">
+        <mkdir dir="${classes.dir}"/>
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,utils/*.java,**/pingAlexa/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -164,8 +176,31 @@
         </jar>
     </target>
 
+    <target name="alexa-jar" depends="compile-alexa" description="Makes the JAR file for the alexa ranker">
+        <delete file="alexa.jar"/>
+        <jar destfile="alexa.jar" update="true">
+          <zipgroupfileset dir="${inputlib.dir}" includes="je-6.2.31.jar,log4j-1.2.9.jar,guava-18.0.jar"/>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+          <fileset dir="src">
+            <include name="log4j.properties"/>
+          </fileset>
+          <fileset dir="${basedir}" includes="log/**">
+            <include name="*.log"/>
+          </fileset>
+          <fileset dir="${basedir}" includes="properties/**">
+            <include name="settings.properties"/>
+          </fileset>
+          <manifest>
+            <attribute name="DependencyFinder" value="main"/>
+            <attribute name="Main-Class" value="cis555.pingAlexa.PingAlexa"/>
+          </manifest>
+        </jar>
+    </target>
+	
   
-    <target name="build" depends="clean,compile-dispatcherMaster-war, compile-dispatcherWorker-war,transferer-jar,pack">
+    <target name="build" depends="clean,compile-dispatcherMaster-war, compile-dispatcherWorker-war,transferer-jar,alexa-jar,pack">
     </target>
   
   

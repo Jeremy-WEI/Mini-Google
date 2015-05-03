@@ -1,15 +1,21 @@
 package cis555.crawler;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.util.Date;
 
 import org.apache.log4j.Logger;
 
-import com.google.common.io.ByteStreams;
-
 import cis555.crawler.CrawlerUtils.Method;
+import cis555.urlDispatcher.utils.DispatcherConstants;
+import cis555.utils.CrawlerConstants;
+
+import com.google.common.io.ByteStreams;
 
 public class Response {
 
@@ -95,48 +101,82 @@ public class Response {
 	 * Extracts relevant details from an http or https connection
 	 * @param connection
 	 * @param method
-	 * @return
 	 * @throws IOException
+	 * @return
 	 */
 	public static Response parseResponse(HttpURLConnection connection, Method method) throws IOException {
 		
-		try {
-			int status = connection.getResponseCode();
-			
-			if (status > 350){
+		int status = connection.getResponseCode();
+		
+		if (status > 350){
 //				logger.info(CLASSNAME + ": non 2 or 300 result");
-				return null;
-			}
-			
-			Response response = new Response();
-			int contentLength = connection.getContentLength();
-			response.parseContentType(connection.getContentType());
-			response.setResponseCode(Integer.toString(connection.getResponseCode()));
-					
-			String locationString = connection.getHeaderField("Location");
-			if (null != locationString && !locationString.isEmpty()){
-				URL url = CrawlerUtils.filterURL(locationString);
-				if (null != url){
-					response.setLocation(new URL(locationString));				
-				}
-			}
-			
-			String language = connection.getHeaderField("Content-Language");
-			if (null != language && !language.isEmpty()){
-				response.setContentLanguage(language.toLowerCase());
-			}
-
-			if (method == Method.GET){
-				response.setResponseBody(ByteStreams.toByteArray(connection.getInputStream()));
-			} else {
-				response.setResponseBody(null);
-			}
-			return response;
-			
-		} catch (NullPointerException e){
-			
-			// Happens if connection is terminated in mid process
 			return null;
+		}
+		
+		Response response = new Response();
+		int contentLength = connection.getContentLength();
+		response.parseContentType(connection.getContentType());
+		response.setResponseCode(Integer.toString(connection.getResponseCode()));
+				
+		String locationString = connection.getHeaderField("Location");
+		if (null != locationString && !locationString.isEmpty()){
+			URL url = CrawlerUtils.filterURL(locationString);
+			if (null != url){
+				response.setLocation(new URL(locationString));				
+			}
+		}
+		
+		String language = connection.getHeaderField("Content-Language");
+		if (null != language && !language.isEmpty()){
+			response.setContentLanguage(language.toLowerCase());
+		}
+
+		if (method == Method.GET){
+			byte[] body = getBytesFromInputStream(connection.getInputStream());
+			if (null == body){
+				// Timed out
+				return null;
+			} else {
+				response.setResponseBody(body);					
+			}
+		} else {
+			response.setResponseBody(null);
+		}
+		return response;
+
+	}
+	
+	/**
+	 * Reads bytes from the input stream. Returns null 
+	 * @param in
+	 * @return
+	 * @throws IOException
+	 */
+	private static byte[] getBytesFromInputStream(InputStream in) throws IOException {
+		
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		byte[] buffer = new byte[CrawlerConstants.BYTE_BUFFER_SIZE];
+		boolean withinTimeLimit = true;
+		Date timer = new Date();
+		while (true){
+			withinTimeLimit = (new Date().getTime() - timer.getTime()) < DispatcherConstants.READ_TIMEOUT;
+			if (!withinTimeLimit){
+				break;
+			}
+			timer = new Date();
+			int bytes = in.read(buffer);
+			if (-1 == bytes){
+				break;
+			}
+			out.write(buffer, 0, bytes);
+			
+		}
+		
+		if (!withinTimeLimit){
+			logger.info(CLASSNAME + " Was unable to read within read timeout period, skipping");
+			return null;
+		} else {
+			return out.toByteArray();
 		}
 		
 	}

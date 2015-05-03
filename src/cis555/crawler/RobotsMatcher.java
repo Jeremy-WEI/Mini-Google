@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,11 +26,14 @@ public class RobotsMatcher implements Runnable {
 	private ConcurrentHashMap<String, SiteInfo> siteInfoMap;
 	private BlockingQueue<URL> newUrlQueue;
 	private BlockingQueue<URL> headCrawlQueue;
+	private Set<String> sitesCrawledThisSession;
 	
-	public RobotsMatcher(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> newUrlQueue, BlockingQueue<URL> headCrawlQueue){
+	public RobotsMatcher(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> newUrlQueue, 
+			BlockingQueue<URL> headCrawlQueue, Set<String> sitesCrawledThisSession){
 		this.siteInfoMap = siteInfoMap;
 		this.newUrlQueue = newUrlQueue;
 		this.headCrawlQueue = headCrawlQueue;
+		this.sitesCrawledThisSession = sitesCrawledThisSession;
 	}
 	
 	@Override
@@ -37,13 +41,22 @@ public class RobotsMatcher implements Runnable {
 		while(Crawler.active){
 			URL url = null;
 
+			Date start = new Date();
+			Date populateRobots = new Date();
+			Date headQueueing = start;
+			Date finished = start;			
+			
 			try {
 				url = newUrlQueue.take();
+				
+				if (this.sitesCrawledThisSession.contains(url.toString())){
+					// We've already looked at this site, so can ignore
+					continue;
+				}
 				
 				URL filteredURL = CrawlerUtils.filterURL(url.toString());
 				
 				if (null == filteredURL){
-					logger.debug("FILTERED " + url);
 					continue;
 				}
 				
@@ -54,6 +67,9 @@ public class RobotsMatcher implements Runnable {
 					
 					SiteInfo info = this.siteInfoMap.get(domain);	
 					String agent = CrawlerUtils.extractAgent(info);
+					
+					headQueueing = new Date();
+					
 					populateHeadCrawlerQueue(info, filteredURL, agent);
 				} else {
 					
@@ -63,21 +79,32 @@ public class RobotsMatcher implements Runnable {
 					// Re-queue the URL
 //					logger.debug(CLASSNAME + ": Re-queuing " + url + " post Robots.txt extraction");
 					
+					populateRobots = new Date();
+					
 					try {
-						newUrlQueue.put(filteredURL);						
+						this.newUrlQueue.put(filteredURL);
+
 					} catch (IllegalStateException e){
 						logger.info(CLASSNAME + ": New url queue is full, dropping " + url);
 					}
 				}
 				
+				finished = new Date();
 				
 			}  catch (InterruptedException e) {
-				logger.error(CLASSNAME + ": Unabble to get URL");
+				logger.error(CLASSNAME + ": Unable to get URL due to interruption");
 				logger.error(CLASSNAME + e.getMessage());
 			} catch (Exception e){
 				logger.debug(CLASSNAME + " THROWING EXCEPTION");
 				Utils.logStackTrace(e);
 			}
+			
+//			logger.info(CLASSNAME + " finished populating head queue, using " +
+//			(populateRobots.getTime() - start.getTime()) + "ms for robots, " + 
+//					(headQueueing.getTime() - populateRobots.getTime()) + "ms for retrieving site info, " +
+//			(finished.getTime() - headQueueing.getTime()) + "ms for adding to head queuer (" + 
+//					(finished.getTime() - start.getTime()) + "ms total)");
+
 		}
 		
 		logger.info(CLASSNAME + ": Robots Matcher has shut down");
@@ -131,8 +158,12 @@ public class RobotsMatcher implements Runnable {
 		}
 		catch (MalformedURLException e) {
 			System.out.println("URL syntax malformed, skipping :" + requestURL);
+			SiteInfo info = new SiteInfo();
+			this.siteInfoMap.put(url.getHost(), info);
 		} catch (IOException e) {
 			logger.error(CLASSNAME + ": Unable to get URL: " + e.getMessage());
+			SiteInfo info = new SiteInfo();
+			this.siteInfoMap.put(url.getHost(), info);
 		} catch (Exception e){
 			logger.debug(CLASSNAME + " THROWING EXCEPTION");
 			Utils.logStackTrace(e);
@@ -173,6 +204,12 @@ public class RobotsMatcher implements Runnable {
 			// No need to wait - can add to headCrawlQueue 
 			try {
 				this.headCrawlQueue.put(filteredURL);
+				this.sitesCrawledThisSession.add(filteredURL.toString());
+
+//				logger.info(CLASSNAME + " New url queue size: " + this.newUrlQueue.size());
+//
+//				logger.info(CLASSNAME + " Head crawl queue size: " + this.headCrawlQueue.size());
+
 			} catch (IllegalStateException | InterruptedException e){
 				logger.info(CLASSNAME + ": Queue for head crawl queue is full, dropping " + url);
 			}

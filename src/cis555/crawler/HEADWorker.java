@@ -1,14 +1,13 @@
 package cis555.crawler;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,12 +39,11 @@ public class HEADWorker implements Runnable {
 	private int maxDocSize;
 	private CrawlerDao dao;
 	private BlockingQueue<RawCrawledItem> contentForLinkExtractor;
-	private Vector<URL> sitesCrawledThisSession;
 	private String storageDirectory;
 	
 	public HEADWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> headCrawlQueue, CrawlerDao dao, BlockingQueue<URL> getCrawlQueue, 
 			int id, int maxDocSize, BlockingQueue<URL> newUrlQueue, BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
-			Vector<URL> sitesCrawledThisSession, String storageDirectory){
+			String storageDirectory){
 		this.siteInfoMap = siteInfoMap;
 		this.headCrawlQueue = headCrawlQueue;
 		this.dao = dao;
@@ -54,7 +52,6 @@ public class HEADWorker implements Runnable {
 		this.maxDocSize = maxDocSize;
 		this.newUrlQueue = newUrlQueue;
 		this.contentForLinkExtractor = contentForLinkExtractor;
-		this.sitesCrawledThisSession = sitesCrawledThisSession;
 		this.storageDirectory = storageDirectory;
 	}
 	
@@ -150,10 +147,7 @@ public class HEADWorker implements Runnable {
 			logger.debug(CLASSNAME + ": Redirected URL " + redirectedURL + " added to newUrlQueue");
 			
 			try {
-				
-				if (!this.newUrlQueue.contains(redirectedURL)){
-					this.newUrlQueue.put(redirectedURL);									
-				}
+				this.newUrlQueue.put(redirectedURL);									
 				
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": New url queue is full, dropping " + redirectedURL);
@@ -193,13 +187,6 @@ public class HEADWorker implements Runnable {
 					
 					logger.info(CLASSNAME + " Get queue size: "+ this.getCrawlQueue.size());
 					
-					// Also add to list of all sites crawled in this session to prevent crawling the same site multiple times
-					
-					if (this.sitesCrawledThisSession.size() > CrawlerConstants.QUEUE_CAPACITY){
-						this.sitesCrawledThisSession.removeAllElements();
-					}
-					
-					this.sitesCrawledThisSession.add(url);
 				}				
 				
 			} catch (IllegalStateException e){
@@ -270,17 +257,14 @@ public class HEADWorker implements Runnable {
 	 */
 	private String retrieveDocument(URL url){
 		
-		if (!this.sitesCrawledThisSession.contains(url)){
+		if (this.dao.hasUrlBeenCrawled(url.toString())){
+			CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
 			
-			if (this.dao.hasUrlBeenCrawled(url.toString())){
-				CrawledDocument document = this.dao.getCrawledDocumentByURL(url.toString());
-				
-				if (document.getContentType().equals("HTML")){
-					return retrieveDocumentFromFileSystem(url);
-				}
+			if (document.getContentType().equals("HTML")){
+				return retrieveDocumentFromFileSystem(url);
 			}
 		}
-		
+				
 		// Already crawled in this session
 		// Not an HTML document
 		// Or has not been crawled at all so ignore

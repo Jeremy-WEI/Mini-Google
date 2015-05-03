@@ -7,6 +7,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServlet;
@@ -63,8 +65,9 @@ public class MasterServlet extends HttpServlet {
 	 */
 	
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		logger.debug(CLASSNAME + " Received request from " + request.getRequestURI());
 		String extension = DispatcherUtils.extractExtension(request);
-		
+
 		try {
 			switch (extension){
 			
@@ -101,6 +104,11 @@ public class MasterServlet extends HttpServlet {
 		if (null != request.getParameter(DispatcherConstants.START_URL)){
 			startCrawl();
 			this.isCrawling = true;
+			
+			Timer timer = new Timer();
+			timer.scheduleAtFixedRate(new PingWorkersTask(), 0, DispatcherConstants.PING_WORKERS_FREQUENCY_MS);
+
+			
 			return;
 		} 
 		
@@ -117,7 +125,7 @@ public class MasterServlet extends HttpServlet {
 	 * Send command to start crawling
 	 * @throws IOException 
 	 */
-	private void startCrawl() throws IOException{
+	public void startCrawl() throws IOException{
 		validateStatus();
 		int crawlerNumber = 0;
 		for (String workerIPAddressAndPort : this.workerDetailMap.keySet()){
@@ -139,6 +147,7 @@ public class MasterServlet extends HttpServlet {
 			crawlerNumber++;
 		}
 	}
+	
 	
 	/**
 	 * Generates the contents to kickstart the workers
@@ -294,6 +303,28 @@ public class MasterServlet extends HttpServlet {
 
 	}
 	
+	
+	/**
+	 * Private timer task class to ping all the workers with instructions to start crawl (in case of reset)
+	 *
+	 */
+	
+	class PingWorkersTask extends TimerTask {
+		@Override
+		public void run(){
+			
+			if (isCrawling){
+				logger.info("PINGING WORKER");
+				try {
+					startCrawl();
+				} catch (Exception e){
+					Utils.logStackTrace(e);
+				}
+					
+			}
+			
+		}
+	}
   
 }
   

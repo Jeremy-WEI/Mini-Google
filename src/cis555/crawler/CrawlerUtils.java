@@ -8,12 +8,6 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -21,7 +15,6 @@ import org.apache.log4j.Logger;
 
 import cis555.urlDispatcher.utils.DispatcherConstants;
 import cis555.utils.CrawlerConstants;
-import cis555.utils.InterruptThread;
 import cis555.utils.Utils;
 
 public class CrawlerUtils {
@@ -58,11 +51,11 @@ public class CrawlerUtils {
 			httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
 			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 
-			if (method == Method.GET && !absoluteURL.toString().endsWith("robots.txt")){
-				
-				// Force closes the connection if it's open for too long
-				new Thread(new InterruptThread(httpConnection)).start();				
-			}
+//			if (method == Method.GET && !absoluteURL.toString().endsWith("robots.txt")){
+//				
+//				// Force closes the connection if it's open for too long
+//				new Thread(new InterruptThread(httpConnection)).start();				
+//			}
 			
 			httpConnection.connect();
 			
@@ -184,11 +177,11 @@ public class CrawlerUtils {
 			httpsConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
 			httpsConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 			
-			if (method == Method.GET && !absoluteURL.toString().endsWith("robots.txt")){
-				
-				// Force closes the connection if it's open for too long
-				new Thread(new InterruptThread(httpsConnection)).start();				
-			}
+//			if (method == Method.GET && !absoluteURL.toString().endsWith("robots.txt")){
+//			
+//			// Force closes the connection if it's open for too long
+//			new Thread(new InterruptThread(httpConnection)).start();				
+//		}
 			
 			httpsConnection.connect();
 			

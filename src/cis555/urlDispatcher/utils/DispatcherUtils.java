@@ -6,19 +6,12 @@ import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.log4j.Logger;
 
 import cis555.utils.CrawlerConstants;
-import cis555.utils.InterruptThread;
 import cis555.utils.Utils;
 
 public class DispatcherUtils {
@@ -45,7 +38,7 @@ public class DispatcherUtils {
 		try {
 			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 			httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
-			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
+//			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 			
 			if (method == Method.GET){
 				httpConnection.setRequestMethod("GET");
@@ -62,7 +55,7 @@ public class DispatcherUtils {
 				httpConnection.getOutputStream().write(content.getBytes(CrawlerConstants.CHARSET));
 			}
 			
-			new Thread(new InterruptThread(httpConnection)).start();
+//			new Thread(new InterruptThread(httpConnection)).start();
 			
 			httpConnection.connect();
 			logger.info(CLASSNAME + ": sending request to " + url + " with response code " + httpConnection.getResponseCode());	
@@ -100,9 +93,6 @@ public class DispatcherUtils {
 
 				
 				
-		} catch (CancellationException e){
-			logger.debug(CLASSNAME + " request timed out after " + DispatcherConstants.READ_TIMEOUT + " seconds");
-			
 		} catch (SocketTimeoutException e){
 			logger.debug(CLASSNAME + " timed out when sending request to " + url);
 		} catch (IOException e){

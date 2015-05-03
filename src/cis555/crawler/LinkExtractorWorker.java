@@ -1,10 +1,5 @@
 package cis555.crawler;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -14,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 import javax.xml.bind.DatatypeConverter;
@@ -38,22 +34,20 @@ public class LinkExtractorWorker extends Thread {
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private int id;
 	private CrawlerDao dao;
-	private String storageDirectory;
-	private String urlStorageDirectory;
 	private int documentsCrawled;
+	private Set<String> sitesCrawledThisSession;
 	private MessageDigest digest;
 	
 	public LinkExtractorWorker(BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
 			BlockingQueue<URL> preRedistributionNewURLQueue, int id, CrawlerDao dao,
-			String storageDirectory, String urlStorageDirectory) throws NoSuchAlgorithmException {
+			Set<String> sitesCrawledThisSession) throws NoSuchAlgorithmException {
 		this.contentForLinkExtractor = contentForLinkExtractor;
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.id = id;
 		this.dao = dao;
-		this.storageDirectory = storageDirectory;
-		this.urlStorageDirectory = urlStorageDirectory;
 		this.documentsCrawled = 0;
-		digest = MessageDigest.getInstance("MD5");
+		this.sitesCrawledThisSession = sitesCrawledThisSession;
+		this.digest = MessageDigest.getInstance("MD5");
 	}
 
 	
@@ -65,8 +59,7 @@ public class LinkExtractorWorker extends Thread {
 	@Override
 	public void run() {
 		while (Crawler.active){
-			try {
-				
+			try {	
 				
 				RawCrawledItem content = contentForLinkExtractor.take();
 				
@@ -78,57 +71,23 @@ public class LinkExtractorWorker extends Thread {
 				
 				boolean isSaved = true;
 				
-				Date startingStorage = new Date();
-				
-				if (content.isNew()){
-					String docID = getDocID(url);
-					if (contentType != ContentType.PDF){
-						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
-						if (contentsIsEnglish(stringContents)){
-							if (contentType == ContentType.TEXT){
-								storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
-							} else {
-								cleansedDoc = Jsoup.parse(stringContents);
-								storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
-							}							
-							this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
-							logger.debug(CLASSNAME + " extractor " + this.id + " stored " + url.toString() + " to file system");
-							this.documentsCrawled++;
-						} else {
-							// otherwise, don't store
-							logger.debug(CLASSNAME + " content doesn't pass English test, rejecting " + url);
-							isSaved = false;
-						}
-						
-					} else {
-						storePDF(rawContents, docID, url);
-						this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
-						logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
-						this.documentsCrawled++;
-					}
-				}
-				
-				Date endingStorage = new Date();
-				
 				if (contentType == ContentType.HTML){				
 					if (null == cleansedDoc){
 						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
 						cleansedDoc = Jsoup.parse(stringContents);						
 					}
-					
+
 					if (isSaved){
 						addAHrefLinks(cleansedDoc, content.isNew(), url);
-						addImgSrcLinks(cleansedDoc, url);						
+						addImgSrcLinks(cleansedDoc, url);
 					} else {
 						addAHrefLinks(cleansedDoc, false, url);
 						addImgSrcLinks(cleansedDoc, url);												
 					}
-				} 
+
+				}
 				
-				Date endProcess = new Date();
-				
-				logger.debug(CLASSNAME + " Took " + (endingStorage.getTime() - startingStorage.getTime()) + "ms to store and " + 
-						(endProcess.getTime() - endingStorage.getTime()) + "ms to extract links for " + url);
+				logger.info(CLASSNAME + " Redistribution queue size: " + this.preRedistributionNewURLQueue.size());
 				
 				
 			} catch (UnsupportedEncodingException | IllegalStateException | IllegalArgumentException e1) {
@@ -157,18 +116,43 @@ public class LinkExtractorWorker extends Thread {
 		
 		List<String> newUrls = new ArrayList<String>();
 		
+		Date startExtractingLinks = new Date();
+		
 		for (Element link : links){
+			
+			Date start = new Date();
+			
 			String urlString = link.attr("abs:href");
+			
+//			Date urlStringTime = new Date();
+//			Date filterString = urlStringTime;
+//			Date checkContained = urlStringTime;
+//			Date putInQueue = urlStringTime;
+//			Date putInDatabase = urlStringTime;			
+//			
 			if (!urlString.isEmpty()){
 				if (!urlString.contains("mailto:")){ // We're ignoring urls with 'mailto's
 					URL newUrl = null;
 					try {
+						
 						newUrl = CrawlerUtils.filterURL(urlString);	
 						
+//						filterString = new Date();
+						
 						if (null != newUrl){
-							if (!this.preRedistributionNewURLQueue.contains(newUrl)){
+							String newUrlString = newUrl.toString();
+							if (!this.sitesCrawledThisSession.contains(newUrlString)){
+								
+//								checkContained = new Date();
+								
 								this.preRedistributionNewURLQueue.put(newUrl);
-								this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);								
+								
+//								putInQueue = new Date();
+								
+								this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
+								
+//								putInDatabase = new Date();
+								
 							}
 							
 							newUrls.add(newUrl.toString());							
@@ -185,11 +169,26 @@ public class LinkExtractorWorker extends Thread {
 					}
 				}
 			}
+			
+//			logger.info(CLASSNAME + " extractor " + this.id + " took " +
+//					(urlStringTime.getTime() - start.getTime()) + "ms to extract link, " + 
+//					(filterString.getTime() - urlStringTime.getTime()) + "ms to filter the url" + 
+//					(checkContained.getTime() - filterString.getTime()) + "ms to check if we've added the link already " +
+//					(putInQueue.getTime() - checkContained.getTime()) + "ms to add url into the queue " + 
+//					(putInDatabase.getTime() - putInQueue.getTime()) + "ms to put URL into the database");
+
 		} 
+		
+		Date savingToDatabase = new Date();
 		
 		if (isNew){
 			this.dao.addNewFromToUrls(sourceUrl.toString(), newUrls);						
 		}		
+
+		Date done = new Date();
+		
+		logger.info(CLASSNAME + "Extractor " + this.id + " took " + (savingToDatabase.getTime() - startExtractingLinks.getTime()) + "ms to extract links "
+				+ (done.getTime() - savingToDatabase.getTime()) + "ms to save to database");
 	}
 	
 	/**
@@ -240,70 +239,9 @@ public class LinkExtractorWorker extends Thread {
 	 */
 	private String getDocID(URL url) throws UnsupportedEncodingException, NoSuchAlgorithmException {
 		return hashUrlToHexStringArray(url.toString());
-//		if (this.dao.doesDocumentMetaExist(url.toString())){
-//			// Previously crawled document
-//			return this.dao.getDocIDFromURL(url.toString());
-//		} else {
-//			// New document, so generate a new ID
-//			return ;
-//		}
-//
 	}
 	
-	/**
-	 * Store the crawled document in a file
-	 * @param contents
-	 * @param docID
-	 * @param url
-	 */
-	private void storeCrawledContentsFile(String contents, String docID, ContentType contentType, URL url){
-		String fileName = generateFileName(docID, contentType);
-		File storageFile = new File(this.storageDirectory + "/" + fileName);
-		try {
-			byte[] urlPlusContents = Utils.appendURL(url, contents.getBytes(CrawlerConstants.CHARSET));
-			Utils.zip(urlPlusContents, storageFile.toString());
-		} catch (IOException e){
-			e.printStackTrace();
-			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		} 
-	}
-	
-	/**
-	 * Generates the file name with the appropriate extension
-	 * @param docID
-	 * @param contentType
-	 * @return
-	 */
-	private String generateFileName(String docID, ContentType contentType){
-		switch (contentType){
-		case HTML:
-			return docID + ".html.gzip";
-		case XML:
-			return docID + ".xml.gzip";
-		case TEXT:
-			return docID + ".txt.gzip";
-		default:
-			throw new CrawlerException("Invalid content type: " + contentType.name());
-		}
-	}
-	
-	/**
-	 * Store a PDF file
-	 * @param contents
-	 * @param docID
-	 * @param url
-	 */
-	private void storePDF(byte[] contents, String docID, URL url){
-		String fileName = docID + ".pdf.gzip";
-		File storageFile = new File(this.storageDirectory + "/" + fileName);
-		try {
-			byte[] urlPlusContents = Utils.appendURL(url, contents);
-			Utils.zip(urlPlusContents, storageFile.toString());
-		} catch (IOException e) {
-			e.printStackTrace();
-			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		}
-	}
+
 	
 	/**
 	 * Returns the number of documents crawled
@@ -314,43 +252,7 @@ public class LinkExtractorWorker extends Thread {
 	}
 
 	
-	/**
-	 * Determines if the contents is english by checking if the document contains a number of common english words
-	 * @param contents
-	 * @return
-	 */
-	private boolean contentsIsEnglish(String contents){
-		int count = 0;
-		if (contents.contains(" the ")){
-			count++;
-		}
-		
-		if (contents.contains(" and ")){
-			count++;
-		}
-		
-		if (contents.contains(" that ")){
-			count++;
-		}
 
-		if (contents.contains(" not ")){
-			count++;
-		}
-
-		if (contents.contains(" with ")){
-			count++;
-		}
-
-		if (contents.contains(" this ")){
-			count++;
-		}
-		
-		if (count > 2){
-			return true;
-		} else {
-			return false;
-		}
-	}
 	
 	
     /**

@@ -56,7 +56,7 @@ public class DBWrapper {
 		if (readOnly){
 			envConfig = envConfig.setReadOnly(readOnly);
 		} 
-		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, CrawlerConstants.LOCK_N_LOCK_TABLES);
+//		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, CrawlerConstants.LOCK_N_LOCK_TABLES);
 		envConfig.setLockTimeout(CrawlerConstants.LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);

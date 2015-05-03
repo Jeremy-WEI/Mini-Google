@@ -17,7 +17,8 @@ public class PagerankDAO {
     /**
      * Initialize all the static variables
      *
-     * @param dbPath The file path of the db
+     * @param dbPath
+     *            The file path of the db
      */
     public static void setup(String dbPath) {
         // Create the directory in which this store will live.
@@ -34,7 +35,8 @@ public class PagerankDAO {
 
         Environment env = new Environment(dir, envConfig);
         store = new EntityStore(env, "pagerankIndexStore", storeConfig);
-        pagerankIndex = store.getPrimaryIndex(String.class, DocIdPagerankInfo.class);
+        pagerankIndex = store.getPrimaryIndex(String.class,
+                DocIdPagerankInfo.class);
 
         ShutdownHook hook = new ShutdownHook(env, store);
         Runtime.getRuntime().addShutdownHook(hook);
@@ -61,15 +63,28 @@ public class PagerankDAO {
     }
 
     /**
-     * Retrieve a pagerankIndex from the database given its docID.
+     * Retrieve a pagerankInfo from the database given its docID.
      * 
-     * @param docID The primary key for the pagerankIndex.
+     * @param docID
+     *            The primary key for the pagerankIndex.
      * @return DocIdPagerankInfo instance.
      */
     public static DocIdPagerankInfo getPagerank(String docID) {
         return pagerankIndex.get(docID);
     }
 
-
+    /**
+     * Retrieve a pagerankValue from the database given its docID.
+     * 
+     * @param docID
+     *            The primary key for the pagerankIndex.
+     * @return pagerankValue.
+     */
+    public static double getPagerankValue(String docID) {
+        DocIdPagerankInfo info = pagerankIndex.get(docID);
+        if (info == null)
+            return 0;
+        return info.getPagerank();
+    }
 
 }

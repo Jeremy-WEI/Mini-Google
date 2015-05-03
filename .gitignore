@@ -19,5 +19,11 @@ hs_err_pid*
 /database/*
 /document_meta/*
 /log/*
+/pagerank/*
+searchengine.war
+.settings/*
+/WebContent/*
 
+.classpath
+.project
 .DS_Store

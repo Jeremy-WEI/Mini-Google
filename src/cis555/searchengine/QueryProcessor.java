@@ -23,9 +23,9 @@ import cis555.utils.Hit;
  * 
  * 2. Prepare Phase (get docID + calculate TF-IDF value)
  * 
- * 3. PageRank Phase (combined with PageRank value)
+ * 3. Position Check Phase (solve the cons of bag model)
  * 
- * 4. Position Check Phase (solve the cons of bag model)
+ * 4. PageRank Phase (combined with PageRank value)
  * 
  * 5. Fancy Check Phase (add weight by Fancy Hit)
  * 
@@ -37,6 +37,7 @@ public class QueryProcessor {
     public static void setup(String dbPath) {
         IndexTermDAO.setup(dbPath);
         UrlIndexDAO.setup(dbPath);
+        PagerankDAO.setup(dbPath);
     }
 
     public static Set<QueryTerm> parseQuery(String query) {
@@ -52,6 +53,8 @@ public class QueryProcessor {
      * 
      * 3. Attach corresponding DocIdEntity to weightedDocId
      * 
+     * 4. Remove the later half (To speed up search process)
+     * 
      * @param Set
      *            of queryTerms
      * 
@@ -59,7 +62,7 @@ public class QueryProcessor {
      */
     public static List<WeightedDocID> preparePhase(Set<QueryTerm> queryTerms) {
         if (queryTerms.size() == 0)
-            return new LinkedList<WeightedDocID>();
+            return new ArrayList<WeightedDocID>();
         Iterator<QueryTerm> iter = queryTerms.iterator();
         QueryTerm queryTerm = iter.next();
         Map<String, WeightedDocID> weightedDocIDMap = new HashMap<String, WeightedDocID>();
@@ -89,12 +92,11 @@ public class QueryProcessor {
         }
         List<WeightedDocID> results = new ArrayList<WeightedDocID>(
                 weightedDocIDMap.values());
+        Collections.sort(results);
+        for (int i = results.size() - 1; i >= 50; i--) {
+            results.remove(i);
+        }
         return results;
-    }
-
-    public static List<WeightedDocID> pageRankPhase(
-            List<WeightedDocID> weightedDocIDList) {
-        return null;
     }
 
     public static List<WeightedDocID> posCheckPhase(
@@ -149,6 +151,15 @@ public class QueryProcessor {
             // TODO: adjust the weight???
             // TODO: mutiple hit??
             w.mutiplyWeight(hitNumber / (double) noOfWords);
+        }
+        return weightedDocIDList;
+    }
+
+    public static List<WeightedDocID> pageRankPhase(
+            List<WeightedDocID> weightedDocIDList) {
+        for (WeightedDocID w : weightedDocIDList) {
+            double value = PagerankDAO.getPagerankValue(w.getDocID()) + 1;
+            w.mutiplyWeight(value);
         }
         return weightedDocIDList;
     }
@@ -214,10 +225,12 @@ public class QueryProcessor {
         // "United_Christian_Broadcasters",
         //
         // "Computer Science developer, hello a i world test wiki 12321 sd132 o98nasd what is ",
-
-        "Hello World",
-
+        //
+        // "Hello World",
+        //
         // "WikiPedia",
+
+        "File:Nasikabatrachus sahyadrensis.jpg",
         //
         // "Bank of America",
         //
@@ -236,12 +249,14 @@ public class QueryProcessor {
             List<WeightedDocID> lst1 = preparePhase(terms);
             List<WeightedDocID> lst2 = posCheckPhase(lst1, terms);
             // List<WeightedDocID> lst2 = lst1;
-            List<WeightedDocID> lst3 = filterPhase(lst2, 0, 5);
-            // List<String> URLs = getURLs(lst3);
+            // List<WeightedDocID> lst3 = pageRankPhase(lst2);
+            List<WeightedDocID> lst3 = lst2;
+            List<WeightedDocID> lst4 = filterPhase(lst3, 0, 5);
+            // List<String> URLs = getURLs(lst4);
             // for (String URL : URLs) {
             // System.out.println(URL);
             // }
-            printInfo(lst3);
+            printInfo(lst4);
             System.out.println("-------- I am the line separator --------");
         }
     }

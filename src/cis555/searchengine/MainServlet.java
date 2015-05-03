@@ -20,23 +20,52 @@ public class MainServlet extends HttpServlet {
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws java.io.IOException {
+        PrintWriter pw = response.getWriter();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("<!DOCTYPE html>").append("<html>")
+        pw.write("<!DOCTYPE html><html>");
+        pw.write("<head>");
+        pw.write("<title>" + "CIS555 Search Engine" + "</title>");
+        pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
+                + request.getContextPath() + "/stylesheet/bootstrap.min.css\">");
+        pw.write("</head>");
 
-        .append("<head>").append("<div>");
+        pw.write("<body>");
+        pw.write("<div class=\"container\">");
 
-        sb.append("<form action=\"search\" method=\"get\">")
-                .append("<input type=\"text\" name=\"query\">")
-                .append("</form> ").append("<br>");
+        pw.write("<div style=\"margin: 100px;\">");
+        pw.write("<form action=\"search\" method=\"GET\" class=\"form-horizontal col-md-12\">");
+        pw.write("<div class=\"form-group\">");
+        pw.write("<div class=\"row\">");
+        pw.write("<div class=\"col-md-10\">");
+        pw.write("<input name=\"query\" id=\"query\" type=\"text\" placeholder=\"Search...\" class=\"form-control\">");
+        pw.write("</div>");
+        pw.write("<div align=\"right\" class=\"col-md-2 form-group\">");
+        pw.write("<button type=\"submit\" class=\"btn btn-info btn-block\">Search</button>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</form>");
+        pw.write("</div>");
 
-        loadResult(sb);
-
-        sb.append("</div></body></html>");
-        response.setContentType("text/html;charset=UTF-8");
-
-        PrintWriter out = response.getWriter();
-        out.println(sb);
+        pw.write("</div>");
+        pw.write("</body>");
+        pw.write("</html>");
+        // StringBuilder sb = new StringBuilder();
+        // sb.append("<!DOCTYPE html>").append("<html>")
+        //
+        // .append("<head>").append("<div>");
+        //
+        // sb.append("<form action=\"search\" method=\"get\">")
+        // .append("<input type=\"text\" name=\"query\">")
+        // .append("</form> ").append("<br>");
+        //
+        // loadResult(sb);
+        //
+        // sb.append("</div></body></html>");
+        // response.setContentType("text/html;charset=UTF-8");
+        //
+        // PrintWriter out = response.getWriter();
+        // out.println(sb);
 
     }
 
@@ -49,13 +78,14 @@ public class MainServlet extends HttpServlet {
 
         if (docList != null) {
             sb.append("<p><b><font size =\"5\">Search Result</font></b></p>")
-            .append("<ul style=\"list-style-type:disc\">");
+                    .append("<ul style=\"list-style-type:disc\">");
 
             for (String url : docList) {
-                sb.append(String.format("<li><a href=\"%s\">%s</a></li>", url, url))
-                .append("<br />");
+                sb.append(
+                        String.format("<li><a href=\"%s\">%s</a></li>", url,
+                                url)).append("<br />");
             }
-            
+
             sb.append("</ul>");
             context.setAttribute("searchResult", null);
         }

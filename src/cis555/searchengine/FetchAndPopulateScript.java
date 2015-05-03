@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import cis555.aws.utils.AWSClientAdapters;
-import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -33,14 +32,17 @@ public class FetchAndPopulateScript {
      */
     public static void main(String[] args) throws IOException {
         IndexTermDAO.setup("database");
-        UrlIndexDAO.setup("database");
-        PagerankDAO.setup("database");
+        // UrlIndexDAO.setup("database");
+        // PagerankDAO.setup("database");
 
         // fetchData();
 
-        populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
-        populateIndexTerm("S3DATA/indexer-output");
-        populatePagerank("S3DATA/pagerank");
+        // populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
+        // populateIndexTerm("S3DATA/indexer-output");
+        // populatePagerank("S3DATA/pagerank");
+        // populatePagerank("pagerank");
+        // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+        // populatePagerank("pagerank");
 
     }
 
@@ -94,6 +96,8 @@ public class FetchAndPopulateScript {
                 if (lastWord == null) {
                     IndexTermDAO.putIndexTerm(tokens[0]);
                 } else if (!tokens[0].equals(lastWord)) {
+                    if (Math.log((docNumber - freq + 0.5) / (freq + 0.5)) < 0)
+                        System.out.println(lastWord);
                     IndexTermDAO.putIndexTerm(
                             lastWord,
                             Math.max(
@@ -180,10 +184,10 @@ public class FetchAndPopulateScript {
     }
 
     public static void fetchData() {
-        S3Adapter s3 = new S3Adapter();
-        s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
-        s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
-        s3.downloadAllFilesInBucket("pagerank", "S3DATA");
+        // S3Adapter s3 = new S3Adapter();
+        // s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
+        // s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
+        // s3.downloadAllFilesInBucket("pagerank", "S3DATA");
 
     }
 

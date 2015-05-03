@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 
 import cis555.utils.CrawlerConstants;
+import cis555.utils.InterruptThread;
 import cis555.utils.Utils;
 
 public class DispatcherUtils {
@@ -61,32 +62,38 @@ public class DispatcherUtils {
 				httpConnection.getOutputStream().write(content.getBytes(CrawlerConstants.CHARSET));
 			}
 			
-			// THIS STUFF IS NEW
+			new Thread(new InterruptThread(httpConnection)).start();
 			
-			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-			final Future<Void> handler = executor.submit(new Callable<Void>() {
-			  public Void call() throws Exception {
-			    try {
-			    	httpConnection.connect();
-					logger.info(CLASSNAME + ": sending request to " + url + " with response code " + httpConnection.getResponseCode());	
-			    } catch (Exception e) {
-			      e.printStackTrace();
-			    }
-			    return null;
-			  }
-			});
+			httpConnection.connect();
+			logger.info(CLASSNAME + ": sending request to " + url + " with response code " + httpConnection.getResponseCode());	
+
 			
-			executor.schedule(new Runnable() {
-				  public void run() {
-					  httpConnection.disconnect();
-				    handler.cancel(true);
-				    executor.shutdownNow(); 
-				  }
-				}, DispatcherConstants.READ_TIMEOUT, TimeUnit.MILLISECONDS);
-				handler.get();
-				executor.shutdownNow();
-			
-				// THIS STUFF IS NEW
+//			// THIS STUFF IS NEW
+//			
+//			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+//			final Future<Void> handler = executor.submit(new Callable<Void>() {
+//			  public Void call() throws Exception {
+//			    try {
+//			    	httpConnection.connect();
+//					logger.info(CLASSNAME + ": sending request to " + url + " with response code " + httpConnection.getResponseCode());	
+//			    } catch (Exception e) {
+//			      e.printStackTrace();
+//			    }
+//			    return null;
+//			  }
+//			});
+//			
+//			executor.schedule(new Runnable() {
+//				  public void run() {
+//					  httpConnection.disconnect();
+//				    handler.cancel(true);
+//				    executor.shutdownNow(); 
+//				  }
+//				}, DispatcherConstants.READ_TIMEOUT, TimeUnit.MILLISECONDS);
+//				handler.get();
+//				executor.shutdownNow();
+//			
+//				// THIS STUFF IS NEW
 			
 //    	httpConnection.connect();
 //		logger.info(CLASSNAME + ": sending request to " + url + " with response code " + httpConnection.getResponseCode());	

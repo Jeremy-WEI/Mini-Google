@@ -37,7 +37,7 @@
   
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,utils/*.java,**/urlDispatcher/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -50,7 +50,7 @@
     
     <target name="compile-transferer" depends="compile-database" description="Compiles the EC2 - S3 and Dynamo transferer">
         <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,*utils/*.java,**/urlDispatcher/utils/*.java,**/aws/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -62,7 +62,7 @@
   
     <target name="compile-crawler" depends="compile-database" description="Compiles the crawler">
         <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -73,7 +73,7 @@
   
     <target name="compile-dispatcherMaster" description="Compiles the dispatcherMaster">
       <mkdir dir="${master_web-inf.classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="**/utils/*.java,**/urlDispatcher/utils/*.java,**/urlDispatcher/master/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="utils/*.java,**/urlDispatcher/utils/*.java,**/urlDispatcher/master/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>

@@ -53,7 +53,9 @@ public class GETWorker implements Runnable {
 				
 				if (!siteInfoMap.containsKey(domain)){
 					// Missing Site info ... return to the new URL queue
-					this.newUrlQueue.add(filteredURL);
+					this.newUrlQueue.put(filteredURL);
+					logger.debug(CLASSNAME + " adding back to new url queue due to missing site info map " + filteredURL);
+					
 					continue;
 				}
 				
@@ -64,8 +66,8 @@ public class GETWorker implements Runnable {
 					crawl(info, domain, filteredURL);
 				} else {
 					// Need to wait 	
-					this.crawlQueue.add(filteredURL);	
-				
+					this.crawlQueue.put(filteredURL);	
+
 				}
 				
 			} catch (IllegalStateException e){
@@ -98,7 +100,9 @@ public class GETWorker implements Runnable {
 			Response response = new Response();
 			String ifModifiedSinceString = ""; // Not relevant for GET requests
 			
-			logger.debug(CLASSNAME + ": About to crawl " + url);				
+			logger.debug(CLASSNAME +  ": Crawler" +  this.id + " is about to crawl " + url);				
+			
+			Date beforeCrawl = new Date();
 			
 			if (url.toString().startsWith("https")){
 				response = CrawlerUtils.retrieveHttpsResource(url, CrawlerUtils.Method.GET, ifModifiedSinceString);
@@ -107,13 +111,16 @@ public class GETWorker implements Runnable {
 			} 
 			
 			if (null == response){
-				logger.debug(CLASSNAME + " Non-2xx or 3xx response received from " + url + ", skipping");
-				// returns null if the result is non-2xx or 3xx
+				logger.debug(CLASSNAME + " Non-2xx or 3xx response, or timeout response received from " + url + ", skipping");
+				// returns null if the result is non-2xx or 3xx, or timeout received
 				return;
 			}
 
+			Date afterCrawl = new Date();
 			
 			updateSiteInfo(info, domain);
+
+			logger.debug(CLASSNAME + ": Crawler" +  this.id + " Crawled " + url + ", about to parse response");
 			
 			byte[] rawContents = response.getResponseBody();
 			
@@ -122,17 +129,20 @@ public class GETWorker implements Runnable {
 				return;
 			}
 			
-			logger.debug(CLASSNAME + ": Crawled " + url);				
+			logger.debug(CLASSNAME + ": Crawler" +  this.id + " Crawled " + url + ", taking " + (afterCrawl.getTime() - beforeCrawl.getTime()) + " ms");				
 			ContentType contentType = response.getContentType();
 			
 			if (contentType == Response.ContentType.OTHERS){
-				// Ignore if content type is not recognised
+				// Ignore if content type is not recognisedF
 				return;
 			}
 			
 			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
 			try {
-				this.contentForLinkExtractor.add(forLinkExtractor);
+				this.contentForLinkExtractor.put(forLinkExtractor);
+				
+				logger.info(CLASSNAME + " Content for link extractor size: "+ this.contentForLinkExtractor.size());
+
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": Link Extractor queue is full, dropping " + url);				
 			}

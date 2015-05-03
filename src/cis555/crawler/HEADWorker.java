@@ -80,7 +80,7 @@ public class HEADWorker implements Runnable {
 					// Missing Site info ... return to the new URL queue
 					
 					logger.warn(CLASSNAME + ": Missing site info map for " + domain);
-					this.newUrlQueue.add(filteredURL);
+					this.newUrlQueue.put(filteredURL);
 					continue;
 				}
 				
@@ -92,7 +92,7 @@ public class HEADWorker implements Runnable {
 				} else {
 					// Returning to the queue
 
-					headCrawlQueue.add(filteredURL);
+					headCrawlQueue.put(filteredURL);
 				}
 				
 			} catch (CrawlerException e){
@@ -152,11 +152,14 @@ public class HEADWorker implements Runnable {
 			try {
 				
 				if (!this.newUrlQueue.contains(redirectedURL)){
-					this.newUrlQueue.add(redirectedURL);									
+					this.newUrlQueue.put(redirectedURL);									
 				}
 				
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": New url queue is full, dropping " + redirectedURL);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			
 		} 	else if (isNotModified(response)){
@@ -166,7 +169,12 @@ public class HEADWorker implements Runnable {
 			
 			if (!contents.isEmpty()){ // This means that it's an HTML document
 				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, contents.getBytes(CrawlerConstants.CHARSET), ContentType.HTML, false);
-				this.contentForLinkExtractor.add(forLinkExtractor);
+				try {
+					this.contentForLinkExtractor.put(forLinkExtractor);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			} 
 		} else if (isTooBig(response.getContentLength())){
 			logger.info("File exceeds maximum file length " + response.getContentLength() + ", skipping");
@@ -179,7 +187,11 @@ public class HEADWorker implements Runnable {
 			try {
 				
 				if (!this.getCrawlQueue.contains(url)){
-					this.getCrawlQueue.add(url);
+					
+					
+					this.getCrawlQueue.put(url);
+					
+					logger.info(CLASSNAME + " Get queue size: "+ this.getCrawlQueue.size());
 					
 					// Also add to list of all sites crawled in this session to prevent crawling the same site multiple times
 					
@@ -188,11 +200,13 @@ public class HEADWorker implements Runnable {
 					}
 					
 					this.sitesCrawledThisSession.add(url);
-					
 				}				
 				
 			} catch (IllegalStateException e){
 				logger.info(CLASSNAME + ": Get queue is full, dropping " + url);				
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			
 

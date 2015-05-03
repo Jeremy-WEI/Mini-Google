@@ -3,6 +3,7 @@ package cis555.crawler;
 import java.io.File;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -100,8 +101,9 @@ public class Crawler {
 	
 	/**
 	 * Set up the entire crawler framework
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private void initialise() {
+	private void initialise() throws NoSuchAlgorithmException {
 		
 		this.dbEnvDir = CrawlerConstants.DB_DIRECTORY;
 		this.storageDirectory = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.STORAGE_DIRECTORY;
@@ -163,8 +165,8 @@ public class Crawler {
 	 * @return
 	 */
 	private void initialiseHeadThreadPool() {
-		headThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_GET_THREADS);
-		for (int i = 0; i < CrawlerConstants.NUM_HEAD_GET_THREADS; i++) {
+		headThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_THREADS);
+		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
 			HEADWorker crawler = new HEADWorker(this.siteInfoMap, this.headCrawlQueue, 
 					this.dao, this.getCrawlQueue, i, this.maxDocSize, this.newUrlQueue, 
 					this.contentForLinkExtractor, this.sitesCrawledThisSession, this.storageDirectory);
@@ -180,8 +182,8 @@ public class Crawler {
 	 * @return
 	 */
 	private void initialiseGetThreadPool() {
-		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_GET_THREADS);
-		for (int i = 0; i < CrawlerConstants.NUM_HEAD_GET_THREADS; i++) {
+		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_GET_THREADS);
+		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
 			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, i, this.contentForLinkExtractor);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
@@ -193,8 +195,9 @@ public class Crawler {
 	 * Start up a pool of threads for GET workers
 	 * 
 	 * @return
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private void initialiseLinkExtractorThreadPool() {
+	private void initialiseLinkExtractorThreadPool() throws NoSuchAlgorithmException {
 		linkExtractorPool = new ArrayList<LinkExtractorWorker>(CrawlerConstants.NUM_EXTRACTOR_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_EXTRACTOR_THREADS; i++) {
 			LinkExtractorWorker extractor = new LinkExtractorWorker(this.contentForLinkExtractor, 
@@ -210,7 +213,7 @@ public class Crawler {
 	 */
 	private void linkQueuerThreadPool(){
 		
-		this.linkQueuerThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_GET_THREADS);
+		this.linkQueuerThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_GET_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_QUEUER_THREADS; i++){
 			LinkQueuer linkQueuer = new LinkQueuer(this.preRedistributionNewURLQueue, 
 					this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort.size(), 

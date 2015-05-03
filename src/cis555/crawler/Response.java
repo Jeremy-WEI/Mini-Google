@@ -100,37 +100,45 @@ public class Response {
 	 */
 	public static Response parseResponse(HttpURLConnection connection, Method method) throws IOException {
 		
-		int status = connection.getResponseCode();
-		
-		if (status > 350){
-			logger.info(CLASSNAME + ": non 2 or 300 result");
+		try {
+			int status = connection.getResponseCode();
+			
+			if (status > 350){
+//				logger.info(CLASSNAME + ": non 2 or 300 result");
+				return null;
+			}
+			
+			Response response = new Response();
+			int contentLength = connection.getContentLength();
+			response.parseContentType(connection.getContentType());
+			response.setResponseCode(Integer.toString(connection.getResponseCode()));
+					
+			String locationString = connection.getHeaderField("Location");
+			if (null != locationString && !locationString.isEmpty()){
+				URL url = CrawlerUtils.filterURL(locationString);
+				if (null != url){
+					response.setLocation(new URL(locationString));				
+				}
+			}
+			
+			String language = connection.getHeaderField("Content-Language");
+			if (null != language && !language.isEmpty()){
+				response.setContentLanguage(language.toLowerCase());
+			}
+
+			if (method == Method.GET){
+				response.setResponseBody(ByteStreams.toByteArray(connection.getInputStream()));
+			} else {
+				response.setResponseBody(null);
+			}
+			return response;
+			
+		} catch (NullPointerException e){
+			
+			// Happens if connection is terminated in mid process
 			return null;
 		}
 		
-		Response response = new Response();
-		int contentLength = connection.getContentLength();
-		response.parseContentType(connection.getContentType());
-		response.setResponseCode(Integer.toString(connection.getResponseCode()));
-				
-		String locationString = connection.getHeaderField("Location");
-		if (null != locationString && !locationString.isEmpty()){
-			URL url = CrawlerUtils.filterURL(locationString);
-			if (null != url){
-				response.setLocation(new URL(locationString));				
-			}
-		}
-		
-		String language = connection.getHeaderField("Content-Language");
-		if (null != language && !language.isEmpty()){
-			response.setContentLanguage(language.toLowerCase());
-		}
-
-		if (method == Method.GET){
-			response.setResponseBody(ByteStreams.toByteArray(connection.getInputStream()));
-		} else {
-			response.setResponseBody(null);
-		}
-		return response;
 	}
 	
 }

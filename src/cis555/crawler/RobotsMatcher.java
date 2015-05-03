@@ -64,7 +64,7 @@ public class RobotsMatcher implements Runnable {
 //					logger.debug(CLASSNAME + ": Re-queuing " + url + " post Robots.txt extraction");
 					
 					try {
-						newUrlQueue.add(filteredURL);						
+						newUrlQueue.put(filteredURL);						
 					} catch (IllegalStateException e){
 						logger.info(CLASSNAME + ": New url queue is full, dropping " + url);
 					}
@@ -162,9 +162,9 @@ public class RobotsMatcher implements Runnable {
 			
 //			logger.debug(CLASSNAME + ": Crawler delay imposed on " + url);
 			try {
-				this.newUrlQueue.add(filteredURL);
+				this.newUrlQueue.put(filteredURL);
 				
-			} catch (IllegalStateException e){
+			} catch (IllegalStateException | InterruptedException e){
 				logger.info(CLASSNAME + ": Queue for new url (requeue while waiting) is full, dropping " + filteredURL);
 			}
 
@@ -172,8 +172,8 @@ public class RobotsMatcher implements Runnable {
 
 			// No need to wait - can add to headCrawlQueue 
 			try {
-				this.headCrawlQueue.add(filteredURL);
-			} catch (IllegalStateException e){
+				this.headCrawlQueue.put(filteredURL);
+			} catch (IllegalStateException | InterruptedException e){
 				logger.info(CLASSNAME + ": Queue for head crawl queue is full, dropping " + url);
 			}
 			updateSiteInfo(info, url.getHost());			

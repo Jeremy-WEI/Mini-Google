@@ -1,10 +1,12 @@
 package cis555.crawler;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -19,6 +21,7 @@ import org.apache.log4j.Logger;
 
 import cis555.urlDispatcher.utils.DispatcherConstants;
 import cis555.utils.CrawlerConstants;
+import cis555.utils.InterruptThread;
 import cis555.utils.Utils;
 
 public class CrawlerUtils {
@@ -30,7 +33,7 @@ public class CrawlerUtils {
 	public static enum Method {
 		HEAD, GET
 	}
-	
+			
 	/**
 	 * Retrieves a resource via http
 	 * @param absoluteURL
@@ -38,9 +41,12 @@ public class CrawlerUtils {
 	 * @param ifModifiedDateString
 	 * @return
 	 */
-	public static Response retrieveHttpResource(final URL absoluteURL, final Method method, String ifModifiedDateString){
+	public static Response retrieveHttpResource(URL absoluteURL, final Method method, String ifModifiedDateString){
+		
+		HttpURLConnection httpConnection = null;
+		
 		try {
-			final HttpURLConnection httpConnection = (HttpURLConnection) absoluteURL.openConnection();
+			httpConnection = (HttpURLConnection) absoluteURL.openConnection();
 			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 			if (method == Method.HEAD){
 				httpConnection.setRequestMethod("HEAD");
@@ -52,42 +58,48 @@ public class CrawlerUtils {
 			httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
 			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 
+			if (method == Method.GET && !absoluteURL.toString().endsWith("robots.txt")){
+				
+				// Force closes the connection if it's open for too long
+				new Thread(new InterruptThread(httpConnection)).start();				
+			}
+			
 			httpConnection.connect();
 			
-			// THIS STUFF IS NEW
+			Response response = Response.parseResponse(httpConnection, method);
 
-			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-			final Future<Response> handler = executor.submit(new Callable<Response>() {
-			  public Response call() throws Exception {
-			    try {
-					Response response = Response.parseResponse(httpConnection, method);
-					logger.info(CLASSNAME + ": sending request to " + absoluteURL + " with response code " + httpConnection.getResponseCode());	
-					return response;
-			    } catch (Exception e) {
-			      e.printStackTrace();
-			    }
-			    return null;
-			  }
-			});
+			return response;
 			
-			executor.schedule(new Runnable() {
-				  public void run() {
-					  httpConnection.disconnect();
-				    handler.cancel(true);
-				    executor.shutdownNow(); 
-				  }
-				}, DispatcherConstants.HTTP_TIMEOUT, TimeUnit.MILLISECONDS);
-				Response response = handler.get();
-				executor.shutdownNow();
-				return response;
-				// THIS STUFF IS NEW
+//			// THIS STUFF IS NEW
+//
+//			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+//			final Future<Response> handler = executor.submit(new Callable<Response>() {
+//			  public Response call() throws Exception {
+//			    try {
+//					Response response = Response.parseResponse(httpConnection, method);
+////					logger.info(CLASSNAME + ": sending request to " + absoluteURL + " with response code " + httpConnection.getResponseCode());	
+//					return response;
+//			    } catch (Exception e) {
+//			      e.printStackTrace();
+//			    }
+//			    return null;
+//			  }
+//			});
+//			
+//			executor.schedule(new Runnable() {
+//				  public void run() {
+//					  httpConnection.disconnect();
+//				    handler.cancel(true);
+//				    executor.shutdownNow(); 
+//				  }
+//				}, DispatcherConstants.HTTP_TIMEOUT, TimeUnit.MILLISECONDS);
+//				Response response = handler.get();
+//				executor.shutdownNow();
+//				return response;
+//				// THIS STUFF IS NEW
 			
 			
-		} catch (CancellationException e){
-			logger.debug(CLASSNAME + " request timed out after 5 seconds");
-			return null;
-			
-		} catch (SocketTimeoutException e){
+		}  catch (SocketTimeoutException e){
 			logger.debug(CLASSNAME + " timed out when sending request to " + absoluteURL);
 			return null;
 		} catch (IOException e){
@@ -97,7 +109,18 @@ public class CrawlerUtils {
 			Utils.logStackTrace(e);
 			logger.debug(CLASSNAME + " Unable to open connection to " + absoluteURL + ", skipping");
 			return null;
-		} 
+		} finally {
+			if (null != httpConnection){
+				try {
+					httpConnection.getInputStream().close();
+					httpConnection.disconnect();
+				} catch (IOException e) {
+					logger.debug(CLASSNAME + " IO Errror when trying to close stream");
+
+				}
+				
+			}
+		}
 	}
 
 		
@@ -135,6 +158,7 @@ public class CrawlerUtils {
 	
 
 	
+	
 	/**
 	 * Retrieve a resource via https
 	 * @param absoluteURI
@@ -144,10 +168,11 @@ public class CrawlerUtils {
 	 */
 	public static Response retrieveHttpsResource(final URL absoluteURL, final Method method, String ifModifiedDateString) throws MalformedURLException, IOException{
 		
-		final HttpsURLConnection httpsConnection = (HttpsURLConnection)absoluteURL.openConnection();
+		HttpsURLConnection httpsConnection = null; 
 		
 		try {
-
+		
+			httpsConnection = (HttpsURLConnection)absoluteURL.openConnection();
 			httpsConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 			if (method == Method.HEAD){
 				httpsConnection.setRequestMethod("HEAD");
@@ -159,39 +184,48 @@ public class CrawlerUtils {
 			httpsConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
 			httpsConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 			
+			if (method == Method.GET && !absoluteURL.toString().endsWith("robots.txt")){
+				
+				// Force closes the connection if it's open for too long
+				new Thread(new InterruptThread(httpsConnection)).start();				
+			}
+			
+			httpsConnection.connect();
+			
+			Response response = Response.parseResponse(httpsConnection, method);
+
+			return response;
+
+			
 			// THIS STUFF IS NEW
 
-			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-			final Future<Response> handler = executor.submit(new Callable<Response>() {
-			  public Response call() throws Exception {
-			    try {
-					Response response = Response.parseResponse(httpsConnection, method);
-					logger.info(CLASSNAME + ": sending request to " + absoluteURL + " with response code " + httpsConnection.getResponseCode());	
-					return response;
-			    } catch (Exception e) {
-			      e.printStackTrace();
-			    }
-			    return null;
-			  }
-			});
-			
-			executor.schedule(new Runnable() {
-				  public void run() {
-					  httpsConnection.disconnect();
-				    handler.cancel(true);
-				    executor.shutdownNow(); 
-				  }
-				}, 5000, TimeUnit.MILLISECONDS);
-				Response response = handler.get();
-				executor.shutdownNow();
-				return response;
-				// THIS STUFF IS NEW
+//			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+//			final Future<Response> handler = executor.submit(new Callable<Response>() {
+//			  public Response call() throws Exception {
+//			    try {
+//					Response response = Response.parseResponse(httpsConnection, method);
+////					logger.info(CLASSNAME + ": sending request to " + absoluteURL + " with response code " + httpsConnection.getResponseCode());	
+//					return response;
+//			    } catch (Exception e) {
+//			      e.printStackTrace();
+//			    }
+//			    return null;
+//			  }
+//			});
+//			
+//			executor.schedule(new Runnable() {
+//				  public void run() {
+//					  httpsConnection.disconnect();
+//				    handler.cancel(true);
+//				    executor.shutdownNow(); 
+//				  }
+//				}, 5000, TimeUnit.MILLISECONDS);
+//				Response response = handler.get();
+//				executor.shutdownNow();
+//				return response;
+//				// THIS STUFF IS NEW
 			
 
-		} catch (CancellationException e){
-			logger.debug(CLASSNAME + " request timed out after 5 seconds");
-			return null;
-			
 		} catch (IOException e){
 			logger.debug(CLASSNAME + " was unable to send request to " + absoluteURL);	
 			return null;
@@ -201,6 +235,7 @@ public class CrawlerUtils {
 			return null;
 		}  finally {
 			if (null != httpsConnection){
+				httpsConnection.getInputStream().close();
 				httpsConnection.disconnect();
 			}
 		}
@@ -242,8 +277,9 @@ public class CrawlerUtils {
 	 * @param rawUrl
 	 * @return
 	 * @throws MalformedURLException 
+	 * @throws UnsupportedEncodingException 
 	 */
-	public static URL filterURL(String rawUrl) throws MalformedURLException {
+	public static URL filterURL(String rawUrl) throws MalformedURLException, UnsupportedEncodingException {
 		if (rawUrl.isEmpty()){
 			return null;
 		}
@@ -268,6 +304,8 @@ public class CrawlerUtils {
 			// Remove trailing /
 			rawUrl = rawUrl.substring(0, rawUrl.length() - 1);
 		}
+		
+		rawUrl = URLDecoder.decode(rawUrl, CrawlerConstants.CHARSET);
 		
 		return new URL(rawUrl);
 		

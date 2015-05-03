@@ -32,8 +32,8 @@ public class FetchAndPopulateScript {
      */
     public static void main(String[] args) throws IOException {
         IndexTermDAO.setup("database");
-        // UrlIndexDAO.setup("database");
-        // PagerankDAO.setup("database");
+        UrlIndexDAO.setup("database");
+        PagerankDAO.setup("database");
 
         // fetchData();
 
@@ -41,7 +41,9 @@ public class FetchAndPopulateScript {
         // populateIndexTerm("S3DATA/indexer-output");
         // populatePagerank("S3DATA/pagerank");
         // populatePagerank("pagerank");
-        // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+        populateDocIDUrl("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/document_meta");
+        populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+        populatePagerank("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/pagerank");
         // populatePagerank("pagerank");
 
     }
@@ -96,8 +98,9 @@ public class FetchAndPopulateScript {
                 if (lastWord == null) {
                     IndexTermDAO.putIndexTerm(tokens[0]);
                 } else if (!tokens[0].equals(lastWord)) {
-                    if (Math.log((docNumber - freq + 0.5) / (freq + 0.5)) < 0)
-                        System.out.println(lastWord);
+                    // if (Math.log((docNumber - freq + 0.5) / (freq + 0.5)) <
+                    // 0)
+                    // System.out.println(lastWord);
                     IndexTermDAO.putIndexTerm(
                             lastWord,
                             Math.max(
@@ -155,7 +158,9 @@ public class FetchAndPopulateScript {
 
     private static void getFileNumberAndAvgWord() {
 
-        AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
+        AmazonDynamoDBClient client = AWSClientAdapters
+                .getDynamoClientFromLocalCredentials();
+        // AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
 
         System.out.println("Connecting to DynamoDB...");
         ScanResult result = null;

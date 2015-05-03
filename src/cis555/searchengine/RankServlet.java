@@ -1,6 +1,14 @@
 package cis555.searchengine;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -8,6 +16,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.amazonaws.util.json.JSONObject;
 
 import cis555.searchengine.utils.QueryTerm;
 import cis555.searchengine.utils.WeightedDocID;
@@ -68,7 +78,18 @@ public class RankServlet extends HttpServlet {
 
         pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:500px\">");
         pw.write("<div class=\"row\">");
-        pw.write("<div class=\"col-md-12\" style=\"height:500px;\">");
+        pw.write("<div class=\"col-md-12\">");
+        pw.write("<div class=\"panel panel-default\" style=\"\">");
+        pw.write("<div class=\"panel-heading\">Result From Wikipedia" + query
+                + "</div>");
+        pw.write("<div class=\"panel-body\" style=\"height:100px;overflow:scroll;\">");
+        pw.write(extractInfoFromWiki(query));
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("<div class=\"row\">");
+        pw.write("<div class=\"col-md-12\" style=\"height:400px;\">");
         pw.write("<table class=\"table table-striped table-hover table-bordered\">");
         pw.write("<thead>");
         pw.write("<tr>");
@@ -113,4 +134,34 @@ public class RankServlet extends HttpServlet {
         pw.write("</html>");
 
     }
+
+    private static String extractInfoFromWiki(String query) {
+        String url = "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles="
+                + URLEncoder.encode(query) + "&format=json&exintro=1";
+        System.out.println(url);
+        URLConnection conn;
+        try {
+            conn = new URL(url).openConnection();
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    conn.getInputStream()));
+            StringBuilder sb = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null)
+                sb.append(inputLine);
+            in.close();
+            JSONObject json = (JSONObject) ((JSONObject) new JSONObject(
+                    sb.toString()).get("query")).get("pages");
+            Iterator<String> iter = json.keys();
+            String key = null;
+            while (iter.hasNext()) {
+                key = iter.next();
+                break;
+            }
+            return ((JSONObject) json.get(key)).getString("extract");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
 }

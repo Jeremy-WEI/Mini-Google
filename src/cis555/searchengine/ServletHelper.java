@@ -36,13 +36,12 @@ public class ServletHelper {
         pw.write("<title>" + title + "</title>");
         pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
                 + contextPath + "/stylesheet/bootstrap.min.css\">");
-        System.out.println("contextpath: " + contextPath);
-        addAjax(pw,sc, contextPath);
+        addAjax(pw,sc);
         pw.write("</head>");
         pw.write("<body>");
     }
     
-    public static void addAjax(PrintWriter pw, ServletContext sc, String contextPath) {
+    public static void addAjax(PrintWriter pw, ServletContext sc) {
     	pw.write("<script src=\"http://code.jquery.com/jquery-1.7.js\" type=\"text/javascript\"></script>");
         pw.write("<script src=\"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js\" type=\"text/javascript\"></script>");
         pw.write("<link href=\"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css\" rel=\"stylesheet\" type=\"text/css\" />");
@@ -50,45 +49,11 @@ public class ServletHelper {
         pw.write(".ui-autocomplete {position: absolute; cursor: default; height: 200px; overflow-x: hidden;}");
         pw.write("</STYLE>");
         
-//        pw.write(new StringBuilder()
-//        .append("\n<script type=\"text/javascript\">")
-//            .append("\n$(document).ready(function() {")
-//                .append("\n$(\"input#query\").autocomplete({")
-//                    .append("\nwidth: 300,")
-//                    .append("\nmax: 10,")
-//                    .append("\ndelay: 100,")
-//                    .append("\nminLength: 1,")
-//                    .append("\nautoFocus: true,")
-//                    .append("\ncacheLength: 1,")
-//                    .append("\nscroll: true,")
-//                    .append("\nhighlight: false,")
-//                    .append("\nsource: function(request, response {")
-//                        .append("\n$.ajax({")
-//                            .append("\nurl: \"/JSON/AjaxRequest\",")
-//                            .append("\ndataType: \"json\",")
-//                                    .append("\ndata: request,")
-//                                    .append("\nsuccess: function( data, textStatus, jqXHR) {")
-//                                        .append("\nconsole.log( data);")
-//                                        .append("\nvar items = data;")
-//                                        .append("\nresponse(items);")
-//                                    .append("\n},")
-//                                    .append("\nerror: function(jqXHR, textStatus, errorThrown){")
-//                                        .append("\nconsole.log( textStatus);")
-//                                    .append("\n}")
-//                                .append("\n});")
-//                            .append("\n}")
-//                        .append("\n});")
-//                    .append("\n});")
-//            .append("\n</script>").toString());
-        
 //        try(BufferedReader br = new BufferedReader(new FileReader(new File(sc.getResource("/script/ajax_script.txt").getPath())))) {
         try(BufferedReader br = new BufferedReader(new FileReader(new File("webapps/searchengine/script/ajax_script.txt")))) {
-//        try(BufferedReader br = new BufferedReader(new InputStreamReader(sc.getResourceAsStream("webapps/searchengine/script/ajax_script.txt")))) {
-//        try(BufferedReader br = new BufferedReader(new InputStreamReader(new URL("http://ec2-52-5-242-152.compute-1.amazonaws.com:8080/searchengine/script/ajax_script.txt").openStream()))) {
 
         	String line = br.readLine();
             while (line != null) {
-            	System.out.println(line);
             	pw.write(line);
                 line = br.readLine();
             }

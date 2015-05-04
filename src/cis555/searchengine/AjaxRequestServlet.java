@@ -35,7 +35,7 @@ public class AjaxRequestServlet extends HttpServlet {
 			
 			List<String> suggestList = new ArrayList<String>();
 			String query = request.getParameter("term");
-			System.out.println("query: " + query);
+//			System.out.println("query: " + query);
 			
 			String[] words = query.trim().toLowerCase().split("\\s+");
 			int last = words.length - 1;
@@ -62,7 +62,7 @@ public class AjaxRequestServlet extends HttpServlet {
 			}
 	
 			String jsonText = JSONValue.toJSONString(suggestList);
-			System.out.println("suggestions: " + jsonText);
+//			System.out.println("suggestions: " + jsonText);
 		  
 			out.println(jsonText);
 		}

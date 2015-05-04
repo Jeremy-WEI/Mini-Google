@@ -1,13 +1,8 @@
 package cis555.searchengine;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -17,8 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import cis555.searchengine.utils.QueryTerm;
 import cis555.searchengine.utils.WeightedDocID;
-
-import com.amazonaws.util.json.JSONObject;
+import cis555.utils.FastTokenizer;
 
 /**
  * @author cis455
@@ -71,10 +65,11 @@ public class RankServlet extends HttpServlet {
 
         pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:600px\">");
         ServletHelper.writePanel(pw, "From Wikipedia: " + query,
-                extractInfoFromWiki(query), "panel-primary");
+                ServletHelper.extractInfoFromWiki(query), "panel-primary");
+        Set<String> words = getQueryWords(query, terms);
         for (int i = 0; i < filteredLst.size(); i++) {
             WeightedDocID w = filteredLst.get(i);
-            String preview = ServletHelper.getPreview(w);
+            String preview = ServletHelper.getPreview(w, words);
             ServletHelper.writePanel(
                     pw,
                     "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
@@ -100,35 +95,18 @@ public class RankServlet extends HttpServlet {
 
     }
 
-    private static String extractInfoFromWiki(String query) {
-        @SuppressWarnings("deprecation")
-        String url = "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles="
-                + URLEncoder.encode(query) + "&format=json&exintro=1";
-        //        System.out.println(url);
-        URLConnection conn;
-        try {
-            conn = new URL(url).openConnection();
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    conn.getInputStream()));
-            StringBuilder sb = new StringBuilder();
-            String inputLine;
-            while ((inputLine = in.readLine()) != null)
-                sb.append(inputLine);
-            in.close();
-            JSONObject json = (JSONObject) ((JSONObject) new JSONObject(
-                    sb.toString()).get("query")).get("pages");
-            @SuppressWarnings("unchecked")
-            Iterator<String> iter = json.keys();
-            String key = null;
-            while (iter.hasNext()) {
-                key = iter.next();
-                break;
-            }
-            return ((JSONObject) json.get(key)).getString("extract");
-        } catch (Exception e) {
-            // e.printStackTrace();
-            return "";
+    private static Set<String> getQueryWords(String query,
+            Set<QueryTerm> queryTerms) {
+        Set<String> set = new HashSet<String>();
+        FastTokenizer tokenizer = new FastTokenizer(query);
+        while (tokenizer.hasMoreTokens()) {
+            set.add(tokenizer.nextToken().toLowerCase());
         }
+        for (QueryTerm term : queryTerms) {
+            set.add(term.getWord());
+        }
+        System.out.println(set);
+        return set;
     }
 
 }

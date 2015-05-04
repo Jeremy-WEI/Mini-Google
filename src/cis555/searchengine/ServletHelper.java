@@ -1,8 +1,15 @@
 package cis555.searchengine;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.util.PDFTextStripper;
@@ -11,6 +18,8 @@ import org.jsoup.Jsoup;
 import cis555.searchengine.utils.DocIDContentInfo;
 import cis555.searchengine.utils.WeightedDocID;
 import cis555.utils.FastTokenizer;
+
+import com.amazonaws.util.json.JSONObject;
 
 public class ServletHelper {
     public static void prepareWrite(PrintWriter pw, String contextPath,
@@ -50,7 +59,7 @@ public class ServletHelper {
         pw.write("</div>");
     }
 
-    public static String getPreview(WeightedDocID w) {
+    public static String getPreview(WeightedDocID w, Set<String> words) {
         StringBuilder sb = new StringBuilder();
         DocIDContentInfo docIDContent = ContentDAO.getContentInfo(w.getDocID());
         try {
@@ -91,7 +100,20 @@ public class ServletHelper {
                 int index = 0;
                 while (tokenizer.hasMoreTokens()) {
                     if ((index >= start) && (index <= end)) {
-                        sb.append(tokenizer.nextToken());
+                        String word = tokenizer.nextToken().toLowerCase();
+                        boolean flag = false;
+                        for (String tmp : words) {
+                            if (tmp.length() > 1 && word.startsWith(tmp)) {
+                                flag = true;
+                                break;
+                            }
+                        }
+                        if (flag) {
+                            sb.append("<b>");
+                            sb.append(word);
+                            sb.append("</b>");
+                        } else
+                            sb.append(word);
                         sb.append(" ");
                     } else {
                         tokenizer.nextToken();
@@ -107,6 +129,37 @@ public class ServletHelper {
         if (sb.length() > 0)
             return "...... " + sb.toString() + " ......";
         return "No Preview is Available.";
+    }
+
+    public static String extractInfoFromWiki(String query) {
+        @SuppressWarnings("deprecation")
+        String url = "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles="
+                + URLEncoder.encode(query) + "&format=json&exintro=1";
+        // System.out.println(url);
+        URLConnection conn;
+        try {
+            conn = new URL(url).openConnection();
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    conn.getInputStream()));
+            StringBuilder sb = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null)
+                sb.append(inputLine);
+            in.close();
+            JSONObject json = (JSONObject) ((JSONObject) new JSONObject(
+                    sb.toString()).get("query")).get("pages");
+            @SuppressWarnings("unchecked")
+            Iterator<String> iter = json.keys();
+            String key = null;
+            while (iter.hasNext()) {
+                key = iter.next();
+                break;
+            }
+            return ((JSONObject) json.get(key)).getString("extract");
+        } catch (Exception e) {
+            // e.printStackTrace();
+            return "";
+        }
     }
 
 }

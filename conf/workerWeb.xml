@@ -24,7 +24,7 @@
          </init-param>
          <init-param>
            <param-name>master</param-name>
-           <param-value>52.0.182.32:8080</param-value>
+           <param-value>52.6.168.133:8080</param-value>
          </init-param>
          <load-on-startup>1</load-on-startup>
      </servlet>

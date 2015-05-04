@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -112,10 +113,14 @@ public class Utils {
      * @throws IOException
      */
     public static void zip(byte[] contents, String fileName) throws IOException {
+    	
         FileOutputStream fos = new FileOutputStream(fileName);
+        
         GZIPOutputStream gz = new GZIPOutputStream(fos);
+        
         gz.write(contents);
         gz.close();
+        
     }
 
     /**

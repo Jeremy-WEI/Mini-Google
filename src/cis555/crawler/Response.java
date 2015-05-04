@@ -163,7 +163,7 @@ public class Response {
 			if (!withinTimeLimit){
 				break;
 			}
-			timer = new Date();
+
 			int bytes = in.read(buffer);
 			if (-1 == bytes){
 				break;

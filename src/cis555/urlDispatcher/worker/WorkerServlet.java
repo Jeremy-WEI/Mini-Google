@@ -164,6 +164,9 @@ public class WorkerServlet extends HttpServlet {
 				break;
 				
 			case DispatcherConstants.ADD_URLS_URL:	
+				if (!this.isCrawling){
+					startCrawler(request);
+				}
 				addNewUrls(request);
 				break;
 			default:

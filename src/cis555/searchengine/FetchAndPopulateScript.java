@@ -9,9 +9,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 
-import cis555.aws.utils.AWSClientAdapters;
 import cis555.searchengine.utils.DocHitEntity;
+import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
@@ -31,19 +33,18 @@ public class FetchAndPopulateScript {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        IndexTermDAO.setup("database");
-        UrlIndexDAO.setup("database");
-        PagerankDAO.setup("database");
-
+        // IndexTermDAO.setup("database");
+        // UrlIndexDAO.setup("database");
+        // PagerankDAO.setup("database");
+        ContentDAO.setup("datatbase");
         // fetchData();
 
         // populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
         // populateIndexTerm("S3DATA/indexer-output");
         // populatePagerank("S3DATA/pagerank");
         // populatePagerank("pagerank");
-        populateDocIDUrl("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/document_meta");
-        populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
-        populatePagerank("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/pagerank");
+        // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+        populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
         // populatePagerank("pagerank");
 
     }
@@ -72,6 +73,34 @@ public class FetchAndPopulateScript {
                 UrlIndexDAO.putUrlInfo(tokens[0], tokens[1]);
             }
             br.close();
+            System.out.println("Finish Processing " + f.getName() + "...");
+        }
+        System.out.println("Finish Building DocID-URL Database...");
+    }
+
+    public static void populateDocIDContent(String dirName) throws IOException {
+        System.out.println("Start Building DocID-Content Database...");
+
+        File dir = new File(dirName);
+        for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
+            System.out.println("Start Processing " + f.getName() + "...");
+            try {
+                String fileName = f.getName();
+                String docID = fileName.substring(0, fileName.indexOf('.'));
+                String type = fileName.substring(fileName.indexOf('.') + 1,
+                        fileName.lastIndexOf('.'));
+                byte[] rawContent = Utils.unzip(f);
+                byte[] content = new byte[rawContent.length
+                        - CrawlerConstants.MAX_URL_LENGTH * 2];
+                System.arraycopy(rawContent,
+                        CrawlerConstants.MAX_URL_LENGTH * 2, content, 0,
+                        rawContent.length - CrawlerConstants.MAX_URL_LENGTH * 2);
+                ContentDAO.putPagerank(docID, type, content);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             System.out.println("Finish Processing " + f.getName() + "...");
         }
         System.out.println("Finish Building DocID-URL Database...");
@@ -158,8 +187,11 @@ public class FetchAndPopulateScript {
 
     private static void getFileNumberAndAvgWord() {
 
-        AmazonDynamoDBClient client = AWSClientAdapters
-                .getDynamoClientFromLocalCredentials();
+        String ACCESS_KEY = "AKIAIHWLNGX7VTENATXQ";
+        String SECRET_KEY = "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";
+        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
+                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
+
         // AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
 
         System.out.println("Connecting to DynamoDB...");

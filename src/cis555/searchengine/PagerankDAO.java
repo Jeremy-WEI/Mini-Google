@@ -2,7 +2,7 @@ package cis555.searchengine;
 
 import java.io.File;
 
-import cis555.utils.DocIdPagerankInfo;
+import cis555.searchengine.utils.DocIdPagerankInfo;
 
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;

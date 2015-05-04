@@ -39,7 +39,7 @@ public class RankServlet extends HttpServlet {
         List<WeightedDocID> lst = new ArrayList<WeightedDocID>();
         QueryProcessor.preparePhase(terms, lst);
         QueryProcessor.posCheckPhase(terms, lst);
-        QueryProcessor.pageRankPhase(lst);
+        // QueryProcessor.pageRankPhase(lst);
         List<WeightedDocID> filteredLst = QueryProcessor
                 .filterPhase(lst, 0, 15);
         // List<String> URLs = QueryProcessor.getURLs(lst4);
@@ -74,14 +74,13 @@ public class RankServlet extends HttpServlet {
                 extractInfoFromWiki(query), "panel-primary");
         for (int i = 0; i < filteredLst.size(); i++) {
             WeightedDocID w = filteredLst.get(i);
+            String preview = ServletHelper.getPreview(w);
             ServletHelper.writePanel(
                     pw,
                     "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
                             + "\" target=\"iFrame\">"
                             + UrlIndexDAO.getUrl(w.getDocID()) + "</a>",
-                    "StartIndex: " + w.getPreviewStartPos() + ", EndIndex: "
-                            + w.getPreviewEndPos(),
-                    "Weight: " + String.format("%.3f", w.getWeight()),
+                    preview, "Weight: " + String.format("%.3f", w.getWeight()),
                     PANEL_CLASSES[i % 4]);
         }
 
@@ -105,7 +104,7 @@ public class RankServlet extends HttpServlet {
         @SuppressWarnings("deprecation")
         String url = "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles="
                 + URLEncoder.encode(query) + "&format=json&exintro=1";
-        System.out.println(url);
+        //        System.out.println(url);
         URLConnection conn;
         try {
             conn = new URL(url).openConnection();
@@ -127,7 +126,7 @@ public class RankServlet extends HttpServlet {
             }
             return ((JSONObject) json.get(key)).getString("extract");
         } catch (Exception e) {
-            e.printStackTrace();
+            // e.printStackTrace();
             return "";
         }
     }

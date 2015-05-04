@@ -18,7 +18,8 @@ public class MyServletContextListener implements ServletContextListener {
         String path = "/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/database";
         IndexTermDAO.setup(path);
         UrlIndexDAO.setup(path);
-        PagerankDAO.setup(path);
+        // PagerankDAO.setup(path);
+        ContentDAO.setup(path);
 
     }
 

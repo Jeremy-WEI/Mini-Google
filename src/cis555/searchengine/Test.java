@@ -28,6 +28,7 @@ public class Test {
             while ((inputLine = in.readLine()) != null)
                 sb.append(inputLine);
             in.close();
+            System.out.println(sb);
             JSONObject json = (JSONObject) ((JSONObject) new JSONObject(
                     sb.toString()).get("query")).get("pages");
             Iterator<String> iter = json.keys();
@@ -57,7 +58,7 @@ public class Test {
         // System.out.println(link.attr("abs:href"));
         // }
 
-        System.out.println(extractInfoFromWiki("Computer"));
+        System.out.println(extractInfoFromWiki("Computer Science"));
         // System.out.println(URLEncoder.encode(s,
         // enc).encode("United States"));
         // JSONObject json = new JSONObject(

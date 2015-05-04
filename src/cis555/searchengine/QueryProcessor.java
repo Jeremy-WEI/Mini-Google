@@ -114,8 +114,8 @@ public class QueryProcessor {
         int noOfWords = 0;
         for (QueryTerm term : queryTerms) {
             initialWordCount.put(term.getWord(), term.getFreq());
-            tolerance = Math.max(2 * tolerance,
-                    Collections.max(term.getPositions()) + 1);
+            tolerance = Math.max(tolerance,
+                    2 * Collections.max(term.getPositions()) + 1);
             noOfWords += term.getFreq();
         }
         for (WeightedDocID w : weightedDocIDList) {
@@ -157,7 +157,7 @@ public class QueryProcessor {
                     w.setPreviewStartPos(Math.max(0, wordStateMachine.get(0)
                             .getPos() - 8));
                     w.setPreviewEndPos(Math.min(w.getDocHits().get(0)
-                            .getWordCount(), position + 8));
+                            .getWordCount() - 1, position + 8));
                 }
                 hitNumber = Math.max(noOfWords - remainingHit, hitNumber);
             }

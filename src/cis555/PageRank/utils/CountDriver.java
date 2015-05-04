@@ -42,17 +42,20 @@ public class CountDriver {
 	
 	// the below needs to be fixed, it is old code
 	
-	boolean aws = false;
-	if (args[0].equals("1")) {
-	    aws = true;
-	}
+//	boolean aws = false;
+//	if (args[0].equals("1")) {
+//	    aws = true;
+//	}
+//	
+//	String crawlInput = "pr/crawlinput"; // from crawl (rawest input)
+//	String output = "pr/counted";
+//	if (aws) {
+//	    crawlInput = "s3://wcbucket555/crawlinput";
+//	    output = "s3://wcbucket555/output";
+//	}
 	
-	String crawlInput = "pr/crawlinput"; // from crawl (rawest input)
-	String output = "pr/counted";
-	if (aws) {
-	    crawlInput = "s3://wcbucket555/crawlinput";
-	    output = "s3://wcbucket555/output";
-	}
+	String crawlInput = args[0];
+	String output = args[1];
 	
 	cd.initialize(crawlInput, output);
 

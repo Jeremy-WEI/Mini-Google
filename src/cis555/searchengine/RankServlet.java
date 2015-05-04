@@ -1,18 +1,18 @@
 package cis555.searchengine;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import cis555.searchengine.utils.DocHitEntity;
+import cis555.searchengine.utils.QueryTerm;
+import cis555.searchengine.utils.WeightedDocID;
+import cis555.utils.FastTokenizer;
 
 /**
  * @author cis455
@@ -21,108 +21,92 @@ import cis555.searchengine.utils.DocHitEntity;
 @SuppressWarnings("serial")
 public class RankServlet extends HttpServlet {
 
-    public void init() throws ServletException {
-    }
+    private static final String[] PANEL_CLASSES = new String[] {
+            "panel-success", "panel-info", "panel-warning", "panel-danger" };
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws java.io.IOException {
-        ServletContext context = getServletContext();
+        // ServletContext context = getServletContext();
 
-        String[] words = request.getParameter("query").split("\\s*");
-        Set<DocHitEntity> docHitList = new HashSet<DocHitEntity>();
-        List<String> urlList = new ArrayList<String>();
+        String query = request.getParameter("query");
+        Set<QueryTerm> terms = QueryProcessor.parseQuery(query);
+        List<WeightedDocID> lst = new ArrayList<WeightedDocID>();
+        QueryProcessor.preparePhase(terms, lst);
+        QueryProcessor.posCheckPhase(terms, lst);
+        // QueryProcessor.pageRankPhase(lst);
+        List<WeightedDocID> filteredLst = QueryProcessor
+                .filterPhase(lst, 0, 15);
+        // List<String> URLs = QueryProcessor.getURLs(lst4);
 
-        for (int i = 0; i < words.length; i++) {
-            docHitList.addAll(IndexTermDAO
-                    .getDocHitEntities(words[i]));
+        PrintWriter pw = response.getWriter();
+
+        ServletHelper.prepareWrite(pw, request.getContextPath(),
+                "CIS555 Search Engine", getServletContext());
+
+        pw.write("<div class=\"container\">");
+
+        pw.write("<div style=\"margin:20px 100px 20px 100px;\">");
+        pw.write("<form action=\"search\" method=\"GET\" class=\"form-horizontal col-md-12\">");
+        pw.write("<div class=\"form-group\">");
+        pw.write("<div class=\"row\">");
+        pw.write("<div class=\"col-md-10\">");
+        pw.write("<input name=\"query\" id=\"query\" type=\"text\" placeholder=\"Search...\" class=\"form-control\" value=\""
+                + query + "\">");
+        pw.write("</div>");
+        pw.write("<div align=\"right\" class=\"col-md-2 form-group\">");
+        pw.write("<button type=\"submit\" class=\"btn btn-info btn-block\">Search</button>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</form>");
+        pw.write("</div>");
+
+        pw.write("<div class=\"row\" style=\"height:500px;\">");
+
+        pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:600px\">");
+        ServletHelper.writePanel(pw, "From Wikipedia: " + query,
+                ServletHelper.extractInfoFromWiki(query), "panel-primary");
+        Set<String> words = getQueryWords(query, terms);
+        for (int i = 0; i < filteredLst.size(); i++) {
+            WeightedDocID w = filteredLst.get(i);
+            String preview = ServletHelper.getPreview(w, words);
+            ServletHelper.writePanel(
+                    pw,
+                    "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
+                            + "\" target=\"iFrame\">"
+                            + UrlIndexDAO.getUrl(w.getDocID()) + "</a>",
+                    preview, "Weight: " + String.format("%.3f", w.getWeight()),
+                    PANEL_CLASSES[i % 4]);
         }
 
-        // for (DocHitEntity docHit : docHitList) {
-        // System.out.println(db.getUrl(docHit.getDocID()));
-        // }
-        // Set<DocHitEntity> lst1 = db.getDocHit("comput");
-        // Set<DocHitEntity> lst2 = db.getDocHit("scienc");
-        // Set<DocHitEntity> lst3 = db.getDocHit("donor");
+        pw.write("</div>");
 
-        for (DocHitEntity docHit : docHitList) {
-            urlList.add(IndexTermDAO.getUrl(docHit.getDocID()));
-            System.out.println(IndexTermDAO.getUrl(docHit
-                    .getDocID()));
-        }
-        // lst1.retainAll(lst2);
-        // System.out.println(lst1);
-        // for (DocHitEntity docHit : lst1) {
-        // System.out.println(db.getUrl(docHit.getDocID()));
-        // }
+        pw.write("<div class=\"col-md-6\" style=\"height:600px;\">");
+        pw.write("<iframe name=\"iFrame\""
+                + (filteredLst.size() > 0 ? "src=\""
+                        + UrlIndexDAO.getUrl(filteredLst.get(0).getDocID())
+                        + "\"" : "")
+                + " style=\"overflow:hidden;overflow-x:hidden;overflow-y:hidden;height:600px;width:100%;position:absolute;top:0px;left:0px;right:0px;bottom:0px\"></iframe>\"");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
 
-        context.setAttribute("searchResult", urlList);
-        response.sendRedirect(request.getContextPath());
+        ServletHelper.finishWrite(pw);
 
     }
 
-    public Set<Long> getDocIDsFromWord(String word) {
-        Set<Long> docIDList = new HashSet<Long>();
-        Random r = new Random();
-        for (int i = 0; i < 100; i++) {
-            docIDList.add((long) r.nextInt(1000));
+    private static Set<String> getQueryWords(String query,
+            Set<QueryTerm> queryTerms) {
+        Set<String> set = new HashSet<String>();
+        FastTokenizer tokenizer = new FastTokenizer(query);
+        while (tokenizer.hasMoreTokens()) {
+            set.add(tokenizer.nextToken().toLowerCase());
         }
-
-        return docIDList;
-
-        // TableKeysAndAttributes invertedIndexTable = new
-        // TableKeysAndAttributes("inverted-index");
-        // invertedIndexTable.addPrimaryKey(new PrimaryKey("word", word));
-        // Map<String, TableKeysAndAttributes> requestItems = new
-        // HashMap<String, TableKeysAndAttributes>();
-        // requestItems.put("inverted-index", invertedIndexTable);
-        //
-        // try {
-        // BatchGetItemOutcome outcome =
-        // dynamoDB.batchGetItem(invertedIndexTable);
-        // List<Item> items = outcome.getTableItems().get("inverted-index");
-        //
-        // if (items.size() == 0){
-        // // logger.error("No items returned");
-        // return null;
-        // }
-        //
-        // Set<Long> docIDList = new HashSet<Long>();
-        // for (Item item: items) {
-        // docIDList.add(item.getLong("docID"));
-        // }
-        // return docIDList;
-        //
-        // } catch (AmazonClientException e){
-        // // logger.error(e.getMessage());
-        // return null;
-        // }
+        for (QueryTerm term : queryTerms) {
+            set.add(term.getWord());
+        }
+        System.out.println(set);
+        return set;
     }
 
-    public Double getPageRankFromDocId(long docID) {
-        return 1.0;
-        // TableKeysAndAttributes pageRankTable = new
-        // TableKeysAndAttributes("pagerank");
-        // pageRankTable.addHashOnlyPrimaryKey("docID", docID);
-        // Map<String, TableKeysAndAttributes> requestItems = new
-        // HashMap<String, TableKeysAndAttributes>();
-        // requestItems.put("pagerankx", pageRankTable);
-        //
-        // try {
-        // BatchGetItemOutcome outcome = dynamoDB.batchGetItem(pageRankTable);
-        // List<Item> items = outcome.getTableItems().get("pagerank");
-        //
-        // if (items.size() == 0){
-        // // logger.error("No items returned");
-        // return null;
-        // }
-        // // We assume that there is only one item
-        //
-        // Item item = items.get(0);
-        // return item.getDouble("pagerank");
-        //
-        // } catch (AmazonClientException e){
-        // // logger.error(e.getMessage());
-        // return null;
-        // }
-    }
 }

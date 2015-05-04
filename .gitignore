@@ -15,5 +15,17 @@ hs_err_pid*
 
 /indexer_test/*
 /test/*
+/indexer/*
+/database/*
+/document_meta/*
+/log/*
+/pagerank/*
+searchengine.war
+.settings/*
+/WebContent/*
+/zipdata/*
 
+
+.classpath
+.project
 .DS_Store

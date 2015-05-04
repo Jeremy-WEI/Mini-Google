@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
+import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.persist.EntityStore;
@@ -56,7 +57,7 @@ public class DBWrapper {
 		if (readOnly){
 			envConfig = envConfig.setReadOnly(readOnly);
 		} 
-		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, CrawlerConstants.LOCK_N_LOCK_TABLES);
+//		envConfig.setConfigParam(EnvironmentConfig.LOCK_N_LOCK_TABLES, CrawlerConstants.LOCK_N_LOCK_TABLES);
 		envConfig.setLockTimeout(CrawlerConstants.LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
 		envConfig.setTransactional(true);
 		envConfig.setAllowCreate(true);
@@ -114,9 +115,13 @@ public class DBWrapper {
 	 */
 	public static void shutdown(){
 		if (isRunning){
-			store.close();
-			myEnv.close();
-			isRunning = false;
+			try {
+				store.close();
+				myEnv.close();
+				isRunning = false;				
+			} catch (DatabaseException dbe){
+				Utils.logStackTrace(dbe);
+			}
 		}
 	}
 	

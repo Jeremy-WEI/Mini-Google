@@ -1,4 +1,4 @@
-package com.primacy.hadoop;
+package cis555.indexer.mapreduce;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,7 +14,6 @@ import cis555.indexer.Indexer;
 import cis555.utils.Utils;
 
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
@@ -25,16 +24,20 @@ import com.amazonaws.services.dynamodbv2.document.Table;
  *              value --> filecontent(read in as BytesWritable)
  * 
  */
-public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
+public class IndexerMapper extends
+        Mapper<URLTypeWritable, BytesWritable, Text, Text> {
 
-    protected void map(Text key, BytesWritable value, Context context)
+    protected void map(URLTypeWritable key, BytesWritable value, Context context)
             throws IOException, InterruptedException {
 
         // System.out.println("Mapper Job Starting...");
-        String fileName = key.toString();
-        int index = fileName.lastIndexOf('.');
-        String url = fileName.substring(0, index);
-        String type = fileName.substring(index + 1);
+        // String fileName = key.toString();
+        // int index = fileName.lastIndexOf('.');
+        // String url = fileName.substring(0, index);
+        // String type = fileName.substring(index + 1);
+        String url = key.url;
+        String type = key.type;
+        // System.out.println("type" + type + "url: " + url);
         String docID = Utils.hashUrlToHexStringArray(url);
         Indexer indexer = Indexer.getInstance(
                 new ByteArrayInputStream(value.getBytes()), url, docID,
@@ -56,8 +59,8 @@ public class IndexerMapper extends Mapper<Text, BytesWritable, Text, Text> {
                 context.write(word, val);
             }
         }
-        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
-                new InstanceProfileCredentialsProvider());
+        AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
+
         DynamoDB dynamoDB = new DynamoDB(client);
         Table table = dynamoDB.getTable("DocumentWordCount");
         Item item = new Item().withPrimaryKey("docID", docID).withNumber(

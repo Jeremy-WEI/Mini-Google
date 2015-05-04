@@ -3,6 +3,8 @@
  */
 package cis555.searchengine;
 
+import java.util.TreeSet;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -14,15 +16,21 @@ import javax.servlet.ServletContextListener;
 public class MyServletContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent contextEvent) {
-        ServletContext context = contextEvent.getServletContext();
+    	ServletContext context = contextEvent.getServletContext();
 
-        IndexTermDAO.setup("database");
-        UrlIndexDAO.setup("database");
+        String path = "database";
+//        String path = "../../inputdata/database";
+        IndexTermDAO.setup(path);
+        UrlIndexDAO.setup(path);
+        PagerankDAO.setup(path);
+        ContentDAO.setup(path);
+        
+        context.setAttribute("wordSet", IndexTermDAO.getIndexTerms());
 
     }
 
-	@Override
-	public void contextDestroyed(ServletContextEvent arg0) {
-		
-	}
+    @Override
+    public void contextDestroyed(ServletContextEvent arg0) {
+
+    }
 }

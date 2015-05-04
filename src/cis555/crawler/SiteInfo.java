@@ -72,9 +72,16 @@ public class SiteInfo {
 			} else if (line.toLowerCase().contains("crawl-delay")){
 				String crawlDelay = extractValueFromKeyValuePair(line)[1];
 				if (crawlDelay.matches("\\d+")){
-					int delay = Integer.parseInt(crawlDelay);
-					if (null != userAgent){
-						addCrawlDelay(userAgent, delay);
+					try {
+						int delay = Integer.parseInt(crawlDelay);
+						if (null != userAgent){
+							addCrawlDelay(userAgent, delay);
+						}						
+					} catch (NumberFormatException e){
+						int delay = Integer.MAX_VALUE;
+						if (null != userAgent){
+							addCrawlDelay(userAgent, delay);
+						}												
 					}
 				}
 			}	

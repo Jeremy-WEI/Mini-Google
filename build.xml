@@ -31,13 +31,14 @@
         <delete dir="${build.target.dir}"/>
       <delete dir="${classes.dir}"/>
       <delete file="transferer.jar"/>
+        <delete file="alexa.jar"/>
       <delete file="master.war"/>
       <delete file="worker.war"/>
     </target>
   
     <target name="compile-database" description="Compiles the local database">
         <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/database/*.java,utils/*.java,**/urlDispatcher/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -50,7 +51,7 @@
     
     <target name="compile-transferer" depends="compile-database" description="Compiles the EC2 - S3 and Dynamo transferer">
         <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/contentTransferer/*.java,*utils/*.java,**/urlDispatcher/utils/*.java,**/aws/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -62,7 +63,18 @@
   
     <target name="compile-crawler" depends="compile-database" description="Compiles the crawler">
         <mkdir dir="${classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,**/utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,utils/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+            <classpath>
+                <fileset dir="${inputlib.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
+	
+    <target name="compile-alexa" depends="compile-crawler,compile-database" description="Compiles the Alexa ranking generator">
+        <mkdir dir="${classes.dir}"/>
+        <javac target="1.7" srcdir="src/cis555" destdir="${classes.dir}" includes="**/crawler/*.java,utils/*.java,**/pingAlexa/*.java" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -73,7 +85,7 @@
   
     <target name="compile-dispatcherMaster" description="Compiles the dispatcherMaster">
       <mkdir dir="${master_web-inf.classes.dir}"/>
-        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="**/utils/*.java,**/urlDispatcher/utils/*.java,**/urlDispatcher/master/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
+        <javac target="1.7" srcdir="src/cis555" destdir="${master_web-inf.classes.dir}" includes="utils/*.java,**/urlDispatcher/utils/*.java,**/urlDispatcher/master/*.java"  debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
                 <fileset dir="${inputlib.dir}">
                     <include name="*.jar"/>
@@ -164,8 +176,31 @@
         </jar>
     </target>
 
+    <target name="alexa-jar" depends="compile-alexa" description="Makes the JAR file for the alexa ranker">
+        <delete file="alexa.jar"/>
+        <jar destfile="alexa.jar" update="true">
+          <zipgroupfileset dir="${inputlib.dir}" includes="je-6.2.31.jar,log4j-1.2.9.jar,guava-18.0.jar"/>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+          <fileset dir="src">
+            <include name="log4j.properties"/>
+          </fileset>
+          <fileset dir="${basedir}" includes="log/**">
+            <include name="*.log"/>
+          </fileset>
+          <fileset dir="${basedir}" includes="properties/**">
+            <include name="settings.properties"/>
+          </fileset>
+          <manifest>
+            <attribute name="DependencyFinder" value="main"/>
+            <attribute name="Main-Class" value="cis555.pingAlexa.PingAlexa"/>
+          </manifest>
+        </jar>
+    </target>
+	
   
-    <target name="build" depends="clean,compile-dispatcherMaster-war, compile-dispatcherWorker-war,transferer-jar,pack">
+    <target name="build" depends="clean,compile-dispatcherMaster-war, compile-dispatcherWorker-war,transferer-jar,alexa-jar,pack">
     </target>
   
   
@@ -174,7 +209,7 @@
   
     <target name="pack" description="Create Crawler Pack">
       <zip destfile="for_ec2.zip">
-        <zipfileset dir="${build.dir}" includes="log/,properties/,master.war, worker.war, transferer.jar" excludes="log/*.log"/>
+        <zipfileset dir="${build.dir}" includes="log/,properties/,master.war, worker.war,ec2_setup_scripts/" excludes="log/*.log"/>
       </zip>
     </target>
 

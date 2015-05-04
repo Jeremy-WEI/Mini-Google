@@ -1,4 +1,4 @@
-package com.primacy.hadoop;
+package cis555.indexer.mapreduce;
 
 import java.io.IOException;
 
@@ -29,6 +29,7 @@ public class WholeFileRecordReader extends RecordReader<Text, BytesWritable> {
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
+        
         this.split = (FileSplit) split;
         String fileName = this.split.getPath().getName();
         // this.key = new Text(fileName);

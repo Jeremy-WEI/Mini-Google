@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -12,6 +13,7 @@ import cis555.database.CrawlerDao;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.DBWrapper;
 import cis555.utils.DocumentMeta;
+import cis555.utils.FromToUrls;
 import cis555.utils.Utils;
 
 import com.sleepycat.persist.EntityStore;
@@ -29,8 +31,8 @@ public class ContentTransferer {
 	
 	public static void main(String[] args){
 		ContentTransferer transferer = new ContentTransferer();
-		transferer.extractDocumentMeta();
-		transferer.copyToS3();
+		transferer.extractDataFromdDatabase();
+//		transferer.copyToS3();
 	}
 
 	private void copyToS3(){
@@ -38,9 +40,12 @@ public class ContentTransferer {
 		populateS3.populateS3();
 	}
 	
-	private void extractDocumentMeta(){
+	private void extractDataFromdDatabase(){
 		CrawlerDao dao = initialiseDb();
+		logger.info(CLASSNAME + " extracting document meta");
 		saveDocumentMetaToDisk(dao);
+		logger.info(CLASSNAME + " extracting urls");
+		saveFromToURLsToDisk(dao);
 	}
 	
 	/**
@@ -58,17 +63,60 @@ public class ContentTransferer {
 	private void saveDocumentMetaToDisk(CrawlerDao dao){
 		List<DocumentMeta> documentMeta = dao.getAllDocumentMetaObjects();
 		String fileName = CrawlerConstants.DOCUMENT_META_STORAGE_FILENAME;
-		Utils.createDirectory(CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY);
-		File urlStorageFile = new File(CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY + "/" + fileName);
+		String directoryName = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.DOCUMENT_META_STORAGE_DIRECTORY;
+		Utils.createDirectory(directoryName);
+		File urlStorageFile = new File(directoryName + "/" + new Date().getTime() + "_" + fileName);
 		BufferedWriter writer = null;
 		try {
 			if (!urlStorageFile.exists()){
 				urlStorageFile.createNewFile();
 			}
 			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
-			if (documentMeta.size() > 0){
-				for (DocumentMeta document : documentMeta){
-					writer.write(document.getDocID() + '\t' + document.getUrl() + '\t' + document.isCrawled() + "\t" + document.getLastCrawledDate());
+			for (DocumentMeta document : documentMeta){
+				writer.write(document.getDocID() + '\t' + document.getUrl() + '\t' + document.isCrawled() + "\t" + document.getLastCrawledDate());
+				writer.write("\n");
+			}
+			
+		} catch (IOException e){
+			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
+		} finally {
+			if (null != writer){
+				try {
+					writer.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+
+	}
+	
+	
+	/**
+	 * Extract all from to url objects from the database and save to flat file
+	 * @param dao
+	 */
+	private void saveFromToURLsToDisk(CrawlerDao dao){
+		List<FromToUrls> fromToUrls = dao.getAllFromToDocuments();
+		logger.info(CLASSNAME + " expecting " + fromToUrls.size() + " entries");
+		String fileName = CrawlerConstants.URL_STORAGE_FILENAME;
+		String directoryName = CrawlerConstants.DB_DIRECTORY + CrawlerConstants.URL_STORAGE_DIRECTORY;
+		Utils.createDirectory(directoryName);
+		File urlStorageFile = new File(directoryName + "/" + new Date().getTime() + "_" + fileName);
+		BufferedWriter writer = null;
+		try {
+			if (!urlStorageFile.exists()){
+				urlStorageFile.createNewFile();
+			}
+			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
+			if (fromToUrls.size() > 0){
+				for (FromToUrls urls : fromToUrls){
+					writer.write(urls.getFromUrl() + "\t");
+					List<String> toUrls = urls.getToURLs();
+					for (String toUrl : toUrls){
+						writer.write(toUrl + ";");
+					}
 					writer.write("\n");
 				}
 			}
@@ -87,43 +135,4 @@ public class ContentTransferer {
 		}
 
 	}
-	
-//	private void downloadFromS3(){
-//		S3Adapter adapter = new S3Adapter();
-//		File dir = new File("log");
-//		adapter.downloadDirectory(dir, AWSConstants.DOCUMENT_BUCKET);
-//	}
-	
-//	private void testDynamo(){
-//		DynamoDao adapter = new DynamoDao();
-//		DocumentMeta c1 = new DocumentMeta("hello1", 1, new Date(), true);
-//		DocumentMeta c2 = new DocumentMeta("hello2", 2, new Date(), false);
-//		DocumentMeta c3 = new DocumentMeta("hello3", 3, new Date(), true);
-//		List<DocumentMeta> documents = new ArrayList<DocumentMeta>();
-//		documents.add(c1);
-//		documents.add(c2);
-//		documents.add(c3);
-//		
-//		
-//		try {
-//
-//			adapter.batchSaveDocumentMeta(documents);	
-//			adapter.batchGetDocumentMeta();
-//		} catch (Exception e){
-//			e.printStackTrace();
-//			System.exit(1);
-//		}
-////		List<String> urls = adapter.getUrlFromDocIDs(1, 2, 3);
-////		for (String url : urls){
-////			logger.info("URL: " + url);
-////		}
-////		adapter.batchGetCrawledDocuments();
-//	}
-//	
-//	private void testS3(){
-//		S3Adapter adapter = new S3Adapter();
-//		File storageDirectory = new File(CrawlerConstants.STORAGE_DIRECTORY);
-//		System.out.println(storageDirectory.getAbsolutePath());
-//		adapter.uploadDirectory(storageDirectory);
-//	}
 }

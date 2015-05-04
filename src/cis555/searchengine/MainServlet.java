@@ -20,27 +20,34 @@ public class MainServlet extends HttpServlet {
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws java.io.IOException {
+        PrintWriter pw = response.getWriter();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("<!DOCTYPE html>").append("<html>")
+        ServletHelper.prepareWrite(pw, request.getContextPath(),
+                "CIS555 Search Engine", getServletContext());
 
-        .append("<head>").append("<div>");
+        pw.write("<div class=\"container\">");
 
-        sb.append("<form action=\"search\" method=\"get\">")
-                .append("<input type=\"text\" name=\"query\">")
-                .append("</form> ").append("<br>");
+        pw.write("<div style=\"margin: 100px;\">");
+        pw.write("<form action=\"search\" method=\"GET\" class=\"form-horizontal col-md-12\">");
+        pw.write("<div class=\"form-group\">");
+        pw.write("<div class=\"row\">");
+        pw.write("<div class=\"col-md-10\">");
+        pw.write("<input name=\"query\" id=\"query\" type=\"text\" placeholder=\"Search...\" class=\"form-control\">");
+        pw.write("</div>");
+        pw.write("<div align=\"right\" class=\"col-md-2 form-group\">");
+        pw.write("<button type=\"submit\" class=\"btn btn-info btn-block\">Search</button>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</form>");
+        pw.write("</div>");
 
-        load_result(sb);
+        pw.write("</div>");
 
-        sb.append("</div></body></html>");
-        response.setContentType("text/html;charset=UTF-8");
-
-        PrintWriter out = response.getWriter();
-        out.println(sb);
-
+        ServletHelper.finishWrite(pw);
     }
 
-    void load_result(StringBuilder sb) {
+    void loadResult(StringBuilder sb) {
         ServletContext context = getServletContext();
 
         @SuppressWarnings("unchecked")
@@ -48,12 +55,16 @@ public class MainServlet extends HttpServlet {
                 .getAttribute("searchResult");
 
         if (docList != null) {
-            sb.append("<p><b><font size =\"5\">Search Result</font></b></p>");
-            for (String docID : docList) {
-                System.out.println("docID" + docID);
-                sb.append(String.format("<p>%s</p>", docID));
+            sb.append("<p><b><font size =\"5\">Search Result</font></b></p>")
+                    .append("<ul style=\"list-style-type:disc\">");
+
+            for (String url : docList) {
+                sb.append(
+                        String.format("<li><a href=\"%s\">%s</a></li>", url,
+                                url)).append("<br />");
             }
 
+            sb.append("</ul>");
             context.setAttribute("searchResult", null);
         }
 

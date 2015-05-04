@@ -9,7 +9,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 
+import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
+import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -31,33 +34,75 @@ public class FetchAndPopulateScript {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        IndexTermDAO.setup("database");
-        UrlIndexDAO.setup("database");
+         IndexTermDAO.setup("database");
+         UrlIndexDAO.setup("database");
+         PagerankDAO.setup("database");
+        ContentDAO.setup("database");
+//         fetchData();
 
-        // fetchData();
-
-        populateDocIDUrl("document_meta.txt");
-        populateIndexTerm("indexer");
+         populateDocIDUrl("S3DATA/documentmeta");
+         populateIndexTerm("S3DATA/indexer-output");
+         populatePagerank("S3DATA/wcbucket555");
+         populateDocIDContent("S3DATA/cis555crawleddata");
+        // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+//        populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
 
     }
 
-    public static void populateDocIDUrl(String fileName) throws IOException {
+    public static void populateDocIDUrl(String dirName) throws IOException {
         System.out.println("Start Building DocID-URL Database...");
-        BufferedReader br = new BufferedReader(new FileReader(fileName));
-        String line = null;
 
-        while ((line = br.readLine()) != null) {
-            String[] tokens = line.split("\\s+");
-            if (tokens.length < 2)
+        File dir = new File(dirName);
+        for (File f : dir.listFiles()) {
+            if (f.isHidden())
                 continue;
-            if (tokens[0].length() != 32)
-                continue;
-            if (tokens[1].length() < '7')
-                continue;
-            UrlIndexDAO.putUrlInfo(tokens[0], tokens[1]);
+            System.out.println("Start Processing " + f.getName() + "...");
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0)
+                    continue;
+                String[] tokens = line.split("\\s+");
+                if (tokens.length < 2)
+                    continue;
+                if (tokens[0].length() != 32)
+                    continue;
+                if (tokens[1].length() < '7')
+                    continue;
+                UrlIndexDAO.putUrlInfo(tokens[0], tokens[1]);
+            }
+            br.close();
+            System.out.println("Finish Processing " + f.getName() + "...");
         }
+        System.out.println("Finish Building DocID-URL Database...");
+    }
 
-        br.close();
+    public static void populateDocIDContent(String dirName) throws IOException {
+        System.out.println("Start Building DocID-Content Database...");
+
+        File dir = new File(dirName);
+        for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
+            System.out.println("Start Processing " + f.getName() + "...");
+            try {
+                String fileName = f.getName();
+                String docID = fileName.substring(0, fileName.indexOf('.'));
+                String type = fileName.substring(fileName.indexOf('.') + 1,
+                        fileName.lastIndexOf('.'));
+                byte[] rawContent = Utils.unzip(f);
+                byte[] content = new byte[rawContent.length
+                        - CrawlerConstants.MAX_URL_LENGTH * 2];
+                System.arraycopy(rawContent,
+                        CrawlerConstants.MAX_URL_LENGTH * 2, content, 0,
+                        rawContent.length - CrawlerConstants.MAX_URL_LENGTH * 2);
+                ContentDAO.putPagerank(docID, type, content);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println("Finish Processing " + f.getName() + "...");
+        }
         System.out.println("Finish Building DocID-URL Database...");
     }
 
@@ -67,16 +112,24 @@ public class FetchAndPopulateScript {
         getFileNumberAndAvgWord();
         File dir = new File(dirName);
         for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
             System.out.println("Start Processing " + f.getName() + "...");
             BufferedReader br = new BufferedReader(new FileReader(f));
             String line = null;
             String lastWord = null;
             int freq = 0;
             while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0)
+                    continue;
                 String[] tokens = line.split("\\s+", 2);
                 if (lastWord == null) {
                     IndexTermDAO.putIndexTerm(tokens[0]);
                 } else if (!tokens[0].equals(lastWord)) {
+                    // if (Math.log((docNumber - freq + 0.5) / (freq + 0.5)) <
+                    // 0)
+                    // System.out.println(lastWord);
                     IndexTermDAO.putIndexTerm(
                             lastWord,
                             Math.max(
@@ -93,16 +146,47 @@ public class FetchAndPopulateScript {
                 if (docHitEntity.getWordCount() > 0)
                     freq++;
             }
-            IndexTermDAO.putIndexTerm(
-                    lastWord,
-                    Math.max(0,
-                            Math.log((docNumber - freq + 0.5) / (freq + 0.5))));
+            if (lastWord != null)
+                IndexTermDAO.putIndexTerm(
+                        lastWord,
+                        Math.max(
+                                0,
+                                Math.log((docNumber - freq + 0.5)
+                                        / (freq + 0.5))));
+            br.close();
+            System.out.println("Finish Processing " + f.getName() + "...");
+        }
+    }
+
+    public static void populatePagerank(String dirName) throws IOException {
+
+        System.out.println("Start Building Pagerank Database...");
+        File dir = new File(dirName);
+
+        for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
+            System.out.println("Start Processing " + f.getName() + "...");
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            String line = null;
+
+            while ((line = br.readLine()) != null) {
+                String[] tokens = line.split("\\s+");
+                if (tokens.length < 2)
+                    continue;
+                if (tokens[0].length() != 32)
+                    continue;
+                PagerankDAO.putPagerank(tokens[0],
+                        Double.parseDouble(tokens[1]));
+            }
+
             br.close();
             System.out.println("Finish Processing " + f.getName() + "...");
         }
     }
 
     private static void getFileNumberAndAvgWord() {
+
         String ACCESS_KEY = "AKIAIHWLNGX7VTENATXQ";
         String SECRET_KEY = "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";
         AmazonDynamoDBClient client = new AmazonDynamoDBClient(
@@ -137,9 +221,12 @@ public class FetchAndPopulateScript {
     }
 
     public static void fetchData() {
-        // S3Adapter s3 = new S3Adapter();
+         S3Adapter s3 = new S3Adapter();
         // s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
         // s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
+      // s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
+          s3.downloadAllFilesInBucket("cis555crawleddata", "S3DATA");
+
 
     }
 

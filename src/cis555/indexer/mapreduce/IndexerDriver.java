@@ -1,4 +1,4 @@
-package com.primacy.hadoop;
+package cis555.indexer.mapreduce;
 
 import java.io.IOException;
 
@@ -30,7 +30,8 @@ public class IndexerDriver {
         job.setOutputValueClass(Text.class);
         System.out.println("Set Output Class Done...");
 
-        job.setInputFormatClass(WholeFileInputFormat.class);
+        // job.setInputFormatClass(WholeFileInputFormat.class);
+        job.setInputFormatClass(CombineFileInputFormatImpl.class);
         System.out.println("Set Input Class Done...");
 
         FileInputFormat.addInputPath(job, new Path(args[0]));

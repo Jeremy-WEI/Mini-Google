@@ -19,6 +19,9 @@ public class StatusPageContentGenerator {
 		str.append("<th>Pages Crawled</th>");
 		str.append("<th>Last Updated</th>");
 		str.append("</tr>");
+		
+		int totalCrawled = 0;
+		
 		for (String workerIP: details.keySet()){
 
 			WorkerDetails workerDetails = details.get(workerIP);
@@ -28,10 +31,12 @@ public class StatusPageContentGenerator {
 			str.append("<td>" + workerDetails.getPagesCrawled() + "</td>");
 			str.append("<td>" + workerDetails.getLastUpdate() + "</td>");
 			str.append("</tr>");
+			totalCrawled = totalCrawled + workerDetails.getPagesCrawled();
 			
 		}
 		str.append("</tr>");
 		str.append("</table>");
+		str.append("<br />Total pages crawled so far: " + totalCrawled + "<br />");
 		return str.toString();
 	}
 	

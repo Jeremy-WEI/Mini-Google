@@ -68,7 +68,7 @@ public class Indexer {
     protected int totalWord;
     protected String docID;
     protected String URL;
-    protected String content;
+    public String content;
     protected InputStream is;
     protected Stemmer stemmer;
     protected Map<String, Map<String, DocHit>> map;

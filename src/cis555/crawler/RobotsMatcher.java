@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
 import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
 
 /**
@@ -24,11 +26,14 @@ public class RobotsMatcher implements Runnable {
 	private ConcurrentHashMap<String, SiteInfo> siteInfoMap;
 	private BlockingQueue<URL> newUrlQueue;
 	private BlockingQueue<URL> headCrawlQueue;
+	private Set<String> sitesCrawledThisSession;
 	
-	public RobotsMatcher(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> newUrlQueue, BlockingQueue<URL> headCrawlQueue){
+	public RobotsMatcher(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> newUrlQueue, 
+			BlockingQueue<URL> headCrawlQueue, Set<String> sitesCrawledThisSession){
 		this.siteInfoMap = siteInfoMap;
 		this.newUrlQueue = newUrlQueue;
 		this.headCrawlQueue = headCrawlQueue;
+		this.sitesCrawledThisSession = sitesCrawledThisSession;
 	}
 	
 	@Override
@@ -36,37 +41,75 @@ public class RobotsMatcher implements Runnable {
 		while(Crawler.active){
 			URL url = null;
 
+			Date start = new Date();
+			Date populateRobots = new Date();
+			Date headQueueing = start;
+			Date finished = start;			
+			
 			try {
 				url = newUrlQueue.take();
 				
-				String domain = url.getHost();
+				if (this.sitesCrawledThisSession.contains(url.toString())){
+					// We've already looked at this site, so can ignore
+					continue;
+				}
+				
+				URL filteredURL = CrawlerUtils.filterURL(url.toString());
+				
+				if (null == filteredURL){
+					continue;
+				}
+				
+				if (null == filteredURL.getHost() || filteredURL.getHost().isEmpty()){
+					continue;
+				}
+				
+				
+				String domain = filteredURL.getHost();
 				if (this.siteInfoMap.containsKey(domain)){
 					
 					// Queue the file to head if valid
 					
 					SiteInfo info = this.siteInfoMap.get(domain);	
 					String agent = CrawlerUtils.extractAgent(info);
-					populateHeadCrawlerQueue(info, url, agent);
+					
+					headQueueing = new Date();
+					
+					populateHeadCrawlerQueue(info, filteredURL, agent);
 				} else {
 					
 					// Get the robots.txt file
 					
-					populateSiteInfo(url);
+					populateSiteInfo(filteredURL);
 					// Re-queue the URL
-					logger.debug(CLASSNAME + ": Re-queuing " + url + " post Robots.txt extraction");
+//					logger.debug(CLASSNAME + ": Re-queuing " + url + " post Robots.txt extraction");
+					
+					populateRobots = new Date();
 					
 					try {
-						newUrlQueue.add(url);						
+						this.newUrlQueue.put(filteredURL);
+
 					} catch (IllegalStateException e){
 						logger.info(CLASSNAME + ": New url queue is full, dropping " + url);
 					}
 				}
 				
+				finished = new Date();
 				
 			}  catch (InterruptedException e) {
-				logger.error(CLASSNAME + ": Unabble to get URL");
+				logger.error(CLASSNAME + ": Unable to get URL due to interruption");
 				logger.error(CLASSNAME + e.getMessage());
-			} 
+			} catch (Exception e){
+				logger.debug(CLASSNAME + " THROWING EXCEPTION");
+				Utils.logStackTrace(e);
+			}
+			
+//			logger.info(CLASSNAME + " finished populating head queue, using " +
+//			(populateRobots.getTime() - start.getTime()) + "ms for robots, " + 
+//					(headQueueing.getTime() - populateRobots.getTime()) + "ms for retrieving site info, " +
+//			(finished.getTime() - headQueueing.getTime()) + "ms for adding to head queuer (" + 
+//					(finished.getTime() - start.getTime()) + "ms total)");
+
 		}
 		
 		logger.info(CLASSNAME + ": Robots Matcher has shut down");
@@ -77,6 +120,9 @@ public class RobotsMatcher implements Runnable {
 	 * @param url
 	 */
 	private void populateSiteInfo(URL url){
+		
+		
+		
 		URL requestURL = null;
 		String requestURLString = url.getProtocol() + "://" +url.getHost() + "/robots.txt";
 		try {
@@ -89,20 +135,26 @@ public class RobotsMatcher implements Runnable {
 			} else {
 				response = CrawlerUtils.retrieveHttpResource(requestURL, CrawlerUtils.Method.GET, ifModifiedSinceString);
 			} 
-			
-			// TO DO: deal with errors
-			
-			SiteInfo info = new SiteInfo();
 
-			String contents = new String(response.getResponseBody(), CrawlerConstants.CHARSET);
-			if (null == contents || contents.isEmpty()){
-				logger.debug(CLASSNAME + ": Unable to get Robots.txt for " + url.getHost() + " because response body was empty. Adding dummy site info. Original URL: " + url.toString());
-				
-			} else {
-				info.parseRobotsTxt(contents);	
-			}
+			SiteInfo info = new SiteInfo();
 			
-			this.siteInfoMap.put(url.getHost(), info);
+			if (null == response){
+				logger.debug(CLASSNAME + " Non-2xx or 3xx response received from " + url + ". Adding dummy site info. ");
+				// returns null if the result is non-2xx or 3xx
+				this.siteInfoMap.put(url.getHost(), info);
+			} else {
+				String contents = new String(response.getResponseBody(), CrawlerConstants.CHARSET);
+				if (null == contents || contents.isEmpty()){
+					logger.debug(CLASSNAME + ": Unable to get Robots.txt for " + url.getHost() + " because response body was empty. Adding dummy site info. Original URL: " + url.toString());
+					
+				} else {
+					info.parseRobotsTxt(contents);	
+				}
+				
+				this.siteInfoMap.put(url.getHost(), info);
+				
+			}
+
 			
 //			logger.debug(CLASSNAME + ": Robots.txt added for " + url.getHost());
 			
@@ -114,8 +166,16 @@ public class RobotsMatcher implements Runnable {
 		}
 		catch (MalformedURLException e) {
 			System.out.println("URL syntax malformed, skipping :" + requestURL);
+			SiteInfo info = new SiteInfo();
+			this.siteInfoMap.put(url.getHost(), info);
 		} catch (IOException e) {
 			logger.error(CLASSNAME + ": Unable to get URL: " + e.getMessage());
+			SiteInfo info = new SiteInfo();
+			this.siteInfoMap.put(url.getHost(), info);
+		} catch (Exception e){
+			logger.debug(CLASSNAME + " THROWING EXCEPTION");
+			Utils.logStackTrace(e);
+
 		}
 	}
 	
@@ -141,18 +201,24 @@ public class RobotsMatcher implements Runnable {
 			
 //			logger.debug(CLASSNAME + ": Crawler delay imposed on " + url);
 			try {
-				this.newUrlQueue.add(url);
+				this.newUrlQueue.put(filteredURL);
 				
-			} catch (IllegalStateException e){
-				logger.info(CLASSNAME + ": Queue for new url (requeue while waiting) is full, dropping " + url);
+			} catch (IllegalStateException | InterruptedException e){
+				logger.info(CLASSNAME + ": Queue for new url (requeue while waiting) is full, dropping " + filteredURL);
 			}
 
 		} else {
 
 			// No need to wait - can add to headCrawlQueue 
 			try {
-				this.headCrawlQueue.add(url);
-			} catch (IllegalStateException e){
+				this.headCrawlQueue.put(filteredURL);
+				this.sitesCrawledThisSession.add(filteredURL.toString());
+
+//				logger.info(CLASSNAME + " New url queue size: " + this.newUrlQueue.size());
+//
+				logger.info(CLASSNAME + " Get crawl queue size: " + this.headCrawlQueue.size());
+
+			} catch (IllegalStateException | InterruptedException e){
 				logger.info(CLASSNAME + ": Queue for head crawl queue is full, dropping " + url);
 			}
 			updateSiteInfo(info, url.getHost());			

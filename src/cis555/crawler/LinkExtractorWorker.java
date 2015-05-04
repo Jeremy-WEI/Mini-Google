@@ -1,18 +1,19 @@
 package cis555.crawler;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -27,6 +28,7 @@ import cis555.utils.Utils;
 
 public class LinkExtractorWorker extends Thread {
 
+
 	private static final Logger logger = Logger.getLogger(LinkExtractorWorker.class);
 	private static final String CLASSNAME = LinkExtractorWorker.class.getName();
 	
@@ -34,20 +36,20 @@ public class LinkExtractorWorker extends Thread {
 	private BlockingQueue<URL> preRedistributionNewURLQueue;
 	private int id;
 	private CrawlerDao dao;
-	private String storageDirectory;
-	private String urlStorageDirectory;
 	private int documentsCrawled;
+	private Set<String> sitesCrawledThisSession;
+	private MessageDigest digest;
 	
 	public LinkExtractorWorker(BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
 			BlockingQueue<URL> preRedistributionNewURLQueue, int id, CrawlerDao dao,
-			String storageDirectory, String urlStorageDirectory) {
+			Set<String> sitesCrawledThisSession) throws NoSuchAlgorithmException {
 		this.contentForLinkExtractor = contentForLinkExtractor;
 		this.preRedistributionNewURLQueue = preRedistributionNewURLQueue;
 		this.id = id;
 		this.dao = dao;
-		this.storageDirectory = storageDirectory;
-		this.urlStorageDirectory = urlStorageDirectory;
 		this.documentsCrawled = 0;
+		this.sitesCrawledThisSession = sitesCrawledThisSession;
+		this.digest = MessageDigest.getInstance("MD5");
 	}
 
 	
@@ -59,7 +61,8 @@ public class LinkExtractorWorker extends Thread {
 	@Override
 	public void run() {
 		while (Crawler.active){
-			try {
+			try {	
+				
 				RawCrawledItem content = contentForLinkExtractor.take();
 				
 				URL url = content.getURL();
@@ -68,43 +71,36 @@ public class LinkExtractorWorker extends Thread {
 					
 				Document cleansedDoc = null;
 				
-				if (content.isNew()){
-					String docID = getDocID(url);
-					this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
-					if (contentType != ContentType.PDF){
-						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
-						if (contentType == ContentType.TEXT){
-							storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
-						} else {
-							cleansedDoc = Jsoup.parse(stringContents);
-							storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
-							
-						}
-					} else {
-						storePDF(rawContents, docID, url);
-					}
-					logger.debug(CLASSNAME + " stored " + url.toString() + " to file system");
-					this.documentsCrawled++;
-				}
+				boolean isSaved = true;
 				
 				if (contentType == ContentType.HTML){				
 					if (null == cleansedDoc){
 						String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
 						cleansedDoc = Jsoup.parse(stringContents);						
 					}
-					
-					addAHrefLinks(cleansedDoc, content.isNew(), url);
-					addImgSrcLinks(cleansedDoc, url);
-				}					
 
+					if (isSaved){
+						addAHrefLinks(cleansedDoc, content.isNew(), url);
+						addImgSrcLinks(cleansedDoc, url);
+					} else {
+						addAHrefLinks(cleansedDoc, false, url);
+						addImgSrcLinks(cleansedDoc, url);												
+					}
+
+				}
 				
-			} catch (InterruptedException | MalformedURLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.info(CLASSNAME + " Redistribution queue size: " + this.preRedistributionNewURLQueue.size());
+				
+				
 			} catch (UnsupportedEncodingException | IllegalStateException | IllegalArgumentException e1) {
 				logger.info(CLASSNAME + " Unable to decode, skipping " + e1.getMessage());
+			} catch (Exception e){
+				logger.debug(CLASSNAME + " THROWING EXCEPTION");
+				Utils.logStackTrace(e);
 			}
 		}
+		logger.info(CLASSNAME + ": LinkExtractorWorker " + this.id + " has shut down");
+
 	}
 	
 	/**
@@ -115,38 +111,94 @@ public class LinkExtractorWorker extends Thread {
 	 * @param sourceUrl
 	 * @throws UnsupportedEncodingException
 	 * @throws MalformedURLException
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private void addAHrefLinks(Document cleansedDoc, boolean isNew, URL sourceUrl) throws IllegalArgumentException, UnsupportedEncodingException, MalformedURLException{
+	private void addAHrefLinks(Document cleansedDoc, boolean isNew, URL sourceUrl) throws IllegalArgumentException, UnsupportedEncodingException, MalformedURLException, NoSuchAlgorithmException{
 		Elements links = cleansedDoc.select("a[href]");
 		
-		List<URL> newUrls = new ArrayList<URL>();
+		List<String> newUrls = new ArrayList<String>();
+		
+		Date startExtractingLinks = new Date();
 		
 		for (Element link : links){
+			
+			Date start = new Date();
+			
 			String urlString = link.attr("abs:href");
+			
+//			Date urlStringTime = new Date();
+//			Date filterString = urlStringTime;
+//			Date checkContained = urlStringTime;
+//			Date putInQueue = urlStringTime;
+//			Date putInDatabase = urlStringTime;			
+//			
 			if (!urlString.isEmpty()){
 				if (!urlString.contains("mailto:")){ // We're ignoring urls with 'mailto's
 					URL newUrl = null;
 					try {
-						String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
-						newUrl = CrawlerUtils.filterURL(cleansedString, sourceUrl);	
+						
+						newUrl = CrawlerUtils.filterURL(urlString);	
+						
+//						filterString = new Date();
+						
 						if (null != newUrl){
-							if (!this.preRedistributionNewURLQueue.contains(newUrl)){
-								this.preRedistributionNewURLQueue.add(newUrl);
-								this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);								
+							String newUrlString = newUrl.toString();
+							if (!this.sitesCrawledThisSession.contains(newUrlString)){
+								
+//								checkContained = new Date();
+								
+								
+								if (this.preRedistributionNewURLQueue.remainingCapacity() > 10){
+									this.preRedistributionNewURLQueue.put(newUrl);
+									
+								}
+								
+								
+//								putInQueue = new Date();
+								
+								if (!this.dao.doesDocumentMetaExist(newUrl.toString())){
+									this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);									
+								}
+								
+								
+//								putInDatabase = new Date();
+								
 							}
-							newUrls.add(newUrl);							
+							
+							newUrls.add(hashUrlToHexStringArray(newUrl.toString()));							
 						}
-					} catch (IllegalStateException e){
+					} catch (IllegalArgumentException | MalformedURLException e){
+						logger.info(CLASSNAME + " :" + newUrl + " syntax is invalid " + e.getMessage());
+					}
+					  catch (IllegalStateException e){
 						logger.info(CLASSNAME + " New preRedistributionNewURLQueue is full, dropping " + newUrl);
 						
-					} 
+					} catch (Exception e){
+						logger.debug(CLASSNAME + " THROWING EXCEPTION");
+						Utils.logStackTrace(e);
+					}
 				}
 			}
+			
+//			logger.info(CLASSNAME + " extractor " + this.id + " took " +
+//					(urlStringTime.getTime() - start.getTime()) + "ms to extract link, " + 
+//					(filterString.getTime() - urlStringTime.getTime()) + "ms to filter the url" + 
+//					(checkContained.getTime() - filterString.getTime()) + "ms to check if we've added the link already " +
+//					(putInQueue.getTime() - checkContained.getTime()) + "ms to add url into the queue " + 
+//					(putInDatabase.getTime() - putInQueue.getTime()) + "ms to put URL into the database");
+
 		} 
 		
+		Date savingToDatabase = new Date();
+		
 		if (isNew){
-			storeUrlsToFile(newUrls, sourceUrl);						
+			this.dao.addNewFromToUrls(hashUrlToHexStringArray(sourceUrl.toString()), newUrls);						
 		}		
+
+		Date done = new Date();
+		
+		logger.info(CLASSNAME + "Extractor " + this.id + " took " + (savingToDatabase.getTime() - startExtractingLinks.getTime()) + "ms to extract links "
+				+ (done.getTime() - savingToDatabase.getTime()) + "ms to save to database");
 	}
 	
 	/**
@@ -169,7 +221,7 @@ public class LinkExtractorWorker extends Thread {
 					URL newUrl = null;
 					try {
 						String cleansedString = URLDecoder.decode(urlString, CrawlerConstants.CHARSET);
-						newUrl = CrawlerUtils.filterURL(cleansedString, sourceUrl);	
+						newUrl = CrawlerUtils.filterURL(cleansedString);	
 						if (null != newUrl){
 							this.dao.addNewDocumentMeta(newUrl.toString(), getDocID(newUrl), new Date(), false);
 							addedImgLinksForOnePage.add(urlString);							
@@ -179,7 +231,10 @@ public class LinkExtractorWorker extends Thread {
 						
 					} catch (IllegalArgumentException e){
 						logger.info(CLASSNAME + " " + e.getMessage() + ", dropping");
-					}					
+					} catch (Exception e){
+						logger.debug(CLASSNAME + " THROWING EXCEPTION");
+						Utils.logStackTrace(e);
+					}
 				}
 			}
 		}
@@ -189,109 +244,14 @@ public class LinkExtractorWorker extends Thread {
 	 * Hashes the url to generate a docID
 	 * @param url
 	 * @return
+	 * @throws UnsupportedEncodingException 
+	 * @throws NoSuchAlgorithmException  
 	 */
-	private String getDocID(URL url){
-		return Utils.hashUrlToHexStringArray(url.toString());
-//		if (this.dao.doesDocumentMetaExist(url.toString())){
-//			// Previously crawled document
-//			return this.dao.getDocIDFromURL(url.toString());
-//		} else {
-//			// New document, so generate a new ID
-//			return ;
-//		}
-//
+	private String getDocID(URL url) throws UnsupportedEncodingException, NoSuchAlgorithmException {
+		return hashUrlToHexStringArray(url.toString());
 	}
 	
-	/**
-	 * Store the crawled document in a file
-	 * @param contents
-	 * @param docID
-	 * @param url
-	 */
-	private void storeCrawledContentsFile(String contents, String docID, ContentType contentType, URL url){
-		String fileName = generateFileName(docID, contentType);
-		File storageFile = new File(this.storageDirectory + "/" + fileName);
-		try {
-			byte[] urlPlusContents = Utils.appendURL(url, contents.getBytes(CrawlerConstants.CHARSET));
-			Utils.zip(urlPlusContents, storageFile.toString());
-		} catch (IOException e){
-			e.printStackTrace();
-			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		} 
-	}
-	
-	/**
-	 * Generates the file name with the appropriate extension
-	 * @param docID
-	 * @param contentType
-	 * @return
-	 */
-	private String generateFileName(String docID, ContentType contentType){
-		switch (contentType){
-		case HTML:
-			return docID + ".html.gzip";
-		case XML:
-			return docID + ".xml.gzip";
-		case TEXT:
-			return docID + ".txt.gzip";
-		default:
-			throw new CrawlerException("Invalid content type: " + contentType.name());
-		}
-	}
-	
-	/**
-	 * Store a PDF file
-	 * @param contents
-	 * @param docID
-	 * @param url
-	 */
-	private void storePDF(byte[] contents, String docID, URL url){
-		String fileName = docID + ".pdf.gzip";
-		File storageFile = new File(this.storageDirectory + "/" + fileName);
-		try {
-			byte[] urlPlusContents = Utils.appendURL(url, contents);
-			Utils.zip(urlPlusContents, storageFile.toString());
-		} catch (IOException e) {
-			e.printStackTrace();
-			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		}
-	}
-	
-	/**
-	 * Appends the new urls to a flat file
-	 * @param newUrls
-	 * @param sourceUrl
-	 */
-	private void storeUrlsToFile(List<URL> newUrls, URL sourceUrl){
-		String fileName = CrawlerConstants.URL_STORAGE_FILENAME;
-		File urlStorageFile = new File(this.urlStorageDirectory + "/" + fileName);
-		BufferedWriter writer = null;
-		try {
-			if (!urlStorageFile.exists()){
-				urlStorageFile.createNewFile();
-			}
-			writer = new BufferedWriter(new FileWriter(urlStorageFile.getAbsoluteFile(), true));
-			if (newUrls.size() > 0){
-				writer.write(Utils.hashUrlToHexStringArray(sourceUrl.toString()) + "\t");
-				for (URL newUrl : newUrls){
-					writer.write(Utils.hashUrlToHexStringArray(newUrl.toString()) + ";");
-				}				
-			}
-			writer.write("\n");
-			
-		} catch (IOException e){
-			logger.error(CLASSNAME + ": Unable to store file " + fileName +  ", skipping");
-		} finally {
-			if (null != writer){
-				try {
-					writer.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-	}
+
 	
 	/**
 	 * Returns the number of documents crawled
@@ -300,6 +260,39 @@ public class LinkExtractorWorker extends Thread {
 	public int getDocumentsCrawled(){
 		return this.documentsCrawled;
 	}
-
 	
+    /**
+     * Hashes a url using MD5, and returns a Hex-string representation of the
+     * hash
+     * 
+     * @param url
+     * @return
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchAlgorithmException
+     */
+    public String hashUrlToHexStringArray(String urlString) {
+        byte[] hash = hashUrlToByteArray(urlString);
+        return DatatypeConverter.printHexBinary(hash);
+    }
+
+    /**
+     * Hashes a url using MD5, returns a byte array
+     * 
+     * @param url
+     * @return
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchAlgorithmException
+     */
+    public byte[] hashUrlToByteArray(String urlString) {
+        try {
+
+            digest.reset();
+            digest.update(urlString.getBytes(CrawlerConstants.CHARSET));
+            return digest.digest();
+        } catch (UnsupportedEncodingException e) {
+            Utils.logStackTrace(e);
+            throw new RuntimeException(e);
+        }
+    }
+
 }

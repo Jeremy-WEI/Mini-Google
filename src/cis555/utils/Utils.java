@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -22,14 +23,14 @@ public class Utils {
     private static final Logger logger = Logger.getLogger(Utils.class);
     private static final String CLASSNAME = Utils.class.getName();
 
-    private static MessageDigest digest;
-
     /**
      * Hashes a url using MD5, and returns a Hex-string representation of the
      * hash
      * 
      * @param url
      * @return
+     * @throws UnsupportedEncodingException 
+     * @throws NoSuchAlgorithmException 
      */
     public static String hashUrlToHexStringArray(String urlString) {
         byte[] hash = hashUrlToByteArray(urlString);
@@ -41,18 +42,19 @@ public class Utils {
      * 
      * @param url
      * @return
+     * @throws UnsupportedEncodingException 
+     * @throws NoSuchAlgorithmException 
      */
     public static byte[] hashUrlToByteArray(String urlString) {
-        if (null == digest) {
-            try {
-                digest = MessageDigest.getInstance("MD5");
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        digest.reset();
-        digest.update(urlString.getBytes());
-        return digest.digest();
+    	try {
+        	MessageDigest digest = MessageDigest.getInstance("MD5");
+            digest.reset();
+            digest.update(urlString.getBytes(CrawlerConstants.CHARSET));
+            return digest.digest();    		
+    	} catch (UnsupportedEncodingException | NoSuchAlgorithmException e){
+    		Utils.logStackTrace(e);
+    		throw new RuntimeException(e);
+    	}
     }
 
     /**
@@ -111,10 +113,14 @@ public class Utils {
      * @throws IOException
      */
     public static void zip(byte[] contents, String fileName) throws IOException {
+    	
         FileOutputStream fos = new FileOutputStream(fileName);
+        
         GZIPOutputStream gz = new GZIPOutputStream(fos);
+        
         gz.write(contents);
         gz.close();
+        
     }
 
     /**
@@ -183,6 +189,7 @@ public class Utils {
 	public static void logStackTrace(Exception e){
 		StackTraceElement[] traces = e.getStackTrace();
 		if (null != traces && traces.length > 0){
+			logger.error(e);
 			logger.error(CLASSNAME + " EXCEPTION THROWN: " + e.getMessage() + "\n");
 			logger.error(CLASSNAME);
 			for (int i = 0; i < traces.length; i++){

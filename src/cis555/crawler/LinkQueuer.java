@@ -50,9 +50,13 @@ public class LinkQueuer implements Runnable {
 				}
 				
 				try {
-					if (!this.newUrlQueue.contains(filteredURL)){
-						this.newUrlQueue.add(filteredURL);						
-					}
+					
+					if (this.newUrlQueue.remainingCapacity() > 10){						
+						this.newUrlQueue.put(filteredURL);
+					} 
+					
+					// if queue is full, we simply drop the url
+					
 				} catch (IllegalStateException e){
 					logger.info(CLASSNAME + " New url queue is full, dropping " + filteredURL);					
 				}
@@ -69,11 +73,11 @@ public class LinkQueuer implements Runnable {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	private URL filter(URL url) throws MalformedURLException{
+	private URL filter(URL url) throws MalformedURLException {
 		String urlString = url.toString();
 		if (urlString.length() > CrawlerConstants.MAX_URL_LENGTH){
 			return null;
-		}else if (urlString.contains("#")){
+		} else if (urlString.contains("#")){
 			String newUrlString = urlString.substring(0, urlString.indexOf("#"));
 			return new URL(newUrlString);
 		}  else {
@@ -115,9 +119,11 @@ public class LinkQueuer implements Runnable {
 			try {
 				
 				// Send URL to other crawlers
-				if (!this.urlsForOtherCrawlers.get(bucket).contains(url)){					
+				
+				if (this.urlsForOtherCrawlers.get(bucket).remainingCapacity() > 10){						
 					this.urlsForOtherCrawlers.get(bucket).add(url);
-				}
+				} 
+				
 				return null;
 				
 			} catch (IllegalStateException e){

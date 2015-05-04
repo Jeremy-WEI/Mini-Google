@@ -38,7 +38,7 @@ public class DispatcherUtils {
 		try {
 			httpConnection.addRequestProperty("User-Agent", CrawlerConstants.CRAWLER_USER_AGENT);
 			httpConnection.setConnectTimeout(DispatcherConstants.HTTP_TIMEOUT);
-//			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
+			httpConnection.setReadTimeout(DispatcherConstants.READ_TIMEOUT);
 			
 			if (method == Method.GET){
 				httpConnection.setRequestMethod("GET");

@@ -60,6 +60,11 @@ public class RobotsMatcher implements Runnable {
 					continue;
 				}
 				
+				if (null == filteredURL.getHost() || filteredURL.getHost().isEmpty()){
+					continue;
+				}
+				
+				
 				String domain = filteredURL.getHost();
 				if (this.siteInfoMap.containsKey(domain)){
 					
@@ -115,6 +120,9 @@ public class RobotsMatcher implements Runnable {
 	 * @param url
 	 */
 	private void populateSiteInfo(URL url){
+		
+		
+		
 		URL requestURL = null;
 		String requestURLString = url.getProtocol() + "://" +url.getHost() + "/robots.txt";
 		try {
@@ -208,7 +216,7 @@ public class RobotsMatcher implements Runnable {
 
 //				logger.info(CLASSNAME + " New url queue size: " + this.newUrlQueue.size());
 //
-//				logger.info(CLASSNAME + " Head crawl queue size: " + this.headCrawlQueue.size());
+				logger.info(CLASSNAME + " Get crawl queue size: " + this.headCrawlQueue.size());
 
 			} catch (IllegalStateException | InterruptedException e){
 				logger.info(CLASSNAME + ": Queue for head crawl queue is full, dropping " + url);

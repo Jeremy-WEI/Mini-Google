@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -35,6 +36,10 @@ public class CrawlerUtils {
 	 * @return
 	 */
 	public static Response retrieveHttpResource(URL absoluteURL, final Method method, String ifModifiedDateString){
+		
+		if (null == absoluteURL.getHost()){
+			return null;
+		}
 		
 		HttpURLConnection httpConnection = null;
 		
@@ -160,6 +165,10 @@ public class CrawlerUtils {
 	 * @throws IOException
 	 */
 	public static Response retrieveHttpsResource(final URL absoluteURL, final Method method, String ifModifiedDateString) throws MalformedURLException, IOException{
+		
+		if (null == absoluteURL.getHost()){
+			return null;
+		}
 		
 		HttpsURLConnection httpsConnection = null; 
 		

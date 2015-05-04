@@ -8,10 +8,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +23,7 @@ import cis555.urlDispatcher.utils.DispatcherConstants;
 import cis555.urlDispatcher.utils.DispatcherUtils;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.DBWrapper;
+import cis555.utils.FromToUrls;
 import cis555.utils.Utils;
 
 import com.sleepycat.persist.EntityStore;
@@ -46,12 +47,10 @@ public class Crawler {
 	private String urlStorageDirectory;
 	
 	private List<Thread> getThreadPool;
-	private List<Thread> headThreadPool;
 	private List<Thread> matcherThreadPool;
 
 	private BlockingQueue<URL> newUrlQueue;
 	private ConcurrentHashMap<String, SiteInfo> siteInfoMap;
-	private BlockingQueue<URL> headCrawlQueue;
 	private BlockingQueue<URL> getCrawlQueue;
 	private Set<String> sitesCrawledThisSession; // A list of sites crawled in this session, to prevent repeated crawl
 	private List<String> excludedPatterns;
@@ -115,7 +114,6 @@ public class Crawler {
 		
 		initialiseDb();
 		
-		this.headCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
 		this.getCrawlQueue = new ArrayBlockingQueue<URL>(CrawlerConstants.QUEUE_CAPACITY);
 		
 		this.contentForLinkExtractor = new ArrayBlockingQueue<RawCrawledItem>(CrawlerConstants.QUEUE_CAPACITY);
@@ -131,21 +129,50 @@ public class Crawler {
 		
 		linkQueuerThreadPool();
 		initialiseLinkExtractorThreadPool();
-		initialiseHeadThreadPool();
 		initialiseGetThreadPool();
 		initialiseMatcherPool();
-		
+		loadInStartingURLS();
 		Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new RedistributeURLsTask(), 0, DispatcherConstants.REDISTRIBUTE_URLS_FREQUENCY_MS);
 
 	}
 	
 	/**
+	 * Load in urls from the stored list
+	 */
+	private void loadInStartingURLS(){
+		List<FromToUrls> fromToUrls = dao.getAllFromToDocuments();
+		
+		if (fromToUrls.size() < 1){
+			logger.info("No urls to load");
+			return;
+		}
+		
+		Random rand = new Random();
+		
+		for (int i = 0; i < CrawlerConstants.URL_SEED_SIZE; i++){
+			
+			int randNumber = rand.nextInt(fromToUrls.size());
+			
+			FromToUrls url = fromToUrls.get(randNumber);
+			try {
+				this.newUrlQueue.put(new URL(url.getFromUrl()));
+				logger.info(CLASSNAME + " loaded in " + url.getFromUrl());
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+		
+	}
+	
+	/**
 	 * Initialise the database
 	 */
 	private void initialiseDb(){
+		
 		EntityStore store = DBWrapper.setupDatabase(this.dbEnvDir, false);
 		this.dao = new CrawlerDao(store);
+		logger.info(CLASSNAME + " Database initialised");
 	}
 	
 	/**
@@ -154,28 +181,11 @@ public class Crawler {
 	private void initialiseMatcherPool(){
 		this.matcherThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_MATCHER_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_MATCHER_THREADS; i++){
-			RobotsMatcher matcher = new RobotsMatcher(siteInfoMap, newUrlQueue, headCrawlQueue, sitesCrawledThisSession);
+			RobotsMatcher matcher = new RobotsMatcher(siteInfoMap, newUrlQueue, getCrawlQueue, sitesCrawledThisSession);
 			Thread robotsMatcherThread = new Thread(matcher);
 			robotsMatcherThread.start();
 			this.matcherThreadPool.add(robotsMatcherThread);
 		}	
-	}
-	
-	/**
-	 * Start up a pool of threads for HEAD workers
-	 * 
-	 * @return
-	 */
-	private void initialiseHeadThreadPool() {
-		headThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_HEAD_THREADS);
-		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
-			HEADWorker crawler = new HEADWorker(this.siteInfoMap, this.headCrawlQueue, 
-					this.dao, this.getCrawlQueue, i, this.maxDocSize, this.newUrlQueue, 
-					this.contentForLinkExtractor, this.storageDirectory);
-			Thread workerThread = new Thread(crawler);
-			workerThread.start();
-			headThreadPool.add(workerThread);
-		}
 	}
 	
 	/**
@@ -188,7 +198,7 @@ public class Crawler {
 		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_GET_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
 			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, 
-					i, this.contentForLinkExtractor, this.dao, this.storageDirectory);
+					i, this.contentForLinkExtractor, this.dao, this.storageDirectory, this.maxDocSize);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
 			getThreadPool.add(workerThread);
@@ -232,12 +242,6 @@ public class Crawler {
 	private void shutdown(){
 		// shut down all threads
 		try {
-			
-			for (Thread t : this.headThreadPool) {
-				if (t.isAlive()) {
-					t.join(CrawlerConstants.THREAD_JOIN_WAIT_TIME);
-				}
-			}
 
 			for (Thread t : this.linkQueuerThreadPool) {
 				if (t.isAlive()) {
@@ -268,7 +272,6 @@ public class Crawler {
 			
 			DBWrapper.shutdown();
 			logger.info(CLASSNAME + ": Database has shut down");
-			System.exit(0);
 			
 		} catch (InterruptedException e) {
 			e.printStackTrace();

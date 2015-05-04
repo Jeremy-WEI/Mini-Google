@@ -32,7 +32,7 @@ public class ContentTransferer {
 	public static void main(String[] args){
 		ContentTransferer transferer = new ContentTransferer();
 		transferer.extractDataFromdDatabase();
-		transferer.copyToS3();
+//		transferer.copyToS3();
 	}
 
 	private void copyToS3(){

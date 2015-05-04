@@ -12,4 +12,6 @@ sudo touch $TOMCAT_HOME/logs/worker.log
 
 sudo chown -R tomcat7:tomcat7 $TOMCAT_HOME/logs/worker.log
 
+sleep 10
+
 sudo service tomcat7 start

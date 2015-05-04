@@ -24,12 +24,14 @@ public class CrawlerDao {
 	private PrimaryIndex<String, DocumentMeta> documentMetaDao;
 	private PrimaryIndex<String, FromToUrls> fromToUrlDao;
 	
+	private EntityStore store;
+	
 	public CrawlerDao(EntityStore store){
+		this.store = store;
 		crawledDocumentDao = store.getPrimaryIndex(String.class, CrawledDocument.class);
 		documentMetaDao = store.getPrimaryIndex(String.class, DocumentMeta.class);
 		fromToUrlDao = store.getPrimaryIndex(String.class, FromToUrls.class);
 	}
-
 	
 	
 	/********
@@ -44,6 +46,7 @@ public class CrawlerDao {
 	 */
 	public void addNewFromToUrls(String fromURL, List<String> toUrls){
 		fromToUrlDao.putNoReturn(new FromToUrls(fromURL, toUrls));
+		store.sync();
 	}
 	
 	
@@ -60,7 +63,8 @@ public class CrawlerDao {
 	 * @param isCrawled
 	 */
 	public void addNewDocumentMeta(String url, String docID, Date crawlDate, boolean isCrawled){
-		documentMetaDao.putNoReturn(new DocumentMeta(url, docID, crawlDate, isCrawled));
+		documentMetaDao.putNoReturn(new DocumentMeta(url, docID, crawlDate, isCrawled));	
+		store.sync();
 	}
 	
 
@@ -118,7 +122,8 @@ public class CrawlerDao {
 	 */
 	public void addNewCrawledDocument(String docID, String url, Date crawlDate, String contentType){
 		crawledDocumentDao.putNoReturn(new CrawledDocument(docID, url, contentType));
-		addNewDocumentMeta(url, docID, crawlDate, true);
+		store.sync();
+		addNewDocumentMeta(url, docID, crawlDate, true);			
 	}
 	
 	/**

@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,11 +36,12 @@ public class GETWorker implements Runnable {
 	private String storageDirectory;
 	private MessageDigest digest;
 	private CrawlerDao dao;
+	private int maxDocSize;
 
 	
 	public GETWorker(ConcurrentHashMap<String, SiteInfo> siteInfoMap, BlockingQueue<URL> crawlQueue, 
 			BlockingQueue<URL> newUrlQueue, int id, BlockingQueue<RawCrawledItem> contentForLinkExtractor, 
-			CrawlerDao dao, String storageDirectory) throws NoSuchAlgorithmException{
+			CrawlerDao dao, String storageDirectory, int maxDocSize) throws NoSuchAlgorithmException{
 		this.siteInfoMap = siteInfoMap;
 		this.crawlQueue = crawlQueue;
 		this.newUrlQueue = newUrlQueue;
@@ -48,6 +50,7 @@ public class GETWorker implements Runnable {
 		this.storageDirectory = storageDirectory;
 		this.dao = dao;
 		this.digest = MessageDigest.getInstance("MD5");
+		this.maxDocSize = maxDocSize;
 
 	}
 	
@@ -147,37 +150,64 @@ public class GETWorker implements Runnable {
 
 			logger.debug(CLASSNAME + ": GETWorker" +  this.id + " Crawled " + url + ", about to parse response");
 			
-			byte[] rawContents = response.getResponseBody();
 			
-			if (null == rawContents){
-				logger.error(CLASSNAME + ": Unable to crawl" + url + " because of no content was received, skipping");
-				return;
-			}
+			// Redirect if is redirected
 			
-			logger.debug(CLASSNAME + ": GETWorker" +  this.id + " crawled " + url + ", taking " + (afterCrawl.getTime() - beforeCrawl.getTime()) + " ms");				
-			ContentType contentType = response.getContentType();
-			
-			if (contentType == Response.ContentType.OTHERS){
-				// Ignore if content type is not recognisedF
-				return;
-			}
-			
-			Date beforeSave = new Date();
-
-			saveDocumentToDisk(url, rawContents, contentType);
-			
-			Date afterSave = new Date();
-			
-			logger.info(CLASSNAME + ": GETWorker" +  this.id + " took: "+ (afterSave.getTime() - beforeSave.getTime()) + "ms to save " + url);
-
-			RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
-			
-			if (this.contentForLinkExtractor.remainingCapacity() > 10){						
-				this.contentForLinkExtractor.put(forLinkExtractor);	
-			} // otherwise drop
-			
-			logger.info(CLASSNAME + " Content for link extractor size: "+ this.contentForLinkExtractor.size());
+			if (isRedirected(response)){
+				URL redirectedURL = response.getLocation();
+				// Adds the URL to the new URL queue
+				logger.debug(CLASSNAME + ": Redirected URL " + redirectedURL + " added to newUrlQueue");
 				
+				try {
+					
+					if (this.newUrlQueue.remainingCapacity() > 10){
+						this.newUrlQueue.put(redirectedURL);	
+					} // Otherwise we just drop
+					
+					
+				} catch (IllegalStateException e){
+					logger.info(CLASSNAME + ": New url queue is full, dropping " + redirectedURL);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			} else if (isTooBig(response.getContentLength())){
+				logger.info("File exceeds maximum file length " + response.getContentLength() + ", skipping");
+			} else if (!isValidResponseType(response)){
+				logger.debug(CLASSNAME + ": URL " + url + " ignored as is neither HTML nor XML");
+			} else if (!response.getContentLanguage().contains("en") && !response.getContentLanguage().equals("NONE")){
+				logger.debug(CLASSNAME + ": URL " + url + " ignored as it's not in English but is in " + response.getContentLanguage());		
+			} else {
+			
+				// We can parse the content
+			
+				byte[] rawContents = response.getResponseBody();
+				
+				if (null == rawContents){
+					logger.error(CLASSNAME + ": Unable to crawl" + url + " because of no content was received, skipping");
+					return;
+				}
+				
+				logger.debug(CLASSNAME + ": GETWorker" +  this.id + " crawled " + url + ", taking " + (afterCrawl.getTime() - beforeCrawl.getTime()) + " ms");				
+				ContentType contentType = response.getContentType();
+				
+				Date beforeSave = new Date();
+	
+				saveDocumentToDisk(url, rawContents, contentType);
+				
+				Date afterSave = new Date();
+				
+				logger.info(CLASSNAME + ": GETWorker" +  this.id + " took: "+ (afterSave.getTime() - beforeSave.getTime()) + "ms to save " + url);
+	
+				RawCrawledItem  forLinkExtractor = new RawCrawledItem(url, rawContents, contentType, true);
+				
+				if (this.contentForLinkExtractor.remainingCapacity() > 10){						
+					this.contentForLinkExtractor.put(forLinkExtractor);	
+				} // otherwise drop
+				
+				logger.info(CLASSNAME + " Content for link extractor size: "+ this.contentForLinkExtractor.size());
+			}	
 		} catch (IllegalStateException e){
 			logger.info(CLASSNAME + ": Link Extractor queue is full, dropping " + url);				
 		} catch (CrawlerException e){
@@ -187,6 +217,45 @@ public class GETWorker implements Runnable {
 			Utils.logStackTrace(e);
 		}
 	}
+	
+	
+	/**
+	 * Checks if response is redirected or not
+	 * @param response
+	 * @return
+	 */
+	private boolean isRedirected(Response response){
+		String responseCode = response.getResponseCode();
+		if (Arrays.asList(CrawlerConstants.REDIRECT_STATUS_CODES).contains(responseCode)){
+			if (null != response.getLocation()){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Determines whether the content type of the response is neither html, xml, text or pdf
+	 * @param response
+	 * @return
+	 */
+	private boolean isValidResponseType(Response response){
+		return (!(response.getContentType() == Response.ContentType.OTHERS));
+	}
+		
+	/**
+	 * Ensures that the size of the response will be smaller than the maximum tolerated document size
+	 * @param response
+	 */
+	private boolean isTooBig(int responseSize){
+		// If response doesn't have a content length then ... response size would be 0
+		
+		int maxDocSizeInBytes = this.maxDocSize * CrawlerConstants.BYTES_IN_MEGABYTE;
+		return (responseSize > maxDocSizeInBytes);
+		
+	}
+	
 	
 	/**
 	 * Updates the site info with the newest crawl date, and puts it back into the siteInfoMap
@@ -201,24 +270,32 @@ public class GETWorker implements Runnable {
 	
 	
 	private void saveDocumentToDisk(URL url, byte[] rawContents, ContentType contentType) throws UnsupportedEncodingException{
-		Date saveDocumentTime = new Date();
+		Date startTime = new Date();
+		Date checkLanguageTime = startTime;
+		Date storeFile = startTime;
+		Date saveToDatabaseTime = startTime;
 		
 		String docID = getDocID(url);
 		Document cleansedDoc;
 		if (contentType != ContentType.PDF){
 			String stringContents = new String(rawContents, CrawlerConstants.CHARSET);
 			if (contentsIsEnglish(stringContents)){
+				
+				checkLanguageTime = new Date();
+				
 				if (contentType == ContentType.TEXT){
 					storeCrawledContentsFile(stringContents.toString(), docID, contentType, url);							
 				} else {
 					cleansedDoc = Jsoup.parse(stringContents);
 					storeCrawledContentsFile(cleansedDoc.toString(), docID, contentType, url);
-				}							
+				}			
+				
+				storeFile = new Date();
+				
 				this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
 				
-				Date finishProcessTime = new Date();
-				logger.debug(CLASSNAME + " GETWorker " + this.id + " stored " + url.toString() + " to file system using "
-						+ (finishProcessTime.getTime() - saveDocumentTime.getTime()) + "ms");
+				saveToDatabaseTime = new Date();
+				
 			} else {
 				// otherwise, don't store
 				logger.debug(CLASSNAME + " content doesn't pass English test, rejecting " + url);
@@ -227,10 +304,14 @@ public class GETWorker implements Runnable {
 		} else {
 			storePDF(rawContents, docID, url);
 			this.dao.addNewCrawledDocument(docID, url.toString(), new Date(), contentType.name());
-			Date finishProcess = new Date();
-			logger.debug(CLASSNAME + " GETWorker " + this.id + " stored " + url.toString() + " to file system using "
-					+ (finishProcess.getTime() - saveDocumentTime.getTime()) + "ms");
 		}
+		
+
+		logger.debug(CLASSNAME + " GETWorker " + this.id + " stored " + url.toString() + " to file system using "
+				+ (checkLanguageTime.getTime() - startTime.getTime()) + "ms to check language, " +
+				(storeFile.getTime() - checkLanguageTime.getTime()) + "ms to store file and " +
+				(saveToDatabaseTime.getTime() - storeFile.getTime()) + "ms to save to database");
+
 
 	}
 	
@@ -242,9 +323,11 @@ public class GETWorker implements Runnable {
 	 * @param url
 	 */
 	private void storeCrawledContentsFile(String contents, String docID, ContentType contentType, URL url){
+
 		String fileName = generateFileName(docID, contentType);
 		File storageFile = new File(this.storageDirectory + "/" + fileName);
 		try {
+			
 			byte[] urlPlusContents = Utils.appendURL(url, contents.getBytes(CrawlerConstants.CHARSET));
 			Utils.zip(urlPlusContents, storageFile.toString());
 		} catch (IOException e){
@@ -369,6 +452,7 @@ public class GETWorker implements Runnable {
 		} else {
 			return false;
 		}
+
 	}
 	
 }

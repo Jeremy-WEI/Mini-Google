@@ -5,20 +5,20 @@ public class CrawlerConstants {
 	// Crawler related constants
 	
 	public static final String CHARSET = "utf-8";
-	public static final int QUEUE_CAPACITY = 5000;
+	public static final int QUEUE_CAPACITY = 50000;
 	public static final int NEW_URL_QUEUE_CAPACITY = 50000;
 	public static final int SMALL_QUEUE_CAPACITY = 10000;
 	public static final int NUM_HEAD_THREADS = 5;
-	public static final int NUM_GET_THREADS = 13;
-	public static final int NUM_EXTRACTOR_THREADS = 4;
-	public static final int NUM_MATCHER_THREADS = 5;
-	public static final int NUM_QUEUER_THREADS = 4;
+	public static final int NUM_GET_THREADS = 15;
+	public static final int NUM_EXTRACTOR_THREADS = 3;
+	public static final int NUM_MATCHER_THREADS = 3;
+	public static final int NUM_QUEUER_THREADS = 1;
 	
 	public static final int THREAD_JOIN_WAIT_TIME = 500;
 	public static final int THREAD_SLEEP_TIME = 1000;
 	
 	public static final String CRAWLER_USER_AGENT = "cis455crawler";
-	public static final long DEFAULT_CRAWLER_DELAY_MS = 300;
+	public static final long DEFAULT_CRAWLER_DELAY_MS = 100;
 	public static final int BYTES_IN_MEGABYTE = 1000000;
 	public static final int DEFAULT_CONTENT_LENGTH = Integer.MAX_VALUE;
 	
@@ -52,5 +52,7 @@ public class CrawlerConstants {
 	
 	// Other misc constants
 	public static final int BYTE_BUFFER_SIZE = 1024;
+	
+	public static final int URL_SEED_SIZE = 100;
 	
 }

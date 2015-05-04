@@ -18,7 +18,8 @@ public class CountMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
 	
 	    String line = value.toString();
 	    System.out.println(line);
-	    Pattern urlFromTo = Pattern.compile("^([^\t]+)\t(.*)");
+	    // Pattern urlFromTo = Pattern.compile("^([^\t]+)\t(.*)");
+	    Pattern urlFromTo = Pattern.compile("^([A-F0-9]{32})\t(.*)");
 	    Matcher urlMatcher = urlFromTo.matcher(line);
 	    if (urlMatcher.matches()) {
 		System.out.println("urlMatcher.group(1): " + urlMatcher.group(1));

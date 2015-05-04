@@ -105,7 +105,7 @@ public class RankServlet extends HttpServlet {
         for (QueryTerm term : queryTerms) {
             set.add(term.getWord());
         }
-        System.out.println(set);
+        // System.out.println(set);
         return set;
     }
 

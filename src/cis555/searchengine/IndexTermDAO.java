@@ -3,6 +3,7 @@ package cis555.searchengine;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import cis555.searchengine.utils.DocHitEntity;
 import cis555.searchengine.utils.IndexTerm;
@@ -184,6 +185,23 @@ public class IndexTermDAO {
         CursorConfig cursorConfig = new CursorConfig();
         cursorConfig.setReadUncommitted(true);
         return termIndex.keys(null, cursorConfig);
+    }
+    
+    
+    public static TreeSet<String> getIndexTerms() {
+		EntityCursor<String> cursor = null;
+		TreeSet<String> set = new TreeSet<String>();
+
+		try {
+			cursor = IndexTermDAO.getIndexTermCursor();
+			
+			for (String word = cursor.first(); word != null; word = cursor.next()) {
+				set.add(word);
+			}
+		} finally {
+			cursor.close();
+		}
+		return set;
     }
 
     /**

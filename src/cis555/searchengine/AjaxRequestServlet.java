@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.json.simple.JSONValue;
+
 import com.sleepycat.persist.EntityCursor;
 
 public class AjaxRequestServlet extends HttpServlet {
@@ -33,10 +35,9 @@ public class AjaxRequestServlet extends HttpServlet {
 			
 			List<String> suggestList = new ArrayList<String>();
 			String query = request.getParameter("term");
-//			System.out.println("query: " + query);
-			query = query.trim().toLowerCase();
+			System.out.println("query: " + query);
 			
-			String[] words = query.split("\\s+");
+			String[] words = query.trim().toLowerCase().split("\\s+");
 			int last = words.length - 1;
 			int suggestCount = 0;
 			String targetWord = words[last];
@@ -47,22 +48,21 @@ public class AjaxRequestServlet extends HttpServlet {
 			}
 			
 			String prefix = prefixBuilder.toString();
-			EntityCursor<String> cursor = null;
-			try {
-				cursor = IndexTermDAO.getIndexTermCursor();
+			
+			@SuppressWarnings("unchecked")
+			TreeSet<String> wordSet = (TreeSet<String>) getServletContext().getAttribute("wordSet");
+			int length = targetWord.length();
+			
+			String endWord = targetWord.substring(0, length-1) + (char)(targetWord.charAt(length-1)+1);
+			for (String word: wordSet.subSet(targetWord, endWord)) {
+				if (suggestCount > 5) break;
 				
-				for (String word = cursor.first(); word != null && suggestCount < 5; word = cursor.next()) {
-					if (word.startsWith(targetWord)) {
-						suggestList.add(prefix + word);
-						suggestCount++;
-					}
-				}
-			} finally {
-				cursor.close();
+				suggestList.add(prefix + word);
+				suggestCount++;
 			}
 	
 			String jsonText = JSONValue.toJSONString(suggestList);
-//			System.out.println("suggestions: " + jsonText);
+			System.out.println("suggestions: " + jsonText);
 		  
 			out.println(jsonText);
 		}

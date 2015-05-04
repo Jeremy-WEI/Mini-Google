@@ -81,13 +81,14 @@ public class ServletHelper {
 //                    .append("\n});")
 //            .append("\n</script>").toString());
         
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(sc.getResource("/script/ajax_script.txt").getPath())))) {
-//        try(BufferedReader br = new BufferedReader(new FileReader(new File(contextPath + "/script/ajax_script.txt")))) {
+//        try(BufferedReader br = new BufferedReader(new FileReader(new File(sc.getResource("/script/ajax_script.txt").getPath())))) {
+        try(BufferedReader br = new BufferedReader(new FileReader(new File("webapps/searchengine/script/ajax_script.txt")))) {
 //        try(BufferedReader br = new BufferedReader(new InputStreamReader(sc.getResourceAsStream("webapps/searchengine/script/ajax_script.txt")))) {
 //        try(BufferedReader br = new BufferedReader(new InputStreamReader(new URL("http://ec2-52-5-242-152.compute-1.amazonaws.com:8080/searchengine/script/ajax_script.txt").openStream()))) {
 
         	String line = br.readLine();
             while (line != null) {
+            	System.out.println(line);
             	pw.write(line);
                 line = br.readLine();
             }

@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 
+import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.Utils;
@@ -33,19 +34,18 @@ public class FetchAndPopulateScript {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        // IndexTermDAO.setup("database");
-        // UrlIndexDAO.setup("database");
-        // PagerankDAO.setup("database");
-        ContentDAO.setup("datatbase");
-        // fetchData();
+         IndexTermDAO.setup("database");
+         UrlIndexDAO.setup("database");
+         PagerankDAO.setup("database");
+        ContentDAO.setup("database");
+//         fetchData();
 
-        // populateDocIDUrl("S3DATA/documentmeta/document_meta.txt");
-        // populateIndexTerm("S3DATA/indexer-output");
-        // populatePagerank("S3DATA/pagerank");
-        // populatePagerank("pagerank");
+         populateDocIDUrl("S3DATA/documentmeta");
+         populateIndexTerm("S3DATA/indexer-output");
+         populatePagerank("S3DATA/wcbucket555");
+         populateDocIDContent("S3DATA/cis555crawleddata");
         // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
-        populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
-        // populatePagerank("pagerank");
+//        populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
 
     }
 
@@ -221,10 +221,12 @@ public class FetchAndPopulateScript {
     }
 
     public static void fetchData() {
-        // S3Adapter s3 = new S3Adapter();
+         S3Adapter s3 = new S3Adapter();
         // s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
         // s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
-        // s3.downloadAllFilesInBucket("pagerank", "S3DATA");
+      // s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
+          s3.downloadAllFilesInBucket("cis555crawleddata", "S3DATA");
+
 
     }
 

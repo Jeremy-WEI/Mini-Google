@@ -12,6 +12,16 @@
          <servlet-name>MainServlet</servlet-name>
          <servlet-class>cis555.searchengine.MainServlet</servlet-class>
      </servlet>
+     
+     <servlet>
+         <servlet-name>ShutdownServlet</servlet-name>
+         <servlet-class>cis555.searchengine.ShutdownServlet</servlet-class>
+     </servlet>
+     
+     <servlet>
+         <servlet-name>AjaxRequestServlet</servlet-name>
+         <servlet-class>cis555.searchengine.AjaxRequestServlet</servlet-class>
+     </servlet>
 
      <servlet>
          <servlet-name>RankServlet</servlet-name>
@@ -25,7 +35,17 @@
 
      <servlet-mapping>
          <servlet-name>MainServlet</servlet-name>
-         <url-pattern>/</url-pattern>
+         <url-pattern></url-pattern>
+     </servlet-mapping>
+     
+     <servlet-mapping>
+         <servlet-name>ShutdownServlet</servlet-name>
+         <url-pattern>/shutdown</url-pattern>
+     </servlet-mapping>
+     
+     <servlet-mapping>
+         <servlet-name>AjaxRequestServlet</servlet-name>
+         <url-pattern>/JSON/AjaxRequest</url-pattern>
      </servlet-mapping>
      
 

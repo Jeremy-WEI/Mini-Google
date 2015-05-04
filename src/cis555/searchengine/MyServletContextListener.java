@@ -15,10 +15,11 @@ public class MyServletContextListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent contextEvent) {
         // ServletContext context = contextEvent.getServletContext();
 
-        String path = "/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/database";
+        String path = "database";
+//        String path = "../../inputdata/database";
         IndexTermDAO.setup(path);
         UrlIndexDAO.setup(path);
-        // PagerankDAO.setup(path);
+        PagerankDAO.setup(path);
         ContentDAO.setup(path);
 
     }

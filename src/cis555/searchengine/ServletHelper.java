@@ -2,14 +2,21 @@ package cis555.searchengine;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Set;
+
+import javax.servlet.ServletContext;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.util.PDFTextStripper;
@@ -23,14 +30,72 @@ import com.amazonaws.util.json.JSONObject;
 
 public class ServletHelper {
     public static void prepareWrite(PrintWriter pw, String contextPath,
-            String title) {
+            String title, ServletContext sc) {
         pw.write("<!DOCTYPE html><html>");
         pw.write("<head>");
         pw.write("<title>" + title + "</title>");
         pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
                 + contextPath + "/stylesheet/bootstrap.min.css\">");
+        System.out.println("contextpath: " + contextPath);
+        addAjax(pw,sc, contextPath);
         pw.write("</head>");
         pw.write("<body>");
+    }
+    
+    public static void addAjax(PrintWriter pw, ServletContext sc, String contextPath) {
+    	pw.write("<script src=\"http://code.jquery.com/jquery-1.7.js\" type=\"text/javascript\"></script>");
+        pw.write("<script src=\"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js\" type=\"text/javascript\"></script>");
+        pw.write("<link href=\"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css\" rel=\"stylesheet\" type=\"text/css\" />");
+        pw.write("<STYLE TYPE=\"text/css\" media=\"all\">");
+        pw.write(".ui-autocomplete {position: absolute; cursor: default; height: 200px; overflow-x: hidden;}");
+        pw.write("</STYLE>");
+        
+//        pw.write(new StringBuilder()
+//        .append("\n<script type=\"text/javascript\">")
+//            .append("\n$(document).ready(function() {")
+//                .append("\n$(\"input#query\").autocomplete({")
+//                    .append("\nwidth: 300,")
+//                    .append("\nmax: 10,")
+//                    .append("\ndelay: 100,")
+//                    .append("\nminLength: 1,")
+//                    .append("\nautoFocus: true,")
+//                    .append("\ncacheLength: 1,")
+//                    .append("\nscroll: true,")
+//                    .append("\nhighlight: false,")
+//                    .append("\nsource: function(request, response {")
+//                        .append("\n$.ajax({")
+//                            .append("\nurl: \"/JSON/AjaxRequest\",")
+//                            .append("\ndataType: \"json\",")
+//                                    .append("\ndata: request,")
+//                                    .append("\nsuccess: function( data, textStatus, jqXHR) {")
+//                                        .append("\nconsole.log( data);")
+//                                        .append("\nvar items = data;")
+//                                        .append("\nresponse(items);")
+//                                    .append("\n},")
+//                                    .append("\nerror: function(jqXHR, textStatus, errorThrown){")
+//                                        .append("\nconsole.log( textStatus);")
+//                                    .append("\n}")
+//                                .append("\n});")
+//                            .append("\n}")
+//                        .append("\n});")
+//                    .append("\n});")
+//            .append("\n</script>").toString());
+        
+        try(BufferedReader br = new BufferedReader(new FileReader(new File(sc.getResource("/script/ajax_script.txt").getPath())))) {
+//        try(BufferedReader br = new BufferedReader(new FileReader(new File(contextPath + "/script/ajax_script.txt")))) {
+//        try(BufferedReader br = new BufferedReader(new InputStreamReader(sc.getResourceAsStream("webapps/searchengine/script/ajax_script.txt")))) {
+//        try(BufferedReader br = new BufferedReader(new InputStreamReader(new URL("http://ec2-52-5-242-152.compute-1.amazonaws.com:8080/searchengine/script/ajax_script.txt").openStream()))) {
+
+        	String line = br.readLine();
+            while (line != null) {
+            	pw.write(line);
+                line = br.readLine();
+            }
+        } catch (FileNotFoundException | MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
     public static void finishWrite(PrintWriter pw) {

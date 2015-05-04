@@ -18,7 +18,7 @@
 
 
   <target name="compile-utils" depends="compile-awsutils">
-    <javac srcdir="src/cis555/utils" destdir="target/WEB-INF/classes" includes="**/*.java" deprecation="on"
+    <javac srcdir="src/cis555/utils" destdir="target/WEB-INF/classes" includes="**/*.java" excludes="**/InterruptThread.java" deprecation="on"
      debug="true" includeantruntime="false">
       <classpath refid="aws.java.sdk.classpath"/>
       <compilerarg value="-Xlint"/>
@@ -34,12 +34,20 @@
     </javac>
   </target>
 
-  <target name="all" depends="compile-awsutils, compile-utils, compile-searchEngine, war"/>
+  <target name="copy-properties">
+    <copy todir="target/WEB-INF/classes">
+      <fileset dir="src/" includes="*.properties"/>
+    </copy>
+  </target>
+
+  <target name="all" depends="compile-awsutils, compile-utils, compile-searchEngine, copy-properties, war"/>
   
-  <target name="war" depends="compile-searchEngine">
+  <target name="war" depends="compile-searchEngine, copy-properties">
     <jar destfile="searchengine.war">
-      <fileset dir="target/" includes="WEB-INF/classes/**/*.class"/>
-      <fileset dir="target/" includes="WEB-INF/lib/**/*.jar" excludes="WEB-INF/lib/pdfbox-app-1.8.9.jar"/>
+      <fileset dir="target/" includes="WEB-INF/classes/**/*.class, WEB-INF/classes/**/*.properties"/>
+      <fileset dir="target/" includes="stylesheet/**/*.css"/>
+      <fileset dir="target/" includes="script/**/*.txt"/>
+      <fileset dir="target/" includes="WEB-INF/lib/**/*.jar" excludes="WEB-INF/lib/pdfbox-app-1.8.9.jar, WEB-INF/lib/servlet-api.jar"/>
       <fileset dir="target/" includes="WEB-INF/*.xml"/>
     </jar>
   </target>

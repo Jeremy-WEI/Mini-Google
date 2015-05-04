@@ -41,7 +41,7 @@ public class RankServlet extends HttpServlet {
         PrintWriter pw = response.getWriter();
 
         ServletHelper.prepareWrite(pw, request.getContextPath(),
-                "CIS555 Search Engine");
+                "CIS555 Search Engine", getServletContext());
 
         pw.write("<div class=\"container\">");
 

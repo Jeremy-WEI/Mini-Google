@@ -100,10 +100,11 @@ public class ServletHelper {
                 int index = 0;
                 while (tokenizer.hasMoreTokens()) {
                     if ((index >= start) && (index <= end)) {
-                        String word = tokenizer.nextToken().toLowerCase();
+                        String word = tokenizer.nextToken();
                         boolean flag = false;
                         for (String tmp : words) {
-                            if (tmp.length() > 1 && word.startsWith(tmp)) {
+                            if (tmp.length() > 1
+                                    && word.toLowerCase().startsWith(tmp)) {
                                 flag = true;
                                 break;
                             }

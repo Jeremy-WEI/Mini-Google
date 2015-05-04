@@ -3,9 +3,11 @@ package cis555.searchengine;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.servlet.ServletException;
@@ -14,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.json.simple.JSONValue;
+
+import cis555.searchengine.utils.IndexTerm;
 
 import com.sleepycat.persist.EntityCursor;
 
@@ -41,6 +45,9 @@ public class AjaxRequestServlet extends HttpServlet {
 			int last = words.length - 1;
 			int suggestCount = 0;
 			String targetWord = words[last];
+			int length = targetWord.length();
+			String endWord = targetWord.substring(0, length-1) + (char)(targetWord.charAt(length-1)+1);
+			
 			StringBuilder prefixBuilder = new StringBuilder();
 			
 			for (int i = 0; i < last; i++) {
@@ -50,14 +57,26 @@ public class AjaxRequestServlet extends HttpServlet {
 			String prefix = prefixBuilder.toString();
 			
 			@SuppressWarnings("unchecked")
-			TreeSet<String> wordSet = (TreeSet<String>) getServletContext().getAttribute("wordSet");
-			int length = targetWord.length();
+			TreeSet<IndexTerm> wordSet = (TreeSet<IndexTerm>) getServletContext().getAttribute("wordSet");
+			SortedSet<IndexTerm> targetRangeSet = wordSet.subSet(new IndexTerm(targetWord, 0), new IndexTerm(endWord, 0));
 			
-			String endWord = targetWord.substring(0, length-1) + (char)(targetWord.charAt(length-1)+1);
-			for (String word: wordSet.subSet(targetWord, endWord)) {
+			TreeSet<IndexTerm> idfSortedTargetRangeSet = new TreeSet<IndexTerm> (
+					new Comparator<IndexTerm>() {
+						@Override
+	                    public int compare(IndexTerm c1, IndexTerm c2) {
+							double c1Idf = c1.getIdfValue();
+							double c2Idf = c2.getIdfValue();
+							
+							return c1Idf > c2Idf ? +1 : c1Idf < c2Idf ? -1 : 0;
+						}
+					});
+			
+			idfSortedTargetRangeSet.addAll(targetRangeSet);
+			
+			for (IndexTerm word: idfSortedTargetRangeSet) {
 				if (suggestCount > 5) break;
 				
-				suggestList.add(prefix + word);
+				suggestList.add(prefix + word.getWord());
 				suggestCount++;
 			}
 	

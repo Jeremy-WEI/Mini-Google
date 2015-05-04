@@ -1,6 +1,7 @@
 package cis555.searchengine;
 
 import java.io.File;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -188,15 +189,23 @@ public class IndexTermDAO {
     }
     
     
-    public static TreeSet<String> getIndexTerms() {
+    public static TreeSet<IndexTerm> getIndexTerms() {
 		EntityCursor<String> cursor = null;
-		TreeSet<String> set = new TreeSet<String>();
+		
+		TreeSet<IndexTerm> set = new TreeSet<IndexTerm> (
+				new Comparator<IndexTerm>() {
+					@Override
+                    public int compare(IndexTerm c1, IndexTerm c2) {
+						return c1.getWord().compareToIgnoreCase(c2.getWord());
+					}
+				});
+		
 
 		try {
 			cursor = IndexTermDAO.getIndexTermCursor();
 			
 			for (String word = cursor.first(); word != null; word = cursor.next()) {
-				set.add(word);
+				set.add(termIndex.get(word));
 			}
 		} finally {
 			cursor.close();

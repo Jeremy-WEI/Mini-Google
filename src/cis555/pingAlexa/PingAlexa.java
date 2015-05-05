@@ -4,10 +4,15 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.List;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.log4j.Logger;
 
@@ -27,16 +32,22 @@ public class PingAlexa {
 
 	private static final Logger logger = Logger.getLogger(PingAlexa.class);
 	private static final String CLASSNAME = PingAlexa.class.getName();
-
-	public static void main(String[] args){
-		PingAlexa alexa = new PingAlexa();
+	private MessageDigest digest;
+	
+	
+	public static void main(String[] args) throws NoSuchAlgorithmException{
+		PingAlexa alexa = new PingAlexa();	
 		alexa.extractDataFromdDatabase();
+	}
+	
+	private PingAlexa() throws NoSuchAlgorithmException{
+		digest = MessageDigest.getInstance("MD5");
 	}
 	
 	private void extractDataFromdDatabase(){
 		CrawlerDao dao = initialiseDb();
 		List<CrawledDocument> crawledDocuments = dao.getAllCrawledDocuments();
-		logger.info(CLASSNAME + " extracting urls");
+		logger.info(CLASSNAME + " expecting " + crawledDocuments.size() + " urls");
 		pingAlexa(crawledDocuments);
 	}
 	
@@ -76,7 +87,7 @@ public class PingAlexa {
 				
 				Response response = CrawlerUtils.retrieveHttpResource(absoluteURL, Method.GET, "");
 				if (null == response){
-					rank = (url + "\t" + -1);
+					rank = (hashUrlToHexStringArray(url) + "\t" + -1);
 					logger.info(rank);
 					writer.write(rank + "\n");
 					continue;
@@ -86,7 +97,7 @@ public class PingAlexa {
 				String rankString = "<REACH RANK=";
 				int index = content.indexOf(rankString);
 				if (index < 0){
-					rank = (url + "\t" + -1);
+					rank = (hashUrlToHexStringArray(url) + "\t" + -1);
 					logger.info(rank);
 					writer.write(rank + "\n");
 					continue;
@@ -95,7 +106,7 @@ public class PingAlexa {
 				int endIndex = content.indexOf("\"/>", index);
 				
 				if (endIndex < 0){
-					rank = (url + "\t" + -1);
+					rank = (hashUrlToHexStringArray(url) + "\t" + -1);
 					logger.info(rank);
 					writer.write(rank + "\n");
 					continue;
@@ -103,7 +114,7 @@ public class PingAlexa {
 
 				String substring = content.substring(index + rankString.length() + 1, endIndex);
 				if (substring.matches("\\d+")){
-					rank = (url + "\t" + Integer.parseInt(substring));
+					rank = (hashUrlToHexStringArray(url) + "\t" + Integer.parseInt(substring));
 					logger.info(rank);
 					writer.write(rank + "\n");					
 				} else {
@@ -131,6 +142,41 @@ public class PingAlexa {
 		}
 
 	}
+	
+	
+    /**
+     * Hashes a url using MD5, and returns a Hex-string representation of the
+     * hash
+     * 
+     * @param url
+     * @return
+     * @throws UnsupportedEncodingException 
+     * @throws NoSuchAlgorithmException 
+     */
+    public String hashUrlToHexStringArray(String urlString) {
+        byte[] hash = hashUrlToByteArray(urlString);
+        return DatatypeConverter.printHexBinary(hash);
+    }
+
+    /**
+     * Hashes a url using MD5, returns a byte array
+     * 
+     * @param url
+     * @return
+     * @throws UnsupportedEncodingException 
+     * @throws NoSuchAlgorithmException 
+     */
+    public byte[] hashUrlToByteArray(String urlString) {
+    	try {
+        	
+            digest.reset();
+            digest.update(urlString.getBytes(CrawlerConstants.CHARSET));
+            return digest.digest();    		
+    	} catch (UnsupportedEncodingException e){
+    		Utils.logStackTrace(e);
+    		throw new RuntimeException(e);
+    	}
+    }
 	
 	
 }

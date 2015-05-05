@@ -7,7 +7,7 @@
     <property name="file.separator" location="/"/>
     <property name="project.root" location="${basedir}"/>
     <property name="build.dir" location="${project.root}"/>
-    <property name="build.target.dir" location="${project.root}${file.separator}target"/>
+    <property name="build.target.dir" location="${project.root}${file.separator}crawler_target"/>
 
   <property name="master_dispatcher.dir" location="${build.target.dir}${file.separator}master"/>
     <property name="master_web-inf.dir" location="${master_dispatcher.dir}${file.separator}WEB-INF"/>

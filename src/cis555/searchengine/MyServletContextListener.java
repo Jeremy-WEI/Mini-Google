@@ -18,8 +18,8 @@ public class MyServletContextListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent contextEvent) {
     	ServletContext context = contextEvent.getServletContext();
 
-        String path = "database";
-//        String path = "../../inputdata/database";
+//        String path = "database";
+        String path = "../../inputdata/database";
         IndexTermDAO.setup(path);
         UrlIndexDAO.setup(path);
         PagerankDAO.setup(path);

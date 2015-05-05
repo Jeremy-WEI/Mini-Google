@@ -48,6 +48,7 @@ public class FetchAndPopulateScript {
 //        populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
 
     }
+    
 
     public static void populateDocIDUrl(String dirName) throws IOException {
         System.out.println("Start Building DocID-URL Database...");

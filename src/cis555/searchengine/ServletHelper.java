@@ -49,8 +49,8 @@ public class ServletHelper {
         pw.write(".ui-autocomplete {position: absolute; cursor: default; height: 200px; overflow-x: hidden;}");
         pw.write("</STYLE>");
         
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(sc.getResource("/script/ajax_script.txt").getPath())))) {
-//        try(BufferedReader br = new BufferedReader(new FileReader(new File("webapps/searchengine/script/ajax_script.txt")))) {
+//        try(BufferedReader br = new BufferedReader(new FileReader(new File(sc.getResource("/script/ajax_script.txt").getPath())))) {
+        try(BufferedReader br = new BufferedReader(new FileReader(new File("webapps/searchengine/script/ajax_script.txt")))) {
 
         	String line = br.readLine();
             while (line != null) {

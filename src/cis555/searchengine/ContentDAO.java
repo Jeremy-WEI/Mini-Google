@@ -87,5 +87,14 @@ public class ContentDAO {
     public static DocIDContentInfo getContentInfo(String docID) {
         return contentIndex.get(docID);
     }
+    
+    /**
+     * Determines if a doc id already exists in the database or not
+     * @param docID
+     * @return
+     */
+    public static boolean contentExists(String docID){
+    	return contentIndex.contains(docID);
+    }
 
 }

@@ -75,27 +75,44 @@ public class S3Adapter {
 	 * @param OutDirectory
 	 */
 	public void downloadAllFilesInBucket(String bucketName, String OutDirectory){	
-   	 	ObjectListing objectListing = client.listObjects(new ListObjectsRequest().withBucketName(bucketName));
+//   	 	ObjectListing objectListing = client.listObjects(new ListObjectsRequest().withBucketName(bucketName));
      
    	 	File dir = new File(OutDirectory, bucketName);
 	    if (dir.mkdirs()) {
 	    	System.out.println("Created " + dir.getName() + " directory.");
 	    }
 	    
-	    for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-	    	if (objectSummary.getSize() < 1) continue;
-	    	
-	    	String k = objectSummary.getKey();
-	    	File f = new File(k);
-	    	
-	    	System.out.println("Processsing: " + k);
-	    	Download d = manager.download(new GetObjectRequest(bucketName, k), new File(String.format("%s/%s", dir.getPath(), f.getName())));
-	    	try {
-				d.waitForCompletion();
-			} catch (AmazonClientException | InterruptedException e) {
-				e.printStackTrace();
-			}
-	    }
+	    String preLastKey = "";
+	    String lastKey = "";
+	    
+	    
+	    do{
+	        preLastKey = lastKey;
+
+	        ListObjectsRequest lstRQ = new ListObjectsRequest().withBucketName(bucketName);  
+
+	        lstRQ.setMarker(lastKey);  
+
+	        ObjectListing objectListing = client.listObjects(lstRQ);
+
+
+	        //  loop and get file on S3
+	        for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+		    	if (objectSummary.getSize() < 1) continue;
+		    	
+		    	String k = objectSummary.getKey();
+		    	File f = new File(k);
+		    	
+		    	System.out.println("Processsing: " + k);
+		    	Download d = manager.download(new GetObjectRequest(bucketName, k), new File(String.format("%s/%s", dir.getPath(), f.getName())));
+		    	try {
+					d.waitForCompletion();
+				} catch (AmazonClientException | InterruptedException e) {
+					e.printStackTrace();
+				}
+	        }
+	} while(lastKey != preLastKey);
+
 	}
 	
 	/**
@@ -104,29 +121,44 @@ public class S3Adapter {
 	 * @param OutDirectory
 	 */
 	public void downloadDirectoryInBucket(String bucketName, String inDirectory, String outDirectory){	
-   	 	ObjectListing objectListing = client.listObjects(new ListObjectsRequest().withBucketName(bucketName));
      
    	 	File dir = new File(outDirectory, bucketName);
 	    if (dir.mkdirs()) {
 	    	System.out.println("Created " + dir.getName() + " directory.");
 	    }
 	    
-	    for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-	    	if (objectSummary.getSize() < 1) continue;
-	    	String k = objectSummary.getKey();
-	    	if (!k.startsWith(inDirectory + '/')) continue;
-	    	
-	    	System.out.println("Processsing: " + k);
-	    	File f = new File(k);
-         
-	    	Download d = manager.download(new GetObjectRequest(bucketName, k), new File(String.format("%s/%s", dir.getPath(), f.getName())));
-	    	
-	    	try {
-				d.waitForCompletion();
-			} catch (AmazonClientException | InterruptedException e) {
-				e.printStackTrace();
-			}
-	    }
+	    String preLastKey = "";
+	    String lastKey = "";
+	    
+	    
+	    do{
+	        preLastKey = lastKey;
+
+	        ListObjectsRequest lstRQ = new ListObjectsRequest().withBucketName(bucketName);  
+
+	        lstRQ.setMarker(lastKey);  
+
+	        ObjectListing objectListing = client.listObjects(lstRQ);
+	    
+		    for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+		    	if (objectSummary.getSize() < 1) continue;
+		    	String k = objectSummary.getKey();
+		    	if (!k.startsWith(inDirectory + '/')) continue;
+		    	
+		    	System.out.println("Processsing: " + k);
+		    	File f = new File(k);
+	         
+		    	Download d = manager.download(new GetObjectRequest(bucketName, k), new File(String.format("%s/%s", dir.getPath(), f.getName())));
+		    	
+		    	try {
+					d.waitForCompletion();
+				} catch (AmazonClientException | InterruptedException e) {
+					e.printStackTrace();
+				}
+		    }
+	    
+		} while(lastKey != preLastKey);
+
 	}
 	
 	

@@ -1,4 +1,10 @@
 <project name="searchengine" default="all" basedir="./">
+	  <property name="ant.build.javac.source" value="1.7"/>
+	  <property name="ant.build.javac.target" value="1.7"/>
+	    <property name="shared.root" location="${basedir}"/>
+    <property name="file.separator" location="/"/>
+
+    <property name="conf.dir"      location="${basedir}${file.separator}conf"/>
 
   <path id="aws.java.sdk.classpath">
     <fileset dir="${basedir}/lib" includes="**/*.jar"/>
@@ -38,6 +44,8 @@
   <target name="all" depends="compile-awsutils, compile-utils, compile-searchEngine, war"/>
   
   <target name="war" depends="compile-searchEngine">
+    <copy file="${conf.dir}${file.separator}log4jSearchEngine.properties" tofile="target/classes/log4j.properties" overwrite="true" />
+
     <war destfile="searchengine.war">
       <fileset dir="WebContent"/>
       <lib dir="lib" excludes="pdfbox-app-1.8.9.jar, servlet-api.jar"/>

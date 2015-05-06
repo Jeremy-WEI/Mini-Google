@@ -19,7 +19,7 @@ public class MyServletContextListener implements ServletContextListener {
     	ServletContext context = contextEvent.getServletContext();
 
 //        String path = "database";
-        String path = "../../inputdata/database";
+        String path = "/usr/inputdata/database";
         IndexTermDAO.setup(path);
         UrlIndexDAO.setup(path);
         PagerankDAO.setup(path);

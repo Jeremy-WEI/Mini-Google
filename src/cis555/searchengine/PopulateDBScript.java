@@ -21,7 +21,6 @@ import cis555.searchengine.utils.DocHitEntity;
 import cis555.utils.CrawlerConstants;
 import cis555.utils.Utils;
 
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
@@ -134,8 +133,10 @@ public class PopulateDBScript {
                     break;
                 default:
                     StringBuilder stringBuilder = new StringBuilder();
+                    ByteArrayInputStream bais = new ByteArrayInputStream(
+                            realContent);
                     int ch;
-                    while ((ch = new ByteArrayInputStream(realContent).read()) != -1) {
+                    while ((ch = bais.read()) != -1) {
                         stringBuilder.append((char) ch);
                     }
                     content = stringBuilder.toString();

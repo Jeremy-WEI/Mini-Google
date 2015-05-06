@@ -1,68 +1,60 @@
 package cis555.searchengine;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.util.Iterator;
+import java.nio.charset.Charset;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.PDFTextStripper;
+import org.jsoup.Jsoup;
+
+import cis555.utils.CrawlerConstants;
+import cis555.utils.Utils;
 
 import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
 
 public class Test {
 
-    private static String extractInfoFromWiki(String query) {
-        String url = "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles="
-                + URLEncoder.encode(query) + "&format=json&exintro=1";
-        System.out.println(url);
-        URLConnection conn;
-        try {
-            conn = new URL(url).openConnection();
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    conn.getInputStream()));
-            StringBuilder sb = new StringBuilder();
-            String inputLine;
-            while ((inputLine = in.readLine()) != null)
-                sb.append(inputLine);
-            in.close();
-            System.out.println(sb);
-            JSONObject json = (JSONObject) ((JSONObject) new JSONObject(
-                    sb.toString()).get("query")).get("pages");
-            Iterator<String> iter = json.keys();
-            String key = null;
-            while (iter.hasNext()) {
-                key = iter.next();
-                break;
-            }
-            return ((JSONObject) json.get(key)).getString("extract");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
-        }
-
-    }
-
     public static void main(String... args) throws MalformedURLException,
             IOException, JSONException {
-        // Document document = Jsoup.parse(new URL(
-        // "http://www.bbc.com/autos/story/20150501-from-denmark"), 3000);
-        // Elements links = document.select("img[src]");
-        // for (Element link : links) {
-        // System.out.println(link.attr("abs:src"));
-        // }
-        // links = document.select("a[href]");
-        // for (Element link : links) {
-        // System.out.println(link.attr("abs:href"));
-        // }
-
-        System.out.println(extractInfoFromWiki("Computer Science"));
-        // System.out.println(URLEncoder.encode(s,
-        // enc).encode("United States"));
-        // JSONObject json = new JSONObject(
-        // "http://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=Threadless&exintro=1");
-        // System.out.println(json.get("extract"));
+        File f = new File("6CC3F1423DA9819753E869418E39CD14.xml.gzip");
+        String fileName = f.getName();
+        String docID = fileName.substring(0, fileName.indexOf('.'));
+        String type = fileName.substring(fileName.indexOf('.') + 1,
+                fileName.lastIndexOf('.'));
+        byte[] rawContent = Utils.unzip(f);
+        byte[] realContent = new byte[rawContent.length
+                - CrawlerConstants.MAX_URL_LENGTH * 2];
+        System.arraycopy(rawContent, CrawlerConstants.MAX_URL_LENGTH * 2,
+                realContent, 0, rawContent.length
+                        - CrawlerConstants.MAX_URL_LENGTH * 2);
+        String content = "";
+        switch (type) {
+        case "pdf":
+            PDDocument document = PDDocument.load(new ByteArrayInputStream(
+                    realContent));
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setStartPage(1);
+            stripper.setEndPage(Integer.MAX_VALUE);
+            content = stripper.getText(document);
+            document.close();
+            break;
+        case "html":
+            content = Jsoup
+                    .parse(new ByteArrayInputStream(realContent),
+                            Charset.defaultCharset().name(), "").body().text();
+            break;
+        default:
+            StringBuilder stringBuilder = new StringBuilder();
+            int ch;
+            while ((ch = new ByteArrayInputStream(realContent).read()) != -1) {
+                stringBuilder.append((char) ch);
+            }
+            content = stringBuilder.toString();
+            break;
+        }
+        System.out.println(content);
     }
 }

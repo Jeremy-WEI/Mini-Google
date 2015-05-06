@@ -28,7 +28,7 @@ public class MainServlet extends HttpServlet {
         pw.write("<div class=\"container\">");
 
         pw.write("<div style=\"margin: 100px;\">");
-        pw.write("<form action=\"search\" method=\"GET\" class=\"form-horizontal col-md-12\">");
+        pw.write("<form action=\"/searchengine/search\" method=\"GET\" class=\"form-horizontal col-md-12\">");
         pw.write("<div class=\"form-group\">");
         pw.write("<div class=\"row\">");
         pw.write("<div class=\"col-md-10\">");

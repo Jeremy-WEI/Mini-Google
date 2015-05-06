@@ -1,7 +1,6 @@
 package cis555.searchengine;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -12,17 +11,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.util.PDFTextStripper;
-import org.jsoup.Jsoup;
-
-import cis555.searchengine.utils.DocIDContentInfo;
 import cis555.searchengine.utils.WeightedDocID;
 import cis555.utils.FastTokenizer;
 
@@ -99,6 +92,8 @@ public class ServletHelper {
             FastTokenizer tokenizer = new FastTokenizer(content);
             int start = w.getPreviewStartPos();
             int end = w.getPreviewEndPos();
+            sb.append("Start Index: " + start + "\n");
+            sb.append("End Index: " + end + "\n");
             int index = 0;
             while (tokenizer.hasMoreTokens()) {
                 if ((index >= start) && (index <= end)) {

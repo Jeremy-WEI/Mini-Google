@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 
+import cis555.aws.utils.AWSClientAdapters;
 import cis555.aws.utils.S3Adapter;
 import cis555.searchengine.utils.DocHitEntity;
 import cis555.utils.CrawlerConstants;
@@ -24,7 +25,7 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
  * @author cis455
  *
  */
-public class FetchAndPopulateScript {
+public class PopulateDBScript {
 
     private static int docNumber;
     private static double avgWord;
@@ -35,17 +36,17 @@ public class FetchAndPopulateScript {
      */
     public static void main(String[] args) throws IOException {
          IndexTermDAO.setup("database");
-         UrlIndexDAO.setup("database");
          PagerankDAO.setup("database");
-        ContentDAO.setup("database");
-//         fetchData();
+//         UrlIndexDAO.setup("database");
+//         ContentDAO.setup("database");
 
-         populateDocIDUrl("S3DATA/documentmeta");
+//         populateDocIDUrl("S3DATA/documentmeta");
          populateIndexTerm("S3DATA/indexer-output");
          populatePagerank("S3DATA/wcbucket555");
-         populateDocIDContent("S3DATA/cis555crawleddata");
-        // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
-//        populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
+//         populateDocIDContent("S3DATA/cis555crawleddata");
+
+//         populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+//         populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
 
     }
     
@@ -187,13 +188,8 @@ public class FetchAndPopulateScript {
     }
 
     private static void getFileNumberAndAvgWord() {
-
-        String ACCESS_KEY = "AKIAIHWLNGX7VTENATXQ";
-        String SECRET_KEY = "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";
-        AmazonDynamoDBClient client = new AmazonDynamoDBClient(
-                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
-
-        // AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
+    	
+    	AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
 
         System.out.println("Connecting to DynamoDB...");
         ScanResult result = null;
@@ -222,11 +218,11 @@ public class FetchAndPopulateScript {
     }
 
     public static void fetchData() {
-         S3Adapter s3 = new S3Adapter();
-        // s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
-        // s3.downloadAllFilesInBucket("indexer-output", "S3DATA");
-      // s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
-          s3.downloadAllFilesInBucket("cis555crawleddata", "S3DATA");
+    	S3Adapter s3 = new S3Adapter();
+        s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
+        s3.downloadDirectoryInBucket("indexer-output","200k-output", "S3DATA");
+        s3.downloadAllFilesInBucket("cis555crawleddata", "S3DATA");
+//        s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
 
 
     }

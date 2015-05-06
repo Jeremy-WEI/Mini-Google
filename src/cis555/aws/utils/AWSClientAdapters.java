@@ -1,5 +1,6 @@
 package cis555.aws.utils;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
@@ -67,7 +68,19 @@ public class AWSClientAdapters {
 	 * Generate an Amazon S3 client
 	 */
 	public static AmazonS3Client getS3Client(){
+		
 		s3Client = new AmazonS3Client(new InstanceProfileCredentialsProvider());
+        Region usEast1 = Region.getRegion(Regions.US_EAST_1);
+        s3Client.setRegion(usEast1);
+        return s3Client;
+	}
+	
+	/**
+	 * Generate an Amazon S3 client
+	 */
+	public static AmazonS3Client getS3Client(ClientConfiguration config){
+		
+		s3Client = new AmazonS3Client(new InstanceProfileCredentialsProvider(), config);
         Region usEast1 = Region.getRegion(Regions.US_EAST_1);
         s3Client.setRegion(usEast1);
         return s3Client;

@@ -8,7 +8,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Map;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -40,15 +39,15 @@ public class PopulateDBScript {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-//         IndexTermDAO.setup("database");
-//         PagerankDAO.setup("database");
-//         UrlIndexDAO.setup("database");
-         ContentDAO.setup("database");
+        // IndexTermDAO.setup("database");
+        // PagerankDAO.setup("database");
+        // UrlIndexDAO.setup("database");
+        ContentDAO.setup("database");
 
-//         populateDocIDUrl("S3DATA/documentmeta");
-//         populateIndexTerm("S3DATA/indexer-output");
-//         populatePagerank("S3DATA/wcbucket555");
-         populateDocIDContent("S3DATA/cis555crawleddata");
+        // populateDocIDUrl("S3DATA/documentmeta");
+        // populateIndexTerm("S3DATA/indexer-output");
+        // populatePagerank("S3DATA/wcbucket555");
+        populateDocIDContent("S3DATA/cis555crawleddata");
 
         // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
         // populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
@@ -106,12 +105,13 @@ public class PopulateDBScript {
                 // ContentDAO.putPagerank(docID, type, content);
                 String fileName = f.getName();
                 String docID = fileName.substring(0, fileName.indexOf('.'));
-                
-                if (ContentDAO.contentExists(docID)){
-                	System.out.println(docID + " already exists in the database, skipping");
-                	continue;
+
+                if (ContentDAO.contentExists(docID)) {
+                    System.out.println(docID
+                            + " already exists in the database, skipping");
+                    continue;
                 }
-                
+
                 String type = fileName.substring(fileName.indexOf('.') + 1,
                         fileName.lastIndexOf('.'));
                 byte[] rawContent = Utils.unzip(f);
@@ -120,7 +120,8 @@ public class PopulateDBScript {
                 System.arraycopy(rawContent,
                         CrawlerConstants.MAX_URL_LENGTH * 2, realContent, 0,
                         rawContent.length - CrawlerConstants.MAX_URL_LENGTH * 2);
-                String content = "";String url = Utils.getURL(realContent);
+                String content = "";
+                String url = Utils.getURL(rawContent);
                 switch (type) {
                 case "pdf":
                     PDDocument document = PDDocument
@@ -134,8 +135,7 @@ public class PopulateDBScript {
                 case "html":
                     content = Jsoup
                             .parse(new ByteArrayInputStream(realContent),
-                                    Charset.defaultCharset().name(), "").body()
-                            .text();
+                                    "UTF-8", url).body().text();
                     break;
                 default:
                     StringBuilder stringBuilder = new StringBuilder();

@@ -27,7 +27,10 @@
 		<servlet-name>RankServlet</servlet-name>
 		<servlet-class>cis555.searchengine.RankServlet</servlet-class>
 	</servlet>
-
+<servlet>
+		<servlet-name>HelperServlet</servlet-name>
+		<servlet-class>cis555.searchengine.HelperServlet</servlet-class>
+	</servlet>
 	<servlet-mapping>
 		<servlet-name>RankServlet</servlet-name>
 		<url-pattern>/search</url-pattern>

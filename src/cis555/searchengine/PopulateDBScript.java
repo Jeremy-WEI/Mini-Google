@@ -42,12 +42,14 @@ public class PopulateDBScript {
         // IndexTermDAO.setup("database");
         // PagerankDAO.setup("database");
         // UrlIndexDAO.setup("database");
-        ContentDAO.setup("database");
+//        ContentDAO.setup("database");
+        AlexaDAO.setup("database");
 
         // populateDocIDUrl("S3DATA/documentmeta");
         // populateIndexTerm("S3DATA/indexer-output");
         // populatePagerank("S3DATA/wcbucket555");
-        populateDocIDContent("S3DATA/cis555crawleddata");
+//        populateDocIDContent("S3DATA/cis555crawleddata");
+        populateAlexaRanking("S3DATA/cis555alexa");
 
         // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
         // populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
@@ -232,6 +234,35 @@ public class PopulateDBScript {
             System.out.println("Finish Processing " + f.getName() + "...");
         }
     }
+    
+    
+
+    public static void populateAlexaRanking(String dirName) throws IOException {
+
+        System.out.println("Start Building AlexaRanking Database...");
+        File dir = new File(dirName);
+
+        for (File f : dir.listFiles()) {
+            if (f.isHidden())
+                continue;
+            System.out.println("Start Processing " + f.getName() + "...");
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            String line = null;
+
+            while ((line = br.readLine()) != null) {
+                String[] tokens = line.split("\\s+");
+                if (tokens.length < 2)
+                    continue;
+                if (tokens[0].length() != 32)
+                    continue;
+                AlexaDAO.putPagerank(tokens[0], Integer.parseInt(tokens[1]));
+            }
+
+            br.close();
+            System.out.println("Finish Processing " + f.getName() + "...");
+        }
+    }
+
 
     private static void getFileNumberAndAvgWord() {
 

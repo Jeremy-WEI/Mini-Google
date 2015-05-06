@@ -23,7 +23,7 @@ hs_err_pid*
 searchengine.war
 .settings/*
 /zipdata/*
-
+/WebContent/META-INF/*
 
 .classpath
 .project

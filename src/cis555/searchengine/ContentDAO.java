@@ -54,14 +54,27 @@ public class ContentDAO {
     }
 
     /**
-     * Store the given pair of docID, type, content in the database.
+     * Store the given pair of docID, content in the database.
      * 
      * @param docID
-     * @param type
      * @param content
      */
-    public static void putPagerank(String docID, String type, byte[] content) {
-        contentIndex.put(new DocIDContentInfo(docID, type, content));
+    public static void putPagerank(String docID, String content) {
+        contentIndex.put(new DocIDContentInfo(docID, content));
+    }
+
+    /**
+     * Retrieve the content from the database given its docID.
+     * 
+     * @param docID
+     *            The primary key for the contentIndex.
+     * @return content
+     */
+    public static String getContent(String docID) {
+        DocIDContentInfo docContentInfo = contentIndex.get(docID);
+        if (docContentInfo == null)
+            return "";
+        return docContentInfo.getContent();
     }
 
     /**

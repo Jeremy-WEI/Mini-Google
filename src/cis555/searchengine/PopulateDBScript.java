@@ -4,10 +4,16 @@
 package cis555.searchengine;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Map;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.PDFTextStripper;
+import org.jsoup.Jsoup;
 
 import cis555.aws.utils.AWSClientAdapters;
 import cis555.aws.utils.S3Adapter;
@@ -35,21 +41,20 @@ public class PopulateDBScript {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-         IndexTermDAO.setup("database");
-         PagerankDAO.setup("database");
-//         UrlIndexDAO.setup("database");
-//         ContentDAO.setup("database");
+        IndexTermDAO.setup("database");
+        PagerankDAO.setup("database");
+        // UrlIndexDAO.setup("database");
+        // ContentDAO.setup("database");
 
-//         populateDocIDUrl("S3DATA/documentmeta");
-         populateIndexTerm("S3DATA/indexer-output");
-         populatePagerank("S3DATA/wcbucket555");
-//         populateDocIDContent("S3DATA/cis555crawleddata");
+        // populateDocIDUrl("S3DATA/documentmeta");
+        populateIndexTerm("S3DATA/indexer-output");
+        populatePagerank("S3DATA/wcbucket555");
+        // populateDocIDContent("S3DATA/cis555crawleddata");
 
-//         populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
-//         populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
+        // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");
+        // populateDocIDContent("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/zipdata");
 
     }
-    
 
     public static void populateDocIDUrl(String dirName) throws IOException {
         System.out.println("Start Building DocID-URL Database...");
@@ -89,17 +94,54 @@ public class PopulateDBScript {
                 continue;
             System.out.println("Start Processing " + f.getName() + "...");
             try {
+                // String fileName = f.getName();
+                // String docID = fileName.substring(0, fileName.indexOf('.'));
+                // String type = fileName.substring(fileName.indexOf('.') + 1,
+                // fileName.lastIndexOf('.'));
+                // byte[] rawContent = Utils.unzip(f);
+                // byte[] content = new byte[rawContent.length
+                // - CrawlerConstants.MAX_URL_LENGTH * 2];
+                // System.arraycopy(rawContent,
+                // CrawlerConstants.MAX_URL_LENGTH * 2, content, 0,
+                // rawContent.length - CrawlerConstants.MAX_URL_LENGTH * 2);
+                // ContentDAO.putPagerank(docID, type, content);
                 String fileName = f.getName();
                 String docID = fileName.substring(0, fileName.indexOf('.'));
                 String type = fileName.substring(fileName.indexOf('.') + 1,
                         fileName.lastIndexOf('.'));
                 byte[] rawContent = Utils.unzip(f);
-                byte[] content = new byte[rawContent.length
+                byte[] realContent = new byte[rawContent.length
                         - CrawlerConstants.MAX_URL_LENGTH * 2];
                 System.arraycopy(rawContent,
-                        CrawlerConstants.MAX_URL_LENGTH * 2, content, 0,
+                        CrawlerConstants.MAX_URL_LENGTH * 2, realContent, 0,
                         rawContent.length - CrawlerConstants.MAX_URL_LENGTH * 2);
-                ContentDAO.putPagerank(docID, type, content);
+                String content = "";
+                switch (type) {
+                case "pdf":
+                    PDDocument document = PDDocument
+                            .load(new ByteArrayInputStream(realContent));
+                    PDFTextStripper stripper = new PDFTextStripper();
+                    stripper.setStartPage(1);
+                    stripper.setEndPage(Integer.MAX_VALUE);
+                    content = stripper.getText(document);
+                    document.close();
+                    break;
+                case "html":
+                    content = Jsoup
+                            .parse(new ByteArrayInputStream(realContent),
+                                    Charset.defaultCharset().name(), "").body()
+                            .text();
+                    break;
+                default:
+                    StringBuilder stringBuilder = new StringBuilder();
+                    int ch;
+                    while ((ch = new ByteArrayInputStream(realContent).read()) != -1) {
+                        stringBuilder.append((char) ch);
+                    }
+                    content = stringBuilder.toString();
+                    break;
+                }
+                ContentDAO.putPagerank(docID, content);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -129,9 +171,6 @@ public class PopulateDBScript {
                 if (lastWord == null) {
                     IndexTermDAO.putIndexTerm(tokens[0]);
                 } else if (!tokens[0].equals(lastWord)) {
-                    // if (Math.log((docNumber - freq + 0.5) / (freq + 0.5)) <
-                    // 0)
-                    // System.out.println(lastWord);
                     IndexTermDAO.putIndexTerm(
                             lastWord,
                             Math.max(
@@ -188,8 +227,8 @@ public class PopulateDBScript {
     }
 
     private static void getFileNumberAndAvgWord() {
-    	
-    	AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
+
+        AmazonDynamoDBClient client = AWSClientAdapters.getDynamoClient();
 
         System.out.println("Connecting to DynamoDB...");
         ScanResult result = null;
@@ -218,12 +257,11 @@ public class PopulateDBScript {
     }
 
     public static void fetchData() {
-    	S3Adapter s3 = new S3Adapter();
+        S3Adapter s3 = new S3Adapter();
         s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
-        s3.downloadDirectoryInBucket("indexer-output","200k-output", "S3DATA");
+        s3.downloadDirectoryInBucket("indexer-output", "200k-output", "S3DATA");
         s3.downloadAllFilesInBucket("cis555crawleddata", "S3DATA");
-//        s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
-
+        // s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
 
     }
 

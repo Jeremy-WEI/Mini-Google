@@ -24,6 +24,7 @@ public class MyServletContextListener implements ServletContextListener {
         UrlIndexDAO.setup(path);
         PagerankDAO.setup(path);
         ContentDAO.setup(path);
+        AlexaDAO.setup(path);
         
         context.setAttribute("wordSet", IndexTermDAO.getIndexTerms());
 

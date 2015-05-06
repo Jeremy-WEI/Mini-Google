@@ -239,9 +239,9 @@ public class PopulateDBScript {
 
     public static void populateAlexaRanking(String dirName) throws IOException {
 
-        System.out.println("Start Building AlexaRanking Database...");
+        System.out.println("Start Building AlexaRanking Database...from " + dirName);
         File dir = new File(dirName);
-
+        
         for (File f : dir.listFiles()) {
             if (f.isHidden())
                 continue;

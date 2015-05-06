@@ -35,7 +35,7 @@ public class AlexaDAO {
         storeConfig.setAllowCreate(true);
 
         Environment env = new Environment(dir, envConfig);
-        store = new EntityStore(env, "pagerankIndexStore", storeConfig);
+        store = new EntityStore(env, "alexaIndexStore", storeConfig);
         alexaIndex = store.getPrimaryIndex(String.class,
         		DocIDAlexaRanking.class);
 

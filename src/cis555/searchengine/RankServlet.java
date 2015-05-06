@@ -75,7 +75,10 @@ public class RankServlet extends HttpServlet {
                     "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
                             + "\" target=\"iFrame\">"
                             + UrlIndexDAO.getUrl(w.getDocID()) + "</a>",
-                    preview, "Weight: " + String.format("%.3f", w.getWeight()),
+                    preview,
+                    "Weight: " + String.format("%.3f", w.getWeight())
+                            + ", PageRank Value:  "
+                            + PagerankDAO.getPagerankValue(w.getDocID()),
                     PANEL_CLASSES[i % 4]);
         }
 

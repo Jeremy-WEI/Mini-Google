@@ -24,6 +24,7 @@ searchengine.war
 .settings/*
 /zipdata/*
 /WebContent/META-INF/*
+/target/*
 
 .classpath
 .project

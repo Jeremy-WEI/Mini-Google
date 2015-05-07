@@ -33,7 +33,8 @@ public class RankServlet extends HttpServlet {
         List<WeightedDocID> lst = new ArrayList<WeightedDocID>();
         QueryProcessor.preparePhase(terms, lst);
         QueryProcessor.posCheckPhase(terms, lst);
-        // QueryProcessor.pageRankPhase(lst);
+        QueryProcessor.fancyCheckPhase(terms, lst);
+        QueryProcessor.pageRankPhase(lst);
         List<WeightedDocID> filteredLst = QueryProcessor
                 .filterPhase(lst, 0, 15);
         // List<String> URLs = QueryProcessor.getURLs(lst4);
@@ -75,10 +76,11 @@ public class RankServlet extends HttpServlet {
                     "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
                             + "\" target=\"iFrame\">"
                             + UrlIndexDAO.getUrl(w.getDocID()) + "</a>",
-                    preview,
-                    "Weight: " + String.format("%.3f", w.getWeight())
-                            + ", PageRank Value:  "
-                            + PagerankDAO.getPagerankValue(w.getDocID()),
+                    preview + ", PageRank Value:  "
+                            + PagerankDAO.getPagerankValue(w.getDocID())
+                            + ", Alexa Value:  "
+                            + AlexaDAO.getAlexaRank(w.getDocID()), "Weight: "
+                            + String.format("%.3f", w.getWeight()),
                     PANEL_CLASSES[i % 4]);
         }
 

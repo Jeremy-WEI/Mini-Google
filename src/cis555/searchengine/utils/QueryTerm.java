@@ -7,6 +7,8 @@ public class QueryTerm {
 
     private String word;
     private int freq;
+    private double idfValue;
+
     private List<Integer> positions;
 
     public QueryTerm(String word, int pos) {
@@ -31,6 +33,14 @@ public class QueryTerm {
 
     public List<Integer> getPositions() {
         return positions;
+    }
+
+    public double getIdfValue() {
+        return idfValue;
+    }
+
+    public void setIdfValue(double idfValue) {
+        this.idfValue = idfValue;
     }
 
     public String toString() {

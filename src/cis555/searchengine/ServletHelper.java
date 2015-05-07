@@ -92,8 +92,8 @@ public class ServletHelper {
             FastTokenizer tokenizer = new FastTokenizer(content);
             int start = w.getPreviewStartPos();
             int end = w.getPreviewEndPos();
-            sb.append("Start Index: " + start + "\n");
-            sb.append("End Index: " + end + "\n");
+            // sb.append("Start Index: " + start + "\n");
+            // sb.append("End Index: " + end + "\n");
             int index = 0;
             while (tokenizer.hasMoreTokens()) {
                 if ((index >= start) && (index <= end)) {

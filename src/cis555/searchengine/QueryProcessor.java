@@ -3,6 +3,7 @@ package cis555.searchengine;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +54,7 @@ public class QueryProcessor {
      * 
      * 3. Attach corresponding DocIdEntity to weightedDocId
      * 
-     * 4. Remove the later half (To speed up search process)
+     * // * 4. Remove the later half (To speed up search process)
      * 
      * @param Set
      *            of queryTerms
@@ -64,6 +65,9 @@ public class QueryProcessor {
             List<WeightedDocID> weightedDocIDList) {
         if (queryTerms.size() == 0)
             return;
+        for (QueryTerm term : queryTerms) {
+            term.setIdfValue(IndexTermDAO.getIdfValue(term.getWord()));
+        }
         Iterator<QueryTerm> iter = queryTerms.iterator();
         QueryTerm queryTerm = iter.next();
         Map<String, WeightedDocID> weightedDocIDMap = new HashMap<String, WeightedDocID>();
@@ -87,15 +91,15 @@ public class QueryProcessor {
                     weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
                 }
                 weightedDocID.addWeight(docHit.getTf() * queryTerm.getFreq()
-                        * IndexTermDAO.getIdfValue(queryTerm.getWord()));
+                        * queryTerm.getIdfValue());
                 weightedDocID.addDocHit(docHit);
             }
         }
         weightedDocIDList.addAll(weightedDocIDMap.values());
-        Collections.sort(weightedDocIDList);
-        for (int i = weightedDocIDList.size() - 1; i >= 50; i--) {
-            weightedDocIDList.remove(i);
-        }
+        // Collections.sort(weightedDocIDList);
+        // for (int i = weightedDocIDList.size() - 1; i >= 100; i--) {
+        // weightedDocIDList.remove(i);
+        // }
     }
 
     /**
@@ -181,6 +185,10 @@ public class QueryProcessor {
         for (WeightedDocID w : weightedDocIDList) {
             double value = PagerankDAO.getPagerankValue(w.getDocID()) + 1;
             w.mutiplyWeight(value);
+            value = AlexaDAO.getAlexaRank(w.getDocID());
+            if (value > 0) {
+                w.mutiplyWeight(1 + Math.pow(1 / value, 0.1));
+            }
         }
     }
 
@@ -195,7 +203,53 @@ public class QueryProcessor {
      *            <WeightedDocID>
      * 
      */
-    public static void fancyCheckPhase(List<WeightedDocID> weightedDocIDList) {
+    public static void fancyCheckPhase(Set<QueryTerm> queryTerms,
+            List<WeightedDocID> weightedDocIDList) {
+        int wordNo = queryTerms.size();
+        for (WeightedDocID w : weightedDocIDList) {
+            double titleValue = 0;
+            double urlValue = 0;
+            double metaValue = 0;
+            double hrefAltValue = 0;
+            Set<String> titleWords = new HashSet<String>();
+            Set<String> urlWords = new HashSet<String>();
+            Set<String> metaWords = new HashSet<String>();
+            Set<String> hrefAltWords = new HashSet<String>();
+            Map<String, Double> map = new HashMap<String, Double>();
+            for (QueryTerm term : queryTerms) {
+                map.put(term.getWord(), term.getIdfValue());
+            }
+            for (DocHitEntity docHit : w.getDocHits()) {
+                String word = docHit.getWord();
+                if (map.get(word) == null)
+                    continue;
+                for (int hit : docHit.getFancyHitLst()) {
+                    int hitType = Hit.getHitType(hit);
+                    double value = map.get(word);
+                    if (hitType == 7 && !urlWords.contains(word)) {
+                        urlWords.add(word);
+                        urlValue += value;
+                    }
+                    if (hitType == 6 && !titleWords.contains(word)) {
+                        titleWords.add(word);
+                        titleValue += value;
+                    }
+                    if (hitType == 5 && !metaWords.contains(word)) {
+                        metaWords.add(word);
+                        metaValue += value;
+                    }
+                    if ((hitType == 3 || hitType == 4)
+                            && !hrefAltWords.contains(word)) {
+                        hrefAltWords.add(word);
+                        hrefAltValue += value;
+                    }
+                }
+            }
+            w.addWeight((urlValue * urlWords.size() + titleValue
+                    + titleWords.size() + metaValue * metaWords.size() + 0.5
+                    * hrefAltValue * hrefAltWords.size())
+                    / wordNo);
+        }
     }
 
     /**

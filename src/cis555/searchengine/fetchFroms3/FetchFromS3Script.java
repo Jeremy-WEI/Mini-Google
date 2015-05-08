@@ -9,7 +9,7 @@ public class FetchFromS3Script {
 	         s3.downloadAllFilesInBucket("documentmeta", "S3DATA");
 	         s3.downloadDirectoryInBucket("indexer-output","200k-output", "S3DATA");
 	         s3.downloadAllFilesInBucket("cis555crawleddata", "S3DATA");
-	         s3.downloadDirectoryInBucket("wcbucket555", "crawlout35k", "S3DATA");
+	         s3.downloadDirectoryInBucket("wcbucket555", "crawloutput200k", "S3DATA");
 
 	}
 }

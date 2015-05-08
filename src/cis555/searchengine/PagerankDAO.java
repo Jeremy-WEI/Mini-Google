@@ -1,11 +1,15 @@
 package cis555.searchengine;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import cis555.searchengine.utils.DocIdPagerankInfo;
+import cis555.utils.DocumentMeta;
 
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
 import com.sleepycat.persist.StoreConfig;
@@ -83,8 +87,22 @@ public class PagerankDAO {
     public static double getPagerankValue(String docID) {
         DocIdPagerankInfo info = pagerankIndex.get(docID);
         if (info == null)
-            return 0;
+            return 0.15;
         return info.getPagerank();
     }
 
+    
+	/**
+	 * Retrieve a list of all document meta data objects in the database
+	 * @return
+	 */
+	public static List<DocIdPagerankInfo> getAllDocumentMetaObjects(){
+		List<DocIdPagerankInfo> documents = new ArrayList<DocIdPagerankInfo>();
+		EntityCursor<DocIdPagerankInfo> documentCursors = pagerankIndex.entities();
+		for (DocIdPagerankInfo document = documentCursors.first(); null != document; document = documentCursors.next()){
+			documents.add(document);
+		}
+		documentCursors.close();
+		return documents;
+	}
 }

@@ -39,16 +39,16 @@ public class PopulateDBScript {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        // IndexTermDAO.setup("database");
-        // PagerankDAO.setup("database");
-        // UrlIndexDAO.setup("database");
-//        ContentDAO.setup("database");
+         IndexTermDAO.setup("database");
+         PagerankDAO.setup("database");
+         UrlIndexDAO.setup("database");
+        ContentDAO.setup("database");
         AlexaDAO.setup("database");
 
-        // populateDocIDUrl("S3DATA/documentmeta");
-        // populateIndexTerm("S3DATA/indexer-output");
-        // populatePagerank("S3DATA/wcbucket555");
-//        populateDocIDContent("S3DATA/cis555crawleddata");
+         populateDocIDUrl("S3DATA/documentmeta");
+         populateIndexTerm("S3DATA/indexer-output");
+         populatePagerank("S3DATA/wcbucket555");
+        populateDocIDContent("S3DATA/cis555crawleddata");
         populateAlexaRanking("S3DATA/cis555alexa");
 
         // populateIndexTerm("/Users/YunchenWei/Documents/EclipseWorkSpace/555_project/indexer");

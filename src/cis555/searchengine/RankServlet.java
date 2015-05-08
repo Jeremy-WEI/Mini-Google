@@ -103,7 +103,7 @@ public class RankServlet extends HttpServlet {
             if (displayedURL.length() >= 65)
                 displayedURL = displayedURL.substring(0, 65) + "...";
             ServletHelper.writePanel(pw, "<a href=\"" + URL
-                    + "\" target=\"iFrame\">" + URL + "</a>", preview
+                    + "\" target=\"iFrame\">" + displayedURL + "</a>", preview
             // + ", PageRank Value:  "
             // + PagerankDAO.getPagerankValue(w.getDocID())
             // + ", Alexa Value:  "

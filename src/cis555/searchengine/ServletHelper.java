@@ -16,8 +16,8 @@ import java.util.Set;
 
 import javax.servlet.ServletContext;
 
+import cis555.searchengine.utils.PreviewTokenizer;
 import cis555.searchengine.utils.WeightedDocID;
-import cis555.utils.FastTokenizer;
 
 import com.amazonaws.util.json.JSONObject;
 
@@ -91,7 +91,7 @@ public class ServletHelper {
         StringBuilder sb = new StringBuilder();
         try {
             String content = ContentDAO.getContent(w.getDocID());
-            FastTokenizer tokenizer = new FastTokenizer(content);
+            PreviewTokenizer tokenizer = new PreviewTokenizer(content);
             int start = w.getPreviewStartPos();
             int end = w.getPreviewEndPos();
             // sb.append("Start Index: " + start + "\n");
@@ -109,9 +109,11 @@ public class ServletHelper {
                         }
                     }
                     if (flag) {
+                        int indx = PreviewTokenizer.getNonLetterIndex(word);
                         sb.append("<mark><b>");
-                        sb.append(word);
+                        sb.append(word.substring(0, indx));
                         sb.append("</b></mark>");
+                        sb.append(word.substring(indx));
                     } else
                         sb.append(word);
                     sb.append(" ");

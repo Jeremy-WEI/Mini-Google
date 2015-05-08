@@ -65,10 +65,12 @@ public class ServletHelper {
     }
 
     public static void writePanel(PrintWriter pw, String panelHead,
-            String panelBody, String className) {
+            String panelBody, String className, boolean overFlowScroll) {
         pw.write("<div class=\"panel " + className + "\" style=\"\">");
         pw.write("<div class=\"panel-heading\">" + panelHead + "</div>");
-        pw.write("<div class=\"panel-body\" style=\"height:100px;overflow:scroll;\">");
+        pw.write("<div class=\"panel-body\""
+                + (overFlowScroll ? " style=\"height:100px;overflow:scroll;\">"
+                        : ">"));
         pw.write(panelBody);
         pw.write("</div>");
         pw.write("</div>");
@@ -107,9 +109,9 @@ public class ServletHelper {
                         }
                     }
                     if (flag) {
-                        sb.append("<b>");
+                        sb.append("<mark><b>");
                         sb.append(word);
-                        sb.append("</b>");
+                        sb.append("</b></mark>");
                     } else
                         sb.append(word);
                     sb.append(" ");

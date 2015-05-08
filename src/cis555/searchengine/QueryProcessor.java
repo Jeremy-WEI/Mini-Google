@@ -73,10 +73,11 @@ public class QueryProcessor {
         Map<String, WeightedDocID> weightedDocIDMap = new HashMap<String, WeightedDocID>();
         Set<DocHitEntity> docHitSet = IndexTermDAO.getDocHitEntities(queryTerm
                 .getWord());
+        int freq = queryTerm.getFreq();
+        double idfValue = queryTerm.getIdfValue();
         for (DocHitEntity docHit : docHitSet) {
             WeightedDocID weightedDocID = new WeightedDocID(docHit.getDocID());
-            weightedDocID.addPlainWeight(docHit.getTf() * queryTerm.getFreq()
-                    * IndexTermDAO.getIdfValue(queryTerm.getWord()));
+            weightedDocID.addPlainWeight(docHit.getTf() * freq * idfValue);
             weightedDocID.addDocHit(docHit);
             weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
         }
@@ -90,8 +91,7 @@ public class QueryProcessor {
                     weightedDocID = new WeightedDocID(docHit.getDocID());
                     weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
                 }
-                weightedDocID.addPlainWeight(docHit.getTf()
-                        * queryTerm.getFreq() * queryTerm.getIdfValue());
+                weightedDocID.addPlainWeight(docHit.getTf() * freq * idfValue);
                 weightedDocID.addDocHit(docHit);
             }
         }
@@ -137,6 +137,7 @@ public class QueryProcessor {
             Iterator<WordWithPosition> iter = wordsSequence.iterator();
             int position = 0;
             int hitNumber = 0;
+            int wordNumber = w.getDocHits().get(0).getWordCount() - 1;
             while (iter.hasNext()) {
                 WordWithPosition curWord = iter.next();
                 position = curWord.getPos();
@@ -159,11 +160,18 @@ public class QueryProcessor {
                 }
                 if (noOfWords - remainingHit > hitNumber) {
                     w.setPreviewStartPos(Math.max(0, wordStateMachine.get(0)
-                            .getPos() - 8));
-                    w.setPreviewEndPos(Math.min(w.getDocHits().get(0)
-                            .getWordCount() - 1, position + 8));
+                            .getPos() - 10));
+                    w.setPreviewEndPos(Math.min(wordNumber, position + 10));
                 }
                 hitNumber = Math.max(noOfWords - remainingHit, hitNumber);
+            }
+            int start = w.getPreviewStartPos();
+            int end = w.getPreviewEndPos();
+            if (end - start <= 40) {
+                int dist = end - start;
+                int offset = (40 - dist) / 2;
+                w.setPreviewStartPos(Math.max(0, start - offset));
+                w.setPreviewEndPos(Math.min(wordNumber, end + offset));
             }
             // System.out.println("-------- I am the line separator --------");
             // TODO: adjust the weight???

@@ -29,25 +29,39 @@ public class RankServlet extends HttpServlet {
             throws java.io.IOException {
         // ServletContext context = getServletContext();
 
+        long time1 = System.currentTimeMillis();
         String query = request.getParameter("query");
         Set<QueryTerm> terms = QueryProcessor.parseQuery(query);
+        // long time2 = System.currentTimeMillis();
         List<WeightedDocID> lst = new ArrayList<WeightedDocID>();
         QueryProcessor.preparePhase(terms, lst);
+        // long time3 = System.currentTimeMillis();
         QueryProcessor.fancyCheckPhase(terms, lst);
+        // long time4 = System.currentTimeMillis();
         Collections.sort(lst);
         for (int i = lst.size() - 1; i >= 100; i--) {
             lst.remove(i);
         }
+        // long time5 = System.currentTimeMillis();
         QueryProcessor.posCheckPhase(terms, lst);
+        // long time6 = System.currentTimeMillis();
         QueryProcessor.pageRankPhase(lst);
-        List<WeightedDocID> filteredLst = QueryProcessor
-                .filterPhase(lst, 0, 15);
+        // long time7 = System.currentTimeMillis();
+        List<WeightedDocID> filteredLst = QueryProcessor.filterPhase(lst, 0,
+                100);
         // List<String> URLs = QueryProcessor.getURLs(lst4);
-
+        long time8 = System.currentTimeMillis();
         PrintWriter pw = response.getWriter();
 
         ServletHelper.prepareWrite(pw, request.getContextPath(),
                 "CIS555 Search Engine", getServletContext());
+        // pw.println("Parse Query:" + (time2 - time1) / 1000.);
+        // pw.println("Prepare Phase:" + (time3 - time2) / 1000.);
+        // pw.println("FancyCheck Phase:" + (time4 - time3) / 1000.);
+        // pw.println("Sort Phase:" + (time5 - time4) / 1000.);
+        // pw.println("PosCheck Phase:" + (time6 - time5) / 1000.);
+        // pw.println("PageRank Phase:" + (time7 - time6) / 1000.);
+        // pw.println("Total Time:" + (time8 - time1) / 1000.);
 
         pw.write("<div class=\"container\">");
 
@@ -67,26 +81,35 @@ public class RankServlet extends HttpServlet {
         pw.write("</form>");
         pw.write("</div>");
 
-        pw.write("<div class=\"row\" style=\"height:500px;\">");
+        pw.write("<div class=\"row\" style=\"height:600px;\">");
+        pw.write("<div class=\"col-md-12\" style=\"height:600px\">");
+
+        pw.write("<div class=\"panel " + "panel-default" + "\" style=\"\">");
+        pw.write("<div class=\"panel-heading\">" + "Search takes about "
+                + (time8 - time1) / 1000. + " seconds." + "</div>");
+        pw.write("<div class=\"panel-body\" style=\"height:600px;overflow:scroll;\">");
 
         pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:600px\">");
-        ServletHelper.writePanel(pw, "From Wikipedia: " + query,
-                ServletHelper.extractInfoFromWiki(query), "panel-primary");
+        ServletHelper
+                .writePanel(pw, "From Wikipedia: " + query,
+                        ServletHelper.extractInfoFromWiki(query),
+                        "panel-primary", true);
         Set<String> words = getQueryWords(query, terms);
         for (int i = 0; i < filteredLst.size(); i++) {
             WeightedDocID w = filteredLst.get(i);
             String preview = ServletHelper.getPreview(w, words);
-            ServletHelper.writePanel(
-                    pw,
-                    "<a href=\"" + UrlIndexDAO.getUrl(w.getDocID())
-                            + "\" target=\"iFrame\">"
-                            + UrlIndexDAO.getUrl(w.getDocID()) + "</a>",
-                    preview + ", PageRank Value:  "
-                            + PagerankDAO.getPagerankValue(w.getDocID())
-                            + ", Alexa Value:  "
-                            + AlexaDAO.getAlexaRank(w.getDocID()), "Weight: "
-                            + String.format("%.3f", w.getWeight()),
-                    PANEL_CLASSES[i % 4]);
+            String URL = UrlIndexDAO.getUrl(w.getDocID());
+            String displayedURL = URL;
+            if (displayedURL.length() >= 65)
+                displayedURL = displayedURL.substring(0, 65) + "...";
+            ServletHelper.writePanel(pw, "<a href=\"" + URL
+                    + "\" target=\"iFrame\">" + URL + "</a>", preview
+            // + ", PageRank Value:  "
+            // + PagerankDAO.getPagerankValue(w.getDocID())
+            // + ", Alexa Value:  "
+            // + AlexaDAO.getAlexaRank(w.getDocID()), "Weight: "
+            // + String.format("%.3f", w.getWeight())
+                    , PANEL_CLASSES[i % 4], false);
         }
 
         pw.write("</div>");
@@ -98,6 +121,11 @@ public class RankServlet extends HttpServlet {
                         + "\"" : "")
                 + " style=\"overflow:hidden;overflow-x:hidden;overflow-y:hidden;height:600px;width:100%;position:absolute;top:0px;left:0px;right:0px;bottom:0px\"></iframe>\"");
         pw.write("</div>");
+
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
+
         pw.write("</div>");
         pw.write("</div>");
 

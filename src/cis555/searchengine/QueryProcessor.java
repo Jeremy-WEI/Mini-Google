@@ -24,11 +24,11 @@ import cis555.utils.Hit;
  * 
  * 2. Prepare Phase (get docID + calculate TF-IDF value)
  * 
- * 3. Position Check Phase (solve the cons of bag model)
+ * 3. Fancy Check Phase (add weight by Fancy Hit)
  * 
- * 4. PageRank Phase (combined with PageRank value)
+ * 4. Position Check Phase (solve the cons of bag model)
  * 
- * 5. Fancy Check Phase (add weight by Fancy Hit)
+ * 5. PageRank Phase (combined with PageRank value)
  * 
  * 6. Filter Phase (Sort + get top N result)
  * 
@@ -75,7 +75,7 @@ public class QueryProcessor {
                 .getWord());
         for (DocHitEntity docHit : docHitSet) {
             WeightedDocID weightedDocID = new WeightedDocID(docHit.getDocID());
-            weightedDocID.addWeight(docHit.getTf() * queryTerm.getFreq()
+            weightedDocID.addPlainWeight(docHit.getTf() * queryTerm.getFreq()
                     * IndexTermDAO.getIdfValue(queryTerm.getWord()));
             weightedDocID.addDocHit(docHit);
             weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
@@ -90,8 +90,8 @@ public class QueryProcessor {
                     weightedDocID = new WeightedDocID(docHit.getDocID());
                     weightedDocIDMap.put(docHit.getDocID(), weightedDocID);
                 }
-                weightedDocID.addWeight(docHit.getTf() * queryTerm.getFreq()
-                        * queryTerm.getIdfValue());
+                weightedDocID.addPlainWeight(docHit.getTf()
+                        * queryTerm.getFreq() * queryTerm.getIdfValue());
                 weightedDocID.addDocHit(docHit);
             }
         }
@@ -168,7 +168,7 @@ public class QueryProcessor {
             // System.out.println("-------- I am the line separator --------");
             // TODO: adjust the weight???
             // TODO: mutiple hit??
-            w.mutiplyWeight(hitNumber / (double) noOfWords);
+            w.multiplyPlainWeight(hitNumber / (double) noOfWords);
         }
     }
 
@@ -184,10 +184,10 @@ public class QueryProcessor {
     public static void pageRankPhase(List<WeightedDocID> weightedDocIDList) {
         for (WeightedDocID w : weightedDocIDList) {
             double value = PagerankDAO.getPagerankValue(w.getDocID()) + 1;
-            w.mutiplyWeight(value);
+            w.multiplyWeight(value);
             value = AlexaDAO.getAlexaRank(w.getDocID());
             if (value > 0) {
-                w.mutiplyWeight(1 + Math.pow(1 / value, 0.1));
+                w.multiplyWeight(1 + Math.pow(1 / value, 0.1));
             }
         }
     }
@@ -245,9 +245,10 @@ public class QueryProcessor {
                     }
                 }
             }
-            w.addWeight((urlValue * urlWords.size() + titleValue
-                    + titleWords.size() + metaValue * metaWords.size() + 0.5
-                    * hrefAltValue * hrefAltWords.size())
+            w.addFancyWeight((0.8 * urlValue * urlWords.size() + 0.8
+                    * titleValue + titleWords.size() + 0.8 * metaValue
+                    * metaWords.size() + 0.5 * hrefAltValue
+                    * hrefAltWords.size())
                     / wordNo);
         }
     }

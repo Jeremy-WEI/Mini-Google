@@ -6,14 +6,17 @@ import java.util.List;
 public class WeightedDocID implements Comparable<WeightedDocID> {
 
     private String docID;
-    private double weight;
+    private double plainWeight;
+    private double fancyWeight;
+
     private List<DocHitEntity> docHits;
     private int previewStartPos;
     private int previewEndPos;
 
     public WeightedDocID(String docID) {
         this.docID = docID;
-        this.weight = 0;
+        this.plainWeight = 0;
+        this.fancyWeight = 0;
         this.docHits = new LinkedList<DocHitEntity>();
         this.previewStartPos = -1;
         this.previewEndPos = -1;
@@ -23,8 +26,16 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
         return docID;
     }
 
+    public double getPlainWeight() {
+        return plainWeight;
+    }
+
+    public double getFancyWeight() {
+        return fancyWeight;
+    }
+    
     public double getWeight() {
-        return weight;
+        return plainWeight + fancyWeight;
     }
 
     public int getPreviewStartPos() {
@@ -43,16 +54,33 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
         this.previewEndPos = previewEndPos;
     }
 
-    public void setWeight(double weight) {
-        this.weight = weight;
+    public void setPlainWeight(double weight) {
+        this.plainWeight = weight;
     }
 
-    public void addWeight(double weight) {
-        this.weight += weight;
+    public void addPlainWeight(double weight) {
+        this.plainWeight += weight;
     }
 
-    public void mutiplyWeight(double factor) {
-        this.weight *= factor;
+    public void multiplyPlainWeight(double factor) {
+        this.plainWeight *= factor;
+    }
+
+    public void setFancyWeight(double weight) {
+        this.fancyWeight = weight;
+    }
+
+    public void addFancyWeight(double weight) {
+        this.fancyWeight += weight;
+    }
+
+    public void multiplyFancyWeight(double factor) {
+        this.fancyWeight *= factor;
+    }
+    
+    public void multiplyWeight(double factor) {
+        this.fancyWeight *= factor;
+        this.plainWeight *= factor;
     }
 
     public void addDocHit(DocHitEntity docHit) {
@@ -65,9 +93,11 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
 
     @Override
     public int compareTo(WeightedDocID o) {
-        if (weight < o.weight)
+        double weight1 = plainWeight + fancyWeight;
+        double weight2 = o.plainWeight + o.fancyWeight;
+        if (weight1 < weight2)
             return 1;
-        if (weight == o.weight)
+        if (weight1 == weight2)
             return 0;
         return -1;
     }
@@ -87,6 +117,6 @@ public class WeightedDocID implements Comparable<WeightedDocID> {
 
     @Override
     public String toString() {
-        return "DocID:" + docID + ", Weight: " + weight;
+        return "DocID:" + docID + ", Weight: " + getWeight();
     }
 }

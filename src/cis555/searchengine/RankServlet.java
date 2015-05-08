@@ -2,6 +2,7 @@ package cis555.searchengine;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,8 +33,12 @@ public class RankServlet extends HttpServlet {
         Set<QueryTerm> terms = QueryProcessor.parseQuery(query);
         List<WeightedDocID> lst = new ArrayList<WeightedDocID>();
         QueryProcessor.preparePhase(terms, lst);
-        QueryProcessor.posCheckPhase(terms, lst);
         QueryProcessor.fancyCheckPhase(terms, lst);
+        Collections.sort(lst);
+        for (int i = lst.size() - 1; i >= 100; i--) {
+            lst.remove(i);
+        }
+        QueryProcessor.posCheckPhase(terms, lst);
         QueryProcessor.pageRankPhase(lst);
         List<WeightedDocID> filteredLst = QueryProcessor
                 .filterPhase(lst, 0, 15);

@@ -29,9 +29,26 @@ public class ServletHelper {
         pw.write("<title>" + title + "</title>");
         pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
                 + contextPath + "/stylesheet/bootstrap.min.css\">");
+        pw.write("<link rel=\"stylesheet\" type=\"text/css\" href=\""
+                + contextPath + "/stylesheet/main.css\">");
         addAjax(pw, sc);
         pw.write("</head>");
-        pw.write("<body>");
+        pw.write("<body style=\"overflow:scroll;\">");
+        pw.write("<div class=\"navbar navbar-default navbar-fixed-top\">");
+        pw.write("<div class=\"container\">");
+        pw.write("<div class=\"navbar-header\">");
+        pw.write("<button type=\"button\" class=\"navbar-toggle\" data-toggle=\"collapse\" data-target=\".navbar-collapse\">");
+        pw.write("<span class=\"icon-bar\">");
+        pw.write("</span>");
+        pw.write("<span class=\"icon-bar\">");
+        pw.write("</span>");
+        pw.write("<span class=\"icon-bar\">");
+        pw.write("</span>");
+        pw.write("</button>");
+        pw.write("<a class=\"navbar-brand\" href=\"/searchengine\"><b>Mini-Search</b></a>");
+        pw.write("</div>");
+        pw.write("</div>");
+        pw.write("</div>");
     }
 
     public static void addAjax(PrintWriter pw, ServletContext sc) {

@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -18,8 +16,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.simple.JSONValue;
 
 import cis555.searchengine.utils.IndexTerm;
-
-import com.sleepycat.persist.EntityCursor;
 
 public class AjaxRequestServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;

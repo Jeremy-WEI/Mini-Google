@@ -64,14 +64,19 @@ public class RankServlet extends HttpServlet {
         // pw.println("Total Time:" + (time8 - time1) / 1000.);
 
         pw.write("<div class=\"container\">");
+//        pw.write("<div class=\"container\" style=\"height:700px;overflow:scroll;\">");
 
-        pw.write("<div style=\"margin:20px 100px 20px 100px;\">");
+        pw.write("<br>");
+        pw.write("<br>");
+        pw.write("<br>");
+        pw.write("<div>");
+
         pw.write("<form action=\"search\" method=\"GET\" class=\"form-horizontal col-md-12\">");
         pw.write("<div class=\"form-group\">");
         pw.write("<div class=\"row\">");
         pw.write("<div class=\"col-md-10\">");
-        pw.write("<input name=\"query\" id=\"query\" type=\"text\" placeholder=\"Search...\" class=\"form-control\" value=\""
-                + query + "\">");
+        pw.write("<input name=\"query\" id=\"query\" type=\"text\" placeholder=\"Type your search here...\" class=\"form-control\" value=\""
+                + query + "\" style=\"width:100%;\">");
         pw.write("</div>");
         pw.write("<div align=\"right\" class=\"col-md-2 form-group\">");
         pw.write("<button type=\"submit\" class=\"btn btn-info btn-block\">Search</button>");
@@ -87,7 +92,7 @@ public class RankServlet extends HttpServlet {
         pw.write("<div class=\"panel " + "panel-default" + "\" style=\"\">");
         pw.write("<div class=\"panel-heading\">" + "Search takes about "
                 + (time8 - time1) / 1000. + " seconds." + "</div>");
-        pw.write("<div class=\"panel-body\" style=\"height:600px;overflow:scroll;\">");
+        pw.write("<div class=\"panel-body\">");
 
         pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:600px\">");
         ServletHelper
@@ -100,8 +105,8 @@ public class RankServlet extends HttpServlet {
             String preview = ServletHelper.getPreview(w, words);
             String URL = UrlIndexDAO.getUrl(w.getDocID());
             String displayedURL = URL;
-            if (displayedURL.length() >= 65)
-                displayedURL = displayedURL.substring(0, 65) + "...";
+            if (displayedURL.length() >= 55)
+                displayedURL = displayedURL.substring(0, 55) + "...";
             ServletHelper.writePanel(pw, "<a href=\"" + URL
                     + "\" target=\"iFrame\">" + displayedURL + "</a>", preview
             // + ", PageRank Value:  "
@@ -128,6 +133,9 @@ public class RankServlet extends HttpServlet {
 
         pw.write("</div>");
         pw.write("</div>");
+        
+        pw.write("<br>");
+        pw.write("<br>");
 
         ServletHelper.finishWrite(pw);
 

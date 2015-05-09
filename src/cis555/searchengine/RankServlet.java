@@ -124,7 +124,7 @@ public class RankServlet extends HttpServlet {
                 + (filteredLst.size() > 0 ? "src=\""
                         + UrlIndexDAO.getUrl(filteredLst.get(0).getDocID())
                         + "\"" : "")
-                + " style=\"overflow:hidden;overflow-x:hidden;overflow-y:hidden;height:600px;width:100%;position:absolute;top:0px;left:0px;right:0px;bottom:0px\"></iframe>\"");
+                + " style=\"overflow:hidden;overflow-x:hidden;overflow-y:hidden;height:600px;width:100%;position:absolute;top:0px;left:0px;right:0px;bottom:0px\" security=\"restricted\" sandbox=\"\"></iframe>\"");
         pw.write("</div>");
 
         pw.write("</div>");

@@ -5,7 +5,7 @@ $(document).ready(function() {
         max: 10,
         delay: 100,
         minLength: 1,
-        autoFocus: true,
+        autoFocus: false,
         cacheLength: 1,
         scroll: true,
         highlight: false,

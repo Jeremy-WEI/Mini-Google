@@ -41,6 +41,7 @@ public class WorkerServlet extends HttpServlet {
 	private List<String> excludedPatterns;
 	private int maxDocSize;
 	private boolean isCrawling;
+	private int numThreads;
 
 	/**
 	 * Get the address that the master is on
@@ -91,6 +92,7 @@ public class WorkerServlet extends HttpServlet {
 		this.maxDocSize = Integer.parseInt(getInitParameter(DispatcherConstants.MAX_SIZE_KEY_XML));
 		
 		this.otherWorkerIPPort = new HashMap<Integer, String>();
+		
 		
 		this.isCrawling = false;
 		
@@ -190,12 +192,16 @@ public class WorkerServlet extends HttpServlet {
 			// Populate the relevant details for the crawler
 			String crawlerNumString = request.getParameter(DispatcherConstants.CRAWLER_NAME_PARAM);
 			this.crawlerNumber = parseCrawlerNumber(crawlerNumString);
+			
+			this.numThreads = Integer.parseInt(request.getParameter(DispatcherConstants.NUM_THREADS_PARAM));
+
 			addOtherCrawlersInfo(request);
 			addNewUrls(request);
 			
 			// And start crawling
 			
-			this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort, this.excludedPatterns, this.maxDocSize);
+			this.crawler = new Crawler(this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort, 
+					this.excludedPatterns, this.maxDocSize, this.numThreads);
 			this.crawler.startCrawler();
 			this.isCrawling = true;
 		}

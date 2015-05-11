@@ -8,8 +8,8 @@ public class CrawlerConstants {
 	public static final int QUEUE_CAPACITY = 50000;
 	public static final int NEW_URL_QUEUE_CAPACITY = 50000;
 	public static final int SMALL_QUEUE_CAPACITY = 10000;
-	public static final int NUM_HEAD_THREADS = 5;
-	public static final int NUM_GET_THREADS = 15;
+//	public static final int NUM_HEAD_THREADS = 5;
+//	public static int NUM_GET_THREADS = 15; // Set by Crawler
 	public static final int NUM_EXTRACTOR_THREADS = 3;
 	public static final int NUM_MATCHER_THREADS = 3;
 	public static final int NUM_QUEUER_THREADS = 1;

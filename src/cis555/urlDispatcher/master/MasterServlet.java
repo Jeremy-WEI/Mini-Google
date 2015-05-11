@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -31,10 +32,14 @@ public class MasterServlet extends HttpServlet {
 	private TreeMap<String, WorkerDetails> workerDetailMap;
 	private boolean isCrawling;
 	private List<URL> startingUrls; 
+	private int numThreads;
+	private Date startTime;
+	private List<ResultsEntry> resultsEntries;
 	
 	public MasterServlet(){
 		this.workerDetailMap = new TreeMap<String, WorkerDetails>(); // NB TreeMap is sorted
 		this.isCrawling = false;
+		this.resultsEntries = new ArrayList<ResultsEntry>();
 	}
 	
 	@Override
@@ -45,6 +50,7 @@ public class MasterServlet extends HttpServlet {
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
+		this.numThreads = Integer.parseInt(getInitParameter(DispatcherConstants.NUM_THREADS_KEY_XML));
 	}
 	
 	/**
@@ -107,7 +113,6 @@ public class MasterServlet extends HttpServlet {
 			
 			Timer timer = new Timer();
 			timer.scheduleAtFixedRate(new PingWorkersTask(), 0, DispatcherConstants.PING_WORKERS_FREQUENCY_MS);
-
 			
 			return;
 		} 
@@ -146,6 +151,14 @@ public class MasterServlet extends HttpServlet {
 			
 			crawlerNumber++;
 		}
+		
+		if (!this.isCrawling){			
+			this.startTime = new Date();
+			resultsEntries.add(new ResultsEntry(null, 0, this.workerDetailMap.size(), this.numThreads));
+			Timer timer = new Timer();
+			timer.scheduleAtFixedRate(new CountPagesCrawledTask(), 0, DispatcherConstants.PING_WORKERS_FREQUENCY_MS);
+
+		}
 	}
 	
 	
@@ -158,7 +171,7 @@ public class MasterServlet extends HttpServlet {
 		StringBuilder str = new StringBuilder();
 		str.append(DispatcherConstants.CRAWLER_NAME_PARAM + "=worker" + crawlerNumber + "&");
 		str.append(DispatcherConstants.NEW_URLS_PARAM + "=" + generateStartingUrlString(crawlerNumber)+ "&");
-		
+		str.append(DispatcherConstants.NUM_THREADS_PARAM + "=" + this.numThreads + "&");
 		Collection<WorkerDetails> workerDetails = this.workerDetailMap.values();
 		
 		int i = 0;
@@ -225,7 +238,7 @@ public class MasterServlet extends HttpServlet {
 				e.printStackTrace();
 				throw new DispatcherException("Unable to convert into url: " + urlString);
 			}
-		}		
+		}	
 	}
 	
 	
@@ -289,6 +302,7 @@ public class MasterServlet extends HttpServlet {
         out.println("<body>");
         out.println("<h1>Current status of crawlers</h1>");
         out.println(StatusPageContentGenerator.generateStatusTable(this.workerDetailMap));
+        out.println(StatusPageContentGenerator.generatePerformanceTable(this.resultsEntries));
         out.println("<br /><br />");
         
         if (null != message){
@@ -317,6 +331,35 @@ public class MasterServlet extends HttpServlet {
 				logger.info("PINGING WORKER");
 				try {
 					startCrawl();
+				} catch (Exception e){
+					Utils.logStackTrace(e);
+				}
+					
+			}
+			
+		}
+	}
+	
+	
+	/**
+	 * Private timer task class to ping all the workers with instructions to start crawl (in case of reset)
+	 *
+	 */
+	
+	class CountPagesCrawledTask extends TimerTask {
+		@Override
+		public void run(){
+			
+			if (isCrawling){
+				logger.info("Counting pages crawled");
+				try {
+					int pagesCrawled = 0;
+					for (String workerIP: workerDetailMap.keySet()){
+						WorkerDetails workerDetails = workerDetailMap.get(workerIP);
+						pagesCrawled = pagesCrawled + workerDetails.getPagesCrawled();
+					}
+					resultsEntries.add(new ResultsEntry(startTime, pagesCrawled, workerDetailMap.size(), numThreads));
+					
 				} catch (Exception e){
 					Utils.logStackTrace(e);
 				}

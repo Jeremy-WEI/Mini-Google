@@ -16,6 +16,7 @@ public class SEHelper {
         STOP_LIST.add("a");
         STOP_LIST.add("about");
         STOP_LIST.add("an");
+        STOP_LIST.add("and");
         STOP_LIST.add("are");
         STOP_LIST.add("as");
         STOP_LIST.add("at");

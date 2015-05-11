@@ -39,7 +39,7 @@ public class RankServlet extends HttpServlet {
         QueryProcessor.fancyCheckPhase(terms, lst);
         // long time4 = System.currentTimeMillis();
         Collections.sort(lst);
-        for (int i = lst.size() - 1; i >= 100; i--) {
+        for (int i = lst.size() - 1; i >= 50; i--) {
             lst.remove(i);
         }
         // long time5 = System.currentTimeMillis();
@@ -47,8 +47,8 @@ public class RankServlet extends HttpServlet {
         // long time6 = System.currentTimeMillis();
         QueryProcessor.pageRankPhase(lst);
         // long time7 = System.currentTimeMillis();
-        List<WeightedDocID> filteredLst = QueryProcessor.filterPhase(lst, 0,
-                100);
+        List<WeightedDocID> filteredLst = QueryProcessor
+                .filterPhase(lst, 0, 30);
         // List<String> URLs = QueryProcessor.getURLs(lst4);
         long time8 = System.currentTimeMillis();
         PrintWriter pw = response.getWriter();
@@ -64,7 +64,7 @@ public class RankServlet extends HttpServlet {
         // pw.println("Total Time:" + (time8 - time1) / 1000.);
 
         pw.write("<div class=\"container\">");
-//        pw.write("<div class=\"container\" style=\"height:700px;overflow:scroll;\">");
+        // pw.write("<div class=\"container\" style=\"height:700px;overflow:scroll;\">");
 
         pw.write("<br>");
         pw.write("<br>");
@@ -90,8 +90,9 @@ public class RankServlet extends HttpServlet {
         pw.write("<div class=\"col-md-12\" style=\"height:600px\">");
 
         pw.write("<div class=\"panel " + "panel-default" + "\" style=\"\">");
-        pw.write("<div class=\"panel-heading\">" + "Search takes about "
-                + (time8 - time1) / 1000. + " seconds." + "</div>");
+        pw.write("<div class=\"panel-heading\">" + "About "
+                + filteredLst.size() + " results (" + (time8 - time1) / 1000.
+                + " seconds)" + "</div>");
         pw.write("<div class=\"panel-body\">");
 
         pw.write("<div class=\"col-md-6\" style=\"overflow:scroll;height:600px\">");
@@ -133,7 +134,7 @@ public class RankServlet extends HttpServlet {
 
         pw.write("</div>");
         pw.write("</div>");
-        
+
         pw.write("<br>");
         pw.write("<br>");
 

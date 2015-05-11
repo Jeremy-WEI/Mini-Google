@@ -47,7 +47,7 @@ public class ServletHelper {
         pw.write("<span class=\"icon-bar\">");
         pw.write("</span>");
         pw.write("</button>");
-        pw.write("<a class=\"navbar-brand\" href=\"/searchengine\"><b>Mini-Search</b></a>");
+        pw.write("<a class=\"navbar-brand\" href=\"/searchengine/\"><b>Mini-Search</b></a>");
         pw.write("</div>");
         pw.write("</div>");
         pw.write("</div>");
@@ -161,7 +161,7 @@ public class ServletHelper {
             URLConnection conn;
             conn = new URL(url).openConnection();
             BufferedReader in = new BufferedReader(new InputStreamReader(
-                    conn.getInputStream()));
+                    conn.getInputStream(), "UTF-8"));
             StringBuilder sb = new StringBuilder();
             String inputLine;
             while ((inputLine = in.readLine()) != null)

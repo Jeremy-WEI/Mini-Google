@@ -45,6 +45,7 @@ public class Crawler {
 	private int maxDocSize;
 	private String storageDirectory;
 	private String urlStorageDirectory;
+	private int numThreads;
 	
 	private List<Thread> getThreadPool;
 	private List<Thread> matcherThreadPool;
@@ -69,12 +70,13 @@ public class Crawler {
 	}
 
 	public Crawler(BlockingQueue<URL> newUrlQueue, int crawlerNumber, Map<Integer, String> otherWorkerIPs,
-			List<String> excludedPatterns, int maxDocSize){
+			List<String> excludedPatterns, int maxDocSize, int numThreads){
 		this.newUrlQueue = newUrlQueue;
 		this.crawlerNumber = crawlerNumber;
 		this.otherWorkerIPPort = otherWorkerIPs;
 		this.excludedPatterns = excludedPatterns;
 		this.maxDocSize = maxDocSize;
+		this.numThreads = numThreads;
 		Crawler.active = true;
 	}
 	
@@ -195,14 +197,16 @@ public class Crawler {
 	 * @throws NoSuchAlgorithmException 
 	 */
 	private void initialiseGetThreadPool() throws NoSuchAlgorithmException {
-		getThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_GET_THREADS);
-		for (int i = 0; i < CrawlerConstants.NUM_GET_THREADS; i++) {
+		getThreadPool = new ArrayList<Thread>(this.numThreads);
+		for (int i = 0; i < this.numThreads; i++) {
 			GETWorker crawler = new GETWorker(this.siteInfoMap, this.getCrawlQueue, this.newUrlQueue, 
 					i, this.contentForLinkExtractor, this.dao, this.storageDirectory, this.maxDocSize);
 			Thread workerThread = new Thread(crawler);
 			workerThread.start();
 			getThreadPool.add(workerThread);
 		}
+		
+		logger.info(CLASSNAME + " Get pool size: " + getThreadPool.size());
 	}
 	
 	/**
@@ -227,7 +231,7 @@ public class Crawler {
 	 */
 	private void linkQueuerThreadPool(){
 		
-		this.linkQueuerThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_GET_THREADS);
+		this.linkQueuerThreadPool = new ArrayList<Thread>(CrawlerConstants.NUM_QUEUER_THREADS);
 		for (int i = 0; i < CrawlerConstants.NUM_QUEUER_THREADS; i++){
 			LinkQueuer linkQueuer = new LinkQueuer(this.preRedistributionNewURLQueue, 
 					this.newUrlQueue, this.crawlerNumber, this.otherWorkerIPPort.size(), 

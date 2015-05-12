@@ -176,7 +176,7 @@ public class QueryProcessor {
             // System.out.println("-------- I am the line separator --------");
             // TODO: adjust the weight???
             // TODO: mutiple hit??
-            w.multiplyPlainWeight(hitNumber / (double) noOfWords);
+            w.multiplyPlainWeight(Math.pow(hitNumber / (double) noOfWords, 2));
         }
     }
 
@@ -253,11 +253,11 @@ public class QueryProcessor {
                     }
                 }
             }
-            w.addFancyWeight((0.8 * urlValue * urlWords.size() + 0.8
-                    * titleValue + titleWords.size() + 0.8 * metaValue
-                    * metaWords.size() + 0.5 * hrefAltValue
-                    * hrefAltWords.size())
-                    / wordNo);
+            w.addFancyWeight((0.8 * urlValue * Math.pow(urlWords.size(), 2)
+                    + 0.8 * titleValue * Math.pow(titleWords.size(), 2) + 0.8
+                    * metaValue * Math.pow(metaWords.size(), 2) + 0.5
+                    * hrefAltValue * hrefAltWords.size())
+                    / Math.pow(wordNo, 2));
         }
     }
 

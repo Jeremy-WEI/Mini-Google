@@ -11,25 +11,31 @@
 	<servlet>
 		<servlet-name>MainServlet</servlet-name>
 		<servlet-class>cis555.searchengine.MainServlet</servlet-class>
+		     <load-on-startup>1</load-on-startup>
+		
 	</servlet>
 
 	<servlet>
 		<servlet-name>ShutdownServlet</servlet-name>
 		<servlet-class>cis555.searchengine.ShutdownServlet</servlet-class>
+		     <load-on-startup>1</load-on-startup>
 	</servlet>
 
 	<servlet>
 		<servlet-name>AjaxRequestServlet</servlet-name>
 		<servlet-class>cis555.searchengine.AjaxRequestServlet</servlet-class>
+		     <load-on-startup>1</load-on-startup>
 	</servlet>
 
 	<servlet>
 		<servlet-name>RankServlet</servlet-name>
 		<servlet-class>cis555.searchengine.RankServlet</servlet-class>
+		     <load-on-startup>1</load-on-startup>
 	</servlet>
 <servlet>
 		<servlet-name>HelperServlet</servlet-name>
 		<servlet-class>cis555.searchengine.HelperServlet</servlet-class>
+		     <load-on-startup>1</load-on-startup>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>RankServlet</servlet-name>

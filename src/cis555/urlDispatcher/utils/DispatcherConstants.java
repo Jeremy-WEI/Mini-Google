@@ -11,6 +11,10 @@ public class DispatcherConstants {
 	
 	public static final int URLS_TO_SEND = 1000;
 	
+	public static final int MILLISECONDS_IN_MINUTE = 60000;
+	
+	public static final int UPDATE_COUNT_INTERVAL = MILLISECONDS_IN_MINUTE * 2;
+	
 	// GET / PUT URL paths
 	
 	public static final String STATUS_URL = "status";
@@ -26,10 +30,10 @@ public class DispatcherConstants {
 	
 	public static final String PORT_PARAM = "port";
 	public static final String PAGES_CRAWLED_PARAM = "pagesCrawled";
-
 	public static final String CRAWLER_NAME_PARAM = "crawlerName";
-	
 	public static final String NEW_URLS_PARAM = "newUrls";
+	public static final String NUM_THREADS_PARAM = "numThreads";
+	
 
 	// Worker Web.xml
 	
@@ -41,5 +45,6 @@ public class DispatcherConstants {
 	
 	// Master Web.xml
 	public static final String STARTING_URL_KEY_XML = "startingUrls";
+	public static final String NUM_THREADS_KEY_XML = "numThreads";
 
 }

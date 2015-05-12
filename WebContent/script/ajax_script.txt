@@ -5,13 +5,13 @@ $(document).ready(function() {
         max: 10,
         delay: 100,
         minLength: 1,
-        autoFocus: true,
+        autoFocus: false,
         cacheLength: 1,
         scroll: true,
         highlight: false,
         source: function(request, response) {
             $.ajax({
-                url: "JSON/AjaxRequest",
+                url: "/searchengine/JSON/AjaxRequest",
                 dataType: "json",
                 data: request,
                 success: function( data, textStatus, jqXHR) {

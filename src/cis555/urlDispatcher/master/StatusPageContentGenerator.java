@@ -1,5 +1,6 @@
 package cis555.urlDispatcher.master;
 
+import java.util.List;
 import java.util.Map;
 
 import cis555.urlDispatcher.utils.DispatcherConstants;
@@ -56,6 +57,37 @@ public class StatusPageContentGenerator {
             str.append("<input type='submit' value='Stop Crawl' name='" + DispatcherConstants.STOP_URL + "' size='30' /></form>");        	
         }
         return str.toString();
+
+	}
+	
+	/**
+	 * Generates the performance table
+	 * @param resultsEntry
+	 * @return
+	 */
+	public static String generatePerformanceTable(List<ResultsEntry> resultsEntry){
+		StringBuilder str = new StringBuilder();
+		str.append("<br /><table border=\"10\"");
+		str.append("<tr>");
+		str.append("<th>Number of nodes</th>");
+		str.append("<th>Number of GETWorkers</th>");
+		str.append("<th>Minutes since crawl</th>");
+		str.append("<th>Total pages Crawled</th>");
+		str.append("</tr>");
+		
+		for (ResultsEntry entry: resultsEntry){
+						
+			str.append("<tr>");
+			str.append("<td>" + entry.getNumCrawlers() + "</td>");
+			str.append("<td>" + entry.getNumGetWorkers() + "</td>");
+			str.append("<td>" + entry.getMinutesRan() + "</td>");
+			str.append("<td>" + entry.getPagesCrawled() + "</td>");
+			str.append("</tr>");
+			
+		}
+		str.append("</tr>");
+		str.append("</table>");
+		return str.toString();
 
 	}
 

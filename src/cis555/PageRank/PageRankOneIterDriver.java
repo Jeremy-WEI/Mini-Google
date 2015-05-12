@@ -9,14 +9,14 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-public class PageRankDriver {
+public class PageRankOneIterDriver {
     
     private void rank(String inputPath, String outputPath) {
 	Configuration conf = new Configuration();
 
 	try {
 	    Job job = Job.getInstance(conf, "recompute pagerank");
-	    job.setJarByClass(PageRankDriver.class);
+	    job.setJarByClass(PageRankOneIterDriver.class);
 	    job.setMapperClass(PageRankMapper.class);
 	    job.setReducerClass(PageRankReducer.class);
 
@@ -38,7 +38,7 @@ public class PageRankDriver {
    	Configuration conf = new Configuration();
    	try {
    	    Job job = Job.getInstance(conf, "initialize pagerank");
-   	    job.setJarByClass(PageRankDriver.class);
+   	    job.setJarByClass(PageRankOneIterDriver.class);
    	    job.setMapperClass(PageRankInitMapper.class);
    	    job.setReducerClass(PageRankInitReducer.class);
 
@@ -59,7 +59,7 @@ public class PageRankDriver {
    	Configuration conf = new Configuration();
    	try {
    	    Job job = Job.getInstance(conf, "initialize pagerank");
-   	    job.setJarByClass(PageRankDriver.class);
+   	    job.setJarByClass(PageRankOneIterDriver.class);
    	    job.setMapperClass(PageRankCleanMapper.class);
    	    job.setReducerClass(PageRankCleanReducer.class);
 
@@ -78,48 +78,16 @@ public class PageRankDriver {
     
     
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-	PageRankDriver cd = new PageRankDriver();
+	PageRankOneIterDriver cd = new PageRankOneIterDriver();
 	
-	String crawlInput = "";
-	String inputBase = "";
-	String output = "";
+	String crawlInput = args[0];
+	String output = args[1];
 	
-	if (args.length == 1) {
-	    boolean aws = false;
-	    if (args[0].equals("1")) {
-		aws = true;
-	    }
-	    if (aws) {
-		crawlInput = "s3://wcbucket555/crawlinput";
-		inputBase = "s3://wcbucket555/tempinput";
-		output = "s3://wcbucket555/output";
-	    }
-	    else {
-		crawlInput = "pr/crawlinput"; // from crawl (rawest input)
-		inputBase = "pr/input"; // after initializing pageranks
-		output = "pr/output";
-	    }
-	}
-	else {
-	    crawlInput = args[0];
-	    inputBase = args[1];
-	    output = args[2];
-	}
+	// cd.initialize(crawlInput, inputBase + "0");
 	
-	if (inputBase.endsWith("/")) {
-	    inputBase += "tempinput";
-	}
-	else {
-	    inputBase += "/tempinput";
-	}
-	cd.initialize(crawlInput, inputBase + "0");
+	cd.rank(crawlInput, output);
 	
-	int numIter = 24;
-        for (int run = 0; run < numIter; run += 1) {
-            cd.rank(inputBase+run, inputBase+(run + 1));
-        }
-        
-        cd.clean(inputBase + numIter, output);
+        //cd.clean(inputBase + numIter, output);
 
     }
 }
